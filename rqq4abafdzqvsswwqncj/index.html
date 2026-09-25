@@ -62,7 +62,7 @@ button { font-family: var(--font); cursor: pointer; }
 .pill.cash { min-width: 110px; }
 /* Money a minute under the total (playtest 3 idea: see what upgrades do). */
 .cashTxt { display: flex; flex-direction: column; }
-#cashRate { font-size: 11px; font-weight: 700; color: #6d8c2f; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 46vw; }
+#cashRate { font-size: 11px; font-weight: 700; color: #6d8c2f; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 50vw; }
 /* One line, however big the numbers (playtest 11: the top bar wrapped). */
 .pill { min-width: 0; white-space: nowrap; }
 .pill.tool { flex-shrink: 1; overflow: hidden; }
@@ -81,6 +81,16 @@ button { font-family: var(--font); cursor: pointer; }
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
   transition: transform 0.08s ease-out;
 }
+/* Picking pay, beside the basket while you harvest (playtest 12: nobody
+   felt it). */
+.carry { position: relative; }
+.carry b.pickPay { position: absolute; left: 100%; top: 50%; transform: translateY(-50%); margin-left: 5px; min-width: 0;
+  font-size: 13px; color: #6d3f00; background: linear-gradient(#fff59d, #ffc107); border: 2px solid #b8860b; border-radius: 999px;
+  padding: 1px 7px; white-space: nowrap; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+.carry b.pickPay[hidden] { display: none; }
+.carry b.pickPay .icon { width: 13px; height: 13px; vertical-align: -2px; margin-right: 1px; }
+.carry b.pickPay.bump { animation: pickBump .25s ease-out; }
+@keyframes pickBump { from { transform: translateY(-50%) scale(1.3); } to { transform: translateY(-50%) scale(1); } }
 .carry b { font-size: 16px; font-weight: 700; min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
 .carryBar { flex: 1; height: 14px; border-radius: 7px; background: rgba(255, 255, 255, 0.2); overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,.25); }
 #carryFill { height: 100%; width: 0; background: linear-gradient(#ffe082, #ffb300); border-radius: 7px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.12); }
@@ -196,6 +206,9 @@ button { font-family: var(--font); cursor: pointer; }
 .buy.pb span { display: flex; align-items: center; gap: 3px; }
 .buy.pb small { font-size: 10px; font-weight: 700; opacity: .92; text-shadow: none; white-space: nowrap; }
 .buy:active { transform: translateY(3px); box-shadow: 0 1px 0 #1f6b24; }
+/* Resting for half a second after a buy, so a slow double tap buys once. */
+.buy.cool { animation: buyCool .5s linear both; }
+@keyframes buyCool { 0% { filter: brightness(1.35) saturate(.4); transform: scale(.94); } 70% { filter: brightness(1.15) saturate(.7); transform: scale(.98); } 100% { filter: none; transform: none; } }
 .buy.poor { background: linear-gradient(#d7ccc8, #a1887f); box-shadow: 0 4px 0 #6d4c41; }
 .buy.done, .buy:disabled { background: #e0d6c2; color: #9c8b73; box-shadow: none; text-shadow: none; }
 .opt {
@@ -219,7 +232,10 @@ button { font-family: var(--font); cursor: pointer; }
 #title.gone { opacity: 0; pointer-events: none; }
 /* The HUD waits under the title (playtest 1: after a reload both showed). */
 #hud, #dock { transition: opacity 0.4s; }
-body.intro #hud, body.intro #dock { opacity: 0; pointer-events: none; }
+/* Hidden from the first paint, not faded out after it (v52 testers: the
+   HUD showed under "Tap to play", and a first tap on Upgrades only closed
+   the title). */
+body:not(.playing) #hud, body:not(.playing) #dock { opacity: 0; pointer-events: none; }
 .logo { display: flex; flex-direction: column; align-items: center; line-height: .85; transform: rotate(-4deg); }
 .logo span {
   font-weight: 700; color: #fff; letter-spacing: 1px;
@@ -330,6 +346,8 @@ body.intro #hud, body.intro #dock { opacity: 0; pointer-events: none; }
   animation: toastIn .35s cubic-bezier(.2,1.5,.4,1); transition: opacity .4s, transform .4s;
 }
 .toast.gone { opacity: 0; transform: translateY(-20px); }
+#toasts { position: relative; }
+#toasts .toast.gone { position: absolute; top: 0; }
 .toast canvas { width: 44px; height: 44px; border-radius: 12px; background: #ffe9a8; flex: none; }
 .toast h3 { margin: 0; font-size: 18px; color: #e65100; }
 .toast p { margin: 0; font-size: 14px; font-weight: 600; line-height: 1.25; }
@@ -426,6 +444,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     <i class="icon basket"></i>
     <div class="carryBar"><div id="carryFill"></div></div>
     <b id="carryText">0 / 5</b>
+    <b class="pickPay" id="pickPay" hidden></b>
   </div>
   <div class="next" id="next" hidden>
     <canvas id="nextIcon" width="48" height="48"></canvas>
@@ -710,7 +729,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           { id: 'corn', name: 'Canned corn', inputs: { corn: 1 }, learn: 4500 },
           { id: 'pumpkin', name: 'Pumpkin soup', inputs: { pumpkin: 1 }, learn: 40000 }
         ] },
-      { id: 'juicer', name: 'Juice press', product: 'juice', goods: 'juice', x: 13, y: 22, w: 3, h: 3, cost: 25000,
+      { id: 'juicer', name: 'Juice press', product: 'juice', goods: 'juice', x: 13, y: 22, w: 3, h: 3, cost: 8000, // was 25,000 (playtest 12: nothing to buy between 1.5K and 25K)
         hopper: { x: 13, y: 25, w: 3, h: 1 }, pickup: { x: 16.4, y: 23.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 10, hopperSize: 30, outSize: 200, walls: ['#66bb6a', '#43a047', '#2e7d32'],
         recipes: [
@@ -945,7 +964,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     economy: {
       tripTime: 8,            // fixed estimate of a walk to the stand and back (s)
       signHold: 0.5, // s standing still on a sign before paying in (playtest 1)
-      signReach: 1.7, // tiles from a sign's spot that count as on it (playtest 3: 1.3 was missed)
+      signReach: 2.0, // tiles from a sign's spot that count as on it (playtest 3: 1.3 was missed; playtest 12: stood just behind it)
       plotDrainFraction: 0.5, // share of a plot's cost paid per second while on its sign
       plotDrainMin: 1
     },
@@ -959,8 +978,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     milestones: { cut: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10], made: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9], demand: 1.5, tierGrowth: 3 },
     // Picking pay (main.js): crops you cut yourself pay share x their price
     // at once, at most cap x your income a second (floor coins a second
-    // early on). The steady edge of harvesting (playtest 11).
-    harvestPay: { share: 0.2, cap: 0.4, floor: 1 },
+    // early on). The steady edge of harvesting (playtest 11). Raised
+    // (playtest 12: active still equalled idle; harvest-only beat idle by
+    // 1.4x, capped at 0.4 of income, while SERVE-only made 1.8x).
+    // The floor keeps the first minutes' pace, which testers liked.
+    harvestPay: { share: 0.4, cap: 0.6, floor: 0.6 },
     // Golden crops (goals.js): the first comes `first` s in, then one every
     // every[0]..every[1] s, within `radius` tiles of you, for `life` s.
     // The first comes after 2 min (playtest 10: nobody saw one in v50).
@@ -2473,8 +2495,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     function dispatch(fm, spot) {
       var c = fm.carry.items[0], h = spots.hungry ? spots.hungry(c) : null;
       fm.wait = 0; fm.fromShelf = false;
+      // The stall first while its shelf has room, the rest to the barn
+      // (playtest 12: buying the barn left the shelves empty for a minute).
+      var shelfRoom = (c in stand.shelves) && stand.capacity - (stand.shelves[c] || 0) > 0;
       if (h) { fm.phase = 'toFactory'; fm.target = { x: h.x, y: h.y }; fm.factory = h.id; fm.hungry = true; }
-      else if (barn && CR.barn.room(barn, config, c) > 0) { fm.phase = 'toBarn'; fm.target = spots.barn; }
+      else if (barn && !shelfRoom && CR.barn.room(barn, config, c) > 0) { fm.phase = 'toBarn'; fm.target = spots.barn; }
       else { fm.phase = 'toStand'; fm.target = spot || spots.stand(c); }
     }
     function deliver(fm, v) {
@@ -5110,9 +5135,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       });
     });
     // A fence just past the walkable edge, with gaps where customers, the
-    // truck and the lorries come in.
+    // truck and the lorries come in. Almost a tile past it, so you never
+    // stand on or over it (playtest 12: "walked out through the fence").
     if (G.edge) {
-      var e = G.edge, pad = 0.5, fx0 = e.x0 - pad, fy0 = e.y0 - pad, fx1 = e.x1 + pad, fy1 = e.y1 + pad;
+      var e = G.edge, pad = 0.9, fx0 = e.x0 - pad, fy0 = e.y0 - pad, fx1 = e.x1 + pad, fy1 = e.y1 + pad;
       var ent = G.cfg.stand.entrance, tf = G.cfg.truck.from, gaps = CR.shopView.clearZones(G).concat([
         { x: ent.x - 4, y: ent.y - 6, w: 8, h: 12 }, { x: tf.x - 8, y: tf.y - 1.6, w: 16, h: 3.2 }]);
       var open = function (x, y) { for (var gi = 0; gi < gaps.length; gi++) { var q = gaps[gi]; if (x > q.x && x < q.x + q.w && y > q.y && y < q.y + q.h) return true; } return false; };
@@ -5867,7 +5893,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // The spot to stand on, on the ground under the sign: glowing when you
     // can pay, with a ring that fills as you pay (playtest 3: the board
     // floats above its spot and testers stood under the board).
-    var can = G.money >= cost - paid - 1e-9, rx = 34, ry = 17;
+    var can = G.money >= cost - paid - 1e-9, rx = 46, ry = 23; // bigger than the board's posts (playtest 12)
     ctx.globalAlpha = can ? 0.4 + 0.2 * Math.sin(G.time * 6) : 0.16;
     ellipse(ctx, sx, sy, rx, ry, can ? '#ffe082' : '#ffffff');
     ctx.globalAlpha = 1;
@@ -7565,9 +7591,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     // ---- title screen: gone at the first touch or key
     var title = $('title');
-    document.body.classList.add('intro');
     function start() {
-      title.classList.add('gone'); document.body.classList.remove('intro'); CR.fx.unlockAudio();
+      title.classList.add('gone'); document.body.classList.add('playing'); CR.fx.unlockAudio();
       if (ui.awayLater) { var a = ui.awayLater; ui.awayLater = null; ui.showAway(a[0], a[1], a[2]); }
     }
     if (G.legacy.runs > 0) {
@@ -7619,7 +7644,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (window.confirm('Start over from the first carrot? Your saved farm will be deleted.')) G.startOver();
     });
     Array.prototype.forEach.call(document.querySelectorAll('.close'), function (b) {
-      b.addEventListener('click', function () { $(b.dataset.close).hidden = true; });
+      b.addEventListener('click', function (e) { $(b.dataset.close).hidden = true; ui.closeSpot = { x: e.clientX, y: e.clientY, t: Date.now() }; });
     });
     // The next-unlock bar: shop things open their tab, things on the map
     // (fields, factories, the barn) are bought on their sign.
@@ -7882,9 +7907,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // What it is worth now (playtest 9, third round asking for payback).
         var pm0 = G.stand.priceMultiplier || 1, gainP = G.rates.money * 60 * 0.1 / pm0;
         names = Object.assign({ prices: ['Better prices', '+10% at the stall' + (gainP >= 1 ? ': about +' + G.fmt(Math.round(gainP)) + ' a minute' : '')] }, names);
+        // Payback where the gain is clear (playtest 12: asked for on every
+        // tab): prices always; Quick hands while the till holds you up;
+        // Signboard while your shelves stay full.
+        var hold = ui.bottleneck(), inc = G.rates.money * 60, standGain = { prices: gainP };
+        if (hold && /till/.test(hold[0])) standGain.till = inc * (1 / up.till.mult - 1);
+        if (hold && /full/.test(hold[0]) && perMin2 > perMin) standGain.signboard = inc * (perMin2 / perMin - 1);
         Object.keys(names).forEach(function (k) {
           var u = up[k], lv = G.standLv[k], top = CR.stand.maxLevel(cfg, k);
-          list.push({ key: 'stand' + k, icon: ['stand', k], title: names[k][0], sub: names[k][1], gain: k === 'prices' ? gainP : 0,
+          list.push({ key: 'stand' + k, icon: ['stand', k], title: names[k][0], sub: names[k][1], gain: standGain[k] || 0,
             level: u.perTier ? (lv >= top ? u.perTier : lv % u.perTier) : lv, max: u.perTier || top,
             price: P.stand(k), done: lv >= top, act: function () { actions.standUp(k); } });
         });
@@ -8080,7 +8111,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       return s && (G.free || G.money >= s.left) ? s : null;
     }
     function setBuy(b, it) {
-      b.className = 'buy'; b.disabled = false;
+      b.className = 'buy'; b.disabled = false; b.style.animationDelay = '';
       if (goThere(it)) { b.textContent = 'Show the way'; b.classList.add('go'); }
       else if (it.label) { b.textContent = it.label; b.disabled = !!it.locked; }
       else if (it.done) { b.textContent = it.info ? 'Built' : 'Max'; b.disabled = true; }
@@ -8101,6 +8132,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         }
         if (!G.free && G.money < it.price) b.classList.add('poor');
       }
+      cool(b, it.key);
     }
     function payback(min) {
       if (min < 1) return Math.max(5, Math.round(min * 12) * 5) + 's';
@@ -8111,15 +8143,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     // One level per double tap (playtest 4: fast taps bought 2-3 levels),
     // but only on the same button (playtest 10: a quick tap on another item
-    // was ignored), unless the rows just moved under your finger. 300 ms
-    // is a double tap; a deliberate second tap comes later (playtest 11:
-    // taps 0.4 s apart on "Hire a seller" did nothing).
+    // was ignored), unless the rows just moved under your finger. A slow
+    // double tap takes up to half a second (playtest 12: taps 350 ms apart
+    // bought twice), so the button rests that long after a buy, and shows
+    // it (the `cool` look), so a deliberate second tap waits for it.
+    var COOL = 500;
     function buyOk(key) {
       var now = Date.now();
       if (now - (ui.shiftAt || 0) < 300) return false;
-      if (key === ui.lastBuyKey && now - (ui.lastBuy || 0) < 300) return false;
+      if (key === ui.lastBuyKey && now - (ui.lastBuy || 0) < COOL) return false;
       ui.lastBuy = now; ui.lastBuyKey = key;
       return true;
+    }
+    function cool(b, key) {
+      var gone = Date.now() - (ui.lastBuy || 0);
+      if (key !== ui.lastBuyKey || gone >= COOL) return;
+      b.classList.add('cool'); b.style.animationDelay = -gone + 'ms';
     }
     ui.buyOk = buyOk;
 
@@ -8139,6 +8178,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           var pp = el.querySelector('.pips');
           if (pp && it.max) pp.outerHTML = pips(it.level, it.max, it.bar);
           var bb = el.querySelector('.buy');
+          // "Need X more" goes as soon as you can pay (playtest 12: it
+          // stayed after the coins came in).
+          if (bb && bb.classList.contains('need') && (G.free || G.money >= it.price || !(it.price < Infinity))) { clearTimeout(bb._needT); bb.classList.remove('need'); }
           if (bb && !bb.classList.contains('need')) setBuy(bb, it);
         });
         return;
@@ -8242,6 +8284,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           // (playtest 8: a scrolled Stand tab jumped 100 px after a buy).
           var sig0 = box._sig;
           it2.act(); again(true);
+          var nb = el.querySelector('.buy'); if (nb) cool(nb, it2.key);
           // Rows came or went: the next row may now sit under your finger.
           if (box._sig !== sig0) ui.shiftAt = Date.now();
         });
@@ -8397,6 +8440,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       tx.innerHTML = '<h3></h3><p></p>';
       tx.firstChild.textContent = t[0]; tx.lastChild.textContent = t[1];
       el.appendChild(tx);
+      // One at a time (playtest 12: toasts overlapped each other).
+      for (var o = ui.toasts.firstChild; o; o = o.nextSibling) if (!o.classList.contains('gone')) { o.classList.add('gone'); (function (o) { setTimeout(function () { o.remove(); }, 450); })(o); }
       ui.toasts.appendChild(el);
       setTimeout(function () { el.classList.add('gone'); }, 3000);
       setTimeout(function () { el.remove(); }, 3500);
@@ -8411,6 +8456,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       CR.fx.sound.done(); setTimeout(function () { CR.fx.sound.done(); }, 350);
     };
     $('winBtn').addEventListener('click', function () { $('win').hidden = true; });
+
+    // Picking pay so far this harvest, beside the basket; gone 6 s after
+    // the last pay (playtest 12: nobody felt it).
+    var pickEl = $('pickPay'), pickHide = 0;
+    ui.pickPay = function (total) {
+      pickEl.innerHTML = '<i class="icon coin"></i>+' + G.fmt(Math.floor(total));
+      pickEl.hidden = false;
+      pickEl.classList.remove('bump'); void pickEl.offsetWidth; pickEl.classList.add('bump');
+      clearTimeout(pickHide);
+      pickHide = setTimeout(function () { pickEl.hidden = true; }, 6000);
+    };
 
     // "Welcome back": what your helpers made while you were away.
     ui.showAway = function (amount, secs, collect) {
@@ -8439,7 +8495,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     function newAffordable() {
       var tabs = ['gear', 'fields', 'farmers', 'factory', 'barn', 'stand'], any = false;
       tabs.forEach(function (t) {
-        var fresh = cardsFor(t).some(function (it) { return affordable(it) && !ui.seenAff[it.key + ':' + it.price]; });
+        // New, or cheap next to what you hold (playtest 12: a basket and
+        // boots at a few % of the coins went unbought for 18 min, their dot
+        // gone once seen).
+        var fresh = cardsFor(t).some(function (it) { return affordable(it) && (!ui.seenAff[it.key + ':' + it.price] || (!G.free && it.cur !== 'seed' && it.price <= G.money * 0.15 && G.money >= 100)); });
         var b = document.querySelector('.tab[data-tab="' + t + '"]');
         if (b) b.classList.toggle('new', fresh);
         any = any || fresh;
@@ -8498,7 +8557,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         cr.hidden = !(perMin >= 1 && G.playTime > 30);
         // What sellers left at the till shows too (playtest 5: the counter
         // barely moved while the rate counted their sales).
-        var waiting = G.stand.coinPile >= 1 ? ' \u00b7 ' + G.fmt(Math.floor(G.stand.coinPile)) + ' at the till' : '';
+        // Coins, said so (playtest 12: "79 at the till" read as customers).
+        var waiting = G.stand.coinPile >= 1 ? ' \u00b7 ' + G.fmt(Math.floor(G.stand.coinPile)) + ' coins waiting' : '';
         if (!cr.hidden) cr.textContent = '+' + G.fmt(Math.round(perMin)) + ' a minute' + waiting;
         cr.classList.toggle('warn', G.pileHigh());
         var nu = Date.now() < (ui.nextHold || 0) ? null : G.nextUnlock();
@@ -8552,7 +8612,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Not over an open menu (playtest 8): they wait until it closes.
       var mo = ui.menuOpen();
       ui.toasts.style.visibility = mo ? 'hidden' : '';
-      if (ui.toastT <= 0 && ui.toastQ.length && !mo) { ui.toastT = 1.2; nextToast(); }
+      if (ui.toastT <= 0 && ui.toastQ.length && !mo) { ui.toastT = 2.2; nextToast(); }
       if (ui.menuOpen()) ui.lastMenu = Date.now();
       // A "for sale" toast goes the moment you buy the thing (playtest 6).
       for (var tc = ui.toasts.firstChild; tc; tc = tc.nextSibling) if (tc.sign && !tc.classList.contains('gone') && !G.signAt(tc.sign)) tc.classList.add('gone');
@@ -9277,10 +9337,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     obj.onAt = G.time;
     if (!obj.buying && G.money < left - 1e-9) {
       obj.hold = 0;
-      if (G.time - (obj.saidNeed || -9) > 3) {
+      // Said again while you stand there (playtest 12: asked for).
+      if (G.time - (obj.saidNeed || -9) > 1.7) {
         obj.saidNeed = G.time;
         var sn = iso.toScreen(p.x, p.y, 30);
-        fx.text(sn.x, sn.y - 70, 'Need ' + E.fmt(Math.ceil(left - G.money)) + ' more', { color: '#ffcdd2', size: 16, max: 1.2, rise: 20 });
+        fx.text(sn.x, sn.y - 70, 'Need ' + E.fmt(Math.ceil(left - G.money)) + ' more', { color: '#ffcdd2', size: 16, max: 1.8, rise: 8 });
       }
       return 0;
     }
@@ -10077,6 +10138,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!(pay >= 0.5)) return;
     pay = Math.round(pay * 10) / 10;
     G.money += pay; G.picked = (G.picked || 0) + pay; ui.bumpMoney();
+    // A running total by the basket while you harvest (playtest 12).
+    if (G.time - (G.pickRunT || -99) > 6) G.pickRun = 0;
+    G.pickRun = (G.pickRun || 0) + pay; G.pickRunT = G.time;
+    ui.pickPay(G.pickRun);
     var ps = iso.toScreen(G.player.x, G.player.y, 30);
     fx.fly('coin', ps.x + 20, ps.y - 60, function () { return iso.toScreen(G.player.x, G.player.y, 30); }, { dur: 0.3, arc: 20, kind: 'pay' });
     fx.text(ps.x - 34, ps.y - 60, '+' + E.fmt(pay), { color: '#ffe082', size: 15, max: 0.7, rise: 18 });
@@ -10872,6 +10937,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // A tap just after a menu closed itself (Take, a buy that walks you
     // there) belongs to that menu, not the world (playtest 7).
     if (Date.now() - (ui.lastMenu || 0) < 500) return;
+    // Nor more taps where its X was (playtest 12: rapid taps on the X
+    // opened the field behind it).
+    var cs = ui.closeSpot;
+    if (cs && Date.now() - cs.t < 1500 && Math.hypot(px - cs.x, py - cs.y) < 60) return;
     // Taps on the HUD bars (they let taps through) aren't world taps
     // (playtest 2: the tool pill opened a field's menu).
     if (py < (G.hudBottom || 0) + 6) return;
