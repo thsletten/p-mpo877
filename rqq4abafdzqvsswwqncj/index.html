@@ -141,7 +141,8 @@ button { font-family: var(--font); cursor: pointer; }
 /* A short rise, not a slide up the whole screen: buttons are where they end
    up almost at once, so early taps land (playtest 2: taps missed while it
    slid). */
-@keyframes slideUp { from { transform: translate(-50%, 18px); opacity: 0.4; } }
+/* Solid from its first frame (playtest 9: see-through as it opened). */
+@keyframes slideUp { from { transform: translate(-50%, 18px); } }
 .sheetHead {
   display: flex; align-items: center; justify-content: center; position: relative;
   margin: 0 -12px 8px; padding: 12px; border-radius: 20px 20px 0 0;
@@ -173,8 +174,9 @@ button { font-family: var(--font); cursor: pointer; }
 /* Buy cards keep one height whatever their text says, so the next tap after
    a purchase lands where it did (playtest 5: rows grew a line after a buy). */
 .card:not(.stats) p { line-height: 1.3; min-height: 3.9em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.pips { display: flex; gap: 3px; margin-top: 4px; flex-wrap: wrap; }
-.pips i { width: 12px; height: 7px; border-radius: 4px; background: #eadcc2; }
+/* One row, however many levels (playtest 9: they wrapped onto two). */
+.pips { display: flex; gap: 3px; margin-top: 4px; flex-wrap: nowrap; }
+.pips i { flex: 0 1 12px; min-width: 3px; height: 7px; border-radius: 4px; background: #eadcc2; }
 .pips i.on { background: #66bb6a; }
 .buy {
   flex: none; min-width: 92px; height: 48px; border: 0; border-radius: 14px;
@@ -936,14 +938,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     milestones: { cut: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10], made: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9], demand: 1.5, tierGrowth: 3 },
     // Golden crops (goals.js): the first comes `first` s in, then one every
     // every[0]..every[1] s, within `radius` tiles of you, for `life` s.
+    // Only time you spend in the fields counts (playtest 9).
     // Cutting it: a rush (rushChance) or a lucky harvest worth luckySeconds
     // of your income (at most luckyCap of this farm's earnings, at least
     // luckyMin).
     // They are the reward for harvesting yourself and should be worth
-    // finding (Tom 2026-09-25 12:18), so a lucky harvest is 2 min of income,
+    // finding (Tom 2026-09-25 12:18), so a lucky harvest is 3 min of income,
     // but rarer: they came every 50-100 s (Tom 12:48 "appear too often").
     golden: { first: 180, every: [180, 360], life: 14, radius: 8,
-      rushChance: 0.5, rush: { mult: 7, time: 30 }, luckySeconds: 120, luckyCap: 0.5, luckyMin: 5, rushWait: 60 },
+      rushChance: 0.5, rush: { mult: 7, time: 30 }, luckySeconds: 180, luckyCap: 0.5, luckyMin: 5, rushWait: 60 },
 
     // Big goals (goals.js): the road through the whole game, kept across
     // farms. `kind` is what is measured (see goals.bigGoalValue) and `need`
@@ -972,7 +975,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     orders: {
       // share: of what the customers for that item buy in the time, so it
       // can be done with its shelf kept stocked (playtest 5).
-      slots: 3, every: 45, afterSold: 200, minItems: 10,
+      // The first order asks firstShare as much; a bonus is at least
+      // incomeShare x bonus of your income over its time (playtest 9).
+      slots: 3, every: 45, afterSold: 200, minItems: 10, firstShare: 0.4, incomeShare: 0.3,
       sizes: [
         { time: 90, share: 0.6, bonus: 0.5 },
         { time: 180, share: 0.7, bonus: 0.8 },
@@ -1805,13 +1810,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (till.queue.length && server) {
         till.timer += dt;
         if (till.timer >= tillTime - EPS) { till.timer = 0; serve(server); }
-        // You and the till's seller serve side by side (playtest 8: with a
-        // seller, serving yourself added nothing): you at your speed, the
-        // seller at theirs, each sale paying the same.
-        if (server === 'player' && till.keeper && till.queue.length && !(till.queue[0].walk > 0)) {
-          till.ktimer = (till.ktimer || 0) + dt;
-          if (till.ktimer >= stand.tillTime * c.keeperSlow - EPS) { till.ktimer = 0; serve('keeper'); }
-        } else till.ktimer = 0;
+        // You take over from the seller while you stand there; they don't
+        // serve beside you (playtest 9: side by side, standing at the till
+        // earned 4x what harvesting did, and harvesting is the heart).
         return;
       }
       till.timer = 0;
@@ -2956,19 +2957,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // seeds for, built factories); `perMinute` is roughly how many of anything
   // you sell a minute, so orders grow with your farm. worth(id) = the price
   // of one. Returns { id, item, n, time, left, reward, sold }.
-  function makeOrder(config, rand, items, perMinute, worth, id) {
+  // income (optional): money you make a second; the bonus is at least
+  // incomeShare x bonus of what you make in the order's time (playtest 9:
+  // +10 and +40 meant nothing at 1,800 a minute). The first order ever is
+  // a small one (playtest 9: 100 carrots in 3:00 felt impossible).
+  function makeOrder(config, rand, items, perMinute, worth, id, income) {
     var o = config.orders;
     var item = items[Math.floor(rand() * items.length)];
-    var size = o.sizes[Math.floor(rand() * o.sizes.length)];
+    var size = id === 1 ? o.sizes[1] : o.sizes[Math.floor(rand() * o.sizes.length)];
     var time = size.time;
     // perMinute: sold a minute, or a function of the item giving how many of
     // it the customers buy a minute, so an order is winnable when you keep
     // its shelf stocked (playtest 5: orders sized to all sales failed).
     var rate = typeof perMinute === 'function' ? perMinute(item) : perMinute;
-    var n = nice(Math.max(o.minItems, rate * time / 60 * size.share));
+    var n = nice(Math.max(o.minItems, rate * time / 60 * size.share * (id === 1 ? o.firstShare : 1)));
     return {
       id: id, item: item, n: n, time: time, left: time, sold: 0,
-      reward: Math.round(n * worth(item) * size.bonus)
+      reward: Math.round(Math.max(n * worth(item), (income || 0) * time * (o.incomeShare || 0)) * size.bonus)
     };
   }
 
@@ -2978,7 +2983,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // Fills the board up to `slots` offers, one every `every` seconds.
   // Returns true when a new offer went up.
-  function refill(board, config, rand, items, perMinute, worth, dt) {
+  function refill(board, config, rand, items, perMinute, worth, dt, income) {
     if (!items.length) return false;
     board.timer -= dt;
     if (board.offers.length >= config.orders.slots || board.timer > 0) return false;
@@ -2988,7 +2993,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       return function (q) { return q && q.item === o.item && q.n === o.n && q.time === o.time; };
     };
     for (var t = 0; t < 8; t++) {
-      var o = makeOrder(config, rand, items, perMinute, worth, board.nextId);
+      var o = makeOrder(config, rand, items, perMinute, worth, board.nextId, income);
       if (board.offers.some(same(o)) || same(o)(board.active)) continue;
       board.nextId++;
       board.offers.push(o);
@@ -3042,7 +3047,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // Runs the clocks (a rush ends by itself: gs.rush goes back to 1).
   // Returns 'spawn' when a golden plant should come out now, 'gone' when
   // the one out has faded, else null. `out` = whether one is out now.
-  function goldenTick(gs, config, rand, dt, out) {
+  // grow: seconds that count toward the next golden plant (default dt); the
+  // game counts only time spent in the fields, so they reward harvesting.
+  function goldenTick(gs, config, rand, dt, out, grow) {
     var g = config.golden;
     // A rush's clock waits for your first sale at the stall after it
     // starts (gs.waiting, cleared by the game), so it's never wasted
@@ -3061,7 +3068,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (gs.left <= 0) { gs.timer = g.every[0] + rand() * (g.every[1] - g.every[0]); return 'gone'; }
       return null;
     }
-    gs.timer -= dt;
+    gs.timer -= grow == null ? dt : grow;
     if (gs.timer > 0) return null;
     gs.timer = g.every[0] + rand() * (g.every[1] - g.every[0]);
     gs.left = g.life;
@@ -4960,7 +4967,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     drawReach(ctx, G);
     // "Tap for the way" wins for a while (playtest 8: with a full basket the
     // arrows went to the stall instead of the sign asked for).
-    var asked = G.guide && G.guideSet != null && G.time - G.guideSet < 10;
+    var asked = G.guide && G.guideSet != null && G.time - G.guideSet < 25;
     if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
     else if (G.surplus) drawArrowTo(ctx, G, time, G.surplus.x, G.surplus.y);
     else if (G.truckHintUntil > G.time && G.carry.items.length) drawArrowTo(ctx, G, time, G.truckZone.x + G.truckZone.w / 2, G.truckZone.y + G.truckZone.h / 2);
@@ -5912,7 +5919,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var on = f.unlocked && G.carry.items.length;
     if (f.unlocked) {
       var need = Object.keys(CR.factory.recipeOf(f).inputs).map(function (cr) { return G.cfg.crops[cr].name.toUpperCase(); }).join(' + ');
-      drawMat(ctx, hz, '#ffc629', on ? 0.55 + 0.35 * Math.sin(time * 6) : 0.4, 'DROP ' + need, time);
+      // Lit up steady while you stand on it (playtest 9: unsure if on it).
+      drawMat(ctx, hz, f.onPad ? '#fff176' : '#ffc629', f.onPad ? 0.95 : on ? 0.55 + 0.35 * Math.sin(time * 6) : 0.4, 'DROP ' + need, time);
     } else {
       ctx.globalAlpha = 0.35; ctx.fillStyle = '#90a4ae';
       quadPath(ctx, hz.x + 0.15, hz.y + 0.12, hz.w - 0.3, hz.h - 0.24, 1); ctx.fill();
@@ -6024,7 +6032,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!f.unlocked) return;
     var px = c.x + c.w + 0.15, py = c.y + 0.4;
     box(ctx, px, py, 0.9, 1.2, 0, 4, '#c98c4f', '#9c6532', '#8a5628');
-    var n = f.out.length >= 1000 ? 0 : Math.min(24, f.out.length), base = ws(px + 0.45, py + 0.6, 4);
+    // At most 3 rows, the count says the rest (playtest 9: a tower through
+    // the roof).
+    var n = f.out.length >= 1000 ? 0 : Math.min(12, f.out.length), base = ws(px + 0.45, py + 0.6, 4);
     // Big batches come off in crates of 1K (Tom: scale both).
     if (f.out.length >= 1000) { CR.barnView.bigCrates(ctx, G, px + 0.45, py + 0.6, 4, Math.floor(f.out.length / 1000), f.out[0]); n = 8; }
     else for (var i = 0; i < n; i++) {
@@ -7488,8 +7498,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // ---- sheets
     function open(sheet) {
       [ui.shop, ui.settings, ui.goals, $('legacy')].forEach(function (s) { s.hidden = s !== sheet || !s.hidden; });
-      if (!ui.shop.hidden) renderCards();
-      if (!ui.goals.hidden) { ui.goalsDot.hidden = true; renderGoals(); }
+      // Each open starts at the top (playtest 9: the old scroll put taps
+      // on the wrong row).
+      if (!ui.shop.hidden) { renderCards(); ui.cards.scrollTop = 0; }
+      if (!ui.goals.hidden) { ui.goalsDot.hidden = true; renderGoals(); $('goalCards').scrollTop = 0; }
       if (!$('legacy').hidden) renderLegacy();
     }
     function unfocus() {
@@ -7640,7 +7652,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           list.push({ key: 'farmer' + plot.id, icon: ['farmer', plot.crop], title: 'Field ' + plot.id + ' farmers',
             // The shared price said first, so the 2-line card never cuts it
             // (playtest 7, fifth round in a row: 90 jumped to 270).
-            sub: (n && G.farmRate[plot.crop] >= 1 ? 'About ' + G.fmt(Math.round(G.farmRate[plot.crop])) + ' ' + cfg.crops[plot.crop].name.toLowerCase() + ' a minute now. ' : '')
+            sub: (n && G.farmRate[plot.crop] >= 1 ? 'Each brings about ' + G.fmt(Math.round(G.farmRate[plot.crop] / n)) + ' ' + cfg.crops[plot.crop].name.toLowerCase() + ' (' + G.fmt(Math.round(G.farmRate[plot.crop] / n * G.worth(plot.crop))) + ' coins) a minute. ' : '')
               + (n >= max ? 'This field is fully staffed' : 'Each farmer you hire, on any field, raises the price of the next'),
             level: n, max: max, price: price, done: !(price < Infinity), act: function () { actions.hireFarmer(plot.id); } });
         });
@@ -7735,7 +7747,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var nTills = G.stand.tills.length, maxTills = cfg.stand.tills.length;
         var sellers = G.stand.tills.filter(function (t) { return t.keeper; }).length;
         list.push({ key: 'keeper', icon: ['seller', 0], title: 'Hire a seller',
-          sub: sellers < nTills ? 'Serves till ' + (sellers + 1) + ' at half your speed. Serve beside them for more' : (nTills < maxTills ? 'Every till has a seller. Buy another till' : 'Every till has a seller'),
+          sub: sellers < nTills ? 'Serves till ' + (sellers + 1) + ' at half your speed, so you can go harvesting' : (nTills < maxTills ? 'Every till has a seller. Buy another till' : 'Every till has a seller'),
           level: sellers, max: maxTills, price: sellers < nTills ? P.keeper() : (cfg.stand.keeperCosts[sellers] || Infinity), done: sellers >= maxTills, locked: sellers >= nTills && sellers < maxTills, act: actions.hireKeeper });
         var tillLocked = P.tillLocked();
         list.push({ key: 'till', icon: ['stand', 'till'], title: 'Another till',
@@ -7757,7 +7769,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
             perMin2 > perMin ? 'Customers a minute: ' + perMin + ' → ' + perMin2 : 'About ' + perMin + ' customers a minute, the most the stall gets'],
           till: ['Quick hands', 'Serve each customer faster'] };
         // Better prices first (playtest 7: missed below the fold for 12 min).
-        names = Object.assign({ prices: ['Better prices', '+10% at the stall'] }, names);
+        // What it is worth now (playtest 9, third round asking for payback).
+        var pm0 = G.stand.priceMultiplier || 1, gainP = G.rates.money * 60 * 0.1 / pm0;
+        names = Object.assign({ prices: ['Better prices', '+10% at the stall' + (gainP >= 1 ? ': about +' + G.fmt(Math.round(gainP)) + ' a minute' : '')] }, names);
         Object.keys(names).forEach(function (k) {
           var u = up[k], lv = G.standLv[k], top = CR.stand.maxLevel(cfg, k);
           list.push({ key: 'stand' + k, icon: ['stand', k], title: names[k][0], sub: names[k][1],
@@ -7779,7 +7793,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (ids.length && full * 2 >= ids.length) return ['Your shelves are full', 'More customers sell them faster: Signboard. A bigger stall holds more. Extra crops can go to a factory or the barn'];
       if (ids.length && empty * 2 >= ids.length) {
         var e0 = ids.filter(function (k) { return st.shelves[k] <= 0; })[0];
-        return ['Your shelves run empty', G.item.name(e0) + ' ran out. ' + G.shortFix(e0) + ', or give your farmers better tools'];
+        return ['Your shelves run empty', G.item.name(e0) + ' ran out. ' + G.shortFix(e0) + (cfg.crops[e0] ? '. Farmers and better tools bring more' : '')];
       }
       return null;
     };
@@ -7898,6 +7912,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ui.settings.hidden = true; ui.goals.hidden = true;
       ui.shop.hidden = false;
       renderCards();
+      ui.cards.scrollTop = 0;
     };
 
     // soft: update the same cards in place (the refresh as money changes),
@@ -7910,7 +7925,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       fillCards(ui.cards, list, renderCards, soft === true);
     }
 
-    // A sign on the farm you can pay for: "Go there" shows you the way
+    // A sign on the farm you can pay for: "Show the way" shows you the way
     // (playtest 1: the button was grey even when you had the coins).
     function goThere(it) {
       var s = it.go && G.signAt(it.go);
@@ -7918,7 +7933,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
     function setBuy(b, it) {
       b.className = 'buy'; b.disabled = false;
-      if (goThere(it)) { b.textContent = 'Go there'; b.classList.add('go'); }
+      if (goThere(it)) { b.textContent = 'Show the way'; b.classList.add('go'); }
       else if (it.label) { b.textContent = it.label; b.disabled = !!it.locked; }
       else if (it.done) { b.textContent = it.info ? 'Built' : 'Max'; b.disabled = true; }
       else if (it.cur === 'seed') {
@@ -8268,14 +8283,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       }
       var n = G.carry.items.length, lim = G.carry.limit;
       if (L.n !== n || L.lim !== lim) {
-        ui.carryText.textContent = n + ' / ' + lim;
-        ui.carryFill.style.width = Math.min(100, n / lim * 100) + '%';
-        ui.carryBox.classList.toggle('full', n >= lim);
+        // Goods ride on top of a full basket; count them apart (playtest 9:
+        // "31 / 25" read as a bug).
+        var ci = G.carry.items, g = 0;
+        for (var gi = ci.length - 1; gi >= 0 && ci[gi].indexOf(':') >= 0; gi--) g++;
+        var gf = g && CR.factory.byId(G.factories, G.item.shelf(ci[ci.length - 1]));
+        var cn = n - g;
+        ui.carryText.textContent = G.fmt(cn) + ' / ' + G.fmt(lim) + (g ? ' + ' + G.fmt(g) + ' ' + (gf ? gf.cfg.goods : 'goods') : '');
+        ui.carryFill.style.width = Math.min(100, cn / lim * 100) + '%';
+        ui.carryBox.classList.toggle('full', cn >= lim);
         L.n = n; L.lim = lim;
       }
       if (L.tier !== G.tier || L.tlv !== G.toolLevel) {
         // With its level (playtest 8: still "Hands" after buying Gloves).
-        ui.toolName.textContent = cfg.tools[G.tier].name + (G.toolLevel ? ' ' + G.toolLevel : '');
+        ui.toolName.textContent = cfg.tools[G.tier].name + (G.toolLevel ? ' Lv ' + G.toolLevel : '');
         CR.render.icon(ui.toolIcon, 'toolPill', G.tier, G);
         if (L.tier != null) bump(ui.toolPill);
         L.tier = G.tier; L.tlv = G.toolLevel;
@@ -8815,9 +8836,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var z = G.cashierZones[ti];
       if (z && tl.queue.length && !tl.keeper && !drop) consider(z.x + z.w / 2, z.y + z.h / 2, pc.serve);
     });
-    if (!CR.field.isFull(G.carry)) G.factories.factories.forEach(function (f) {
-      var z = f.cfg.pickup;
-      if (f.unlocked && f.out.length) consider(z.x + z.w / 2, z.y + z.h / 2, pc.pallet);
+    // Goods ride on top of a full basket now (v49), and a DROP pad pulls you
+    // in when you carry what it takes (playtest 9: stood just off it).
+    G.factories.factories.forEach(function (f) {
+      if (!f.unlocked) return;
+      var z = f.cfg.pickup, h = f.cfg.hopper, ins = CR.factory.recipeOf(f).inputs;
+      if (f.out.length) consider(z.x + z.w / 2, z.y + z.h / 2, pc.pallet);
+      if (Math.hypot(h.x + h.w / 2 - p.x, h.y + h.h / 2 - p.y) < pc.pallet && G.carry.items.some(function (it) { return ins[it]; })) consider(h.x + h.w / 2, h.y + h.h / 2, pc.pallet);
     });
     if (!best || bd < 0.06) return;
     var step = Math.min(bd, pc.speed * dt), nx = p.x + (best.x - p.x) / bd * step, ny = p.y + (best.y - p.y) / bd * step;
@@ -9040,9 +9065,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // ---- the barn: storage, and the workers who carry from it ----------------
 
   // Buy it on its sign once the Cannery stands; then drop crops on its mat.
+  // Half a tile round the mat counts too (playtest 7: overshot twice), and
+  // so does standing by the barn's sides (playtest 9: "stood next to the
+  // barn 10 s, nothing"). The barn itself is solid.
+  function barnZone() {
+    var b = cfg.barn, m = b.mat;
+    if (!G.barn.unlocked) return { x: m.x - 0.4, y: m.y - 0.4, w: m.w + 0.8, h: m.h + 0.8 };
+    var x0 = Math.min(b.x, m.x - 0.4) - 0.6, x1 = Math.max(b.x + b.w, m.x + m.w + 0.4) + 0.6;
+    return { x: x0, y: b.y + 0.6, w: x1 - x0, h: m.y + m.h + 0.4 - (b.y + 0.6) };
+  }
   function barnStep(dt) {
-    // Half a tile round the mat counts too (playtest 7: overshot twice).
-    var p = G.player, b = cfg.barn, barn = G.barn, there = inZone({ x: b.mat.x - 0.4, y: b.mat.y - 0.4, w: b.mat.w + 0.8, h: b.mat.h + 0.8 }, p.x, p.y)
+    var p = G.player, b = cfg.barn, barn = G.barn, there = inZone(barnZone(), p.x, p.y)
       || (!barn.unlocked && Math.hypot(p.x - (b.mat.x + b.mat.w / 2), p.y - (b.mat.y + b.mat.h / 2)) < cfg.economy.signReach);
     if (!barn.unlocked) {
       if (!there || !CR.barn.forSale(cfg, G.factories)) return;
@@ -9152,12 +9185,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // No harvesting on a built factory's lot: the Cannery's pallet sits by
   // the carrot field, and walking to it filled your basket so you could
   // never take the jars (playtest 2, ~15 min lost).
+  // The DROP pad and a forgiving margin round it (playtest 9: players
+  // stood just off the 1-tile pad and thought it refused their crops).
+  function hopZone(f) {
+    var h = f.cfg.hopper;
+    return { x: h.x - 0.5, y: h.y, w: h.w + 1, h: h.h + 0.7 };
+  }
   function onFactoryLot(p) {
     for (var i = 0; i < G.factories.factories.length; i++) {
       var f = G.factories.factories[i], c = f.cfg;
       if (!f.unlocked) continue;
-      var x0 = Math.min(c.x, c.pickup.x) - 0.3, x1 = Math.max(c.x + c.w, c.pickup.x + c.pickup.w) + 0.3;
-      var y0 = Math.min(c.y, c.pickup.y) - 0.3, y1 = Math.max(c.hopper.y + c.hopper.h, c.pickup.y + c.pickup.h) + 0.3;
+      var x0 = Math.min(c.x - 0.2, c.pickup.x) - 0.3, x1 = Math.max(c.x + c.w, c.pickup.x + c.pickup.w) + 0.3;
+      var y0 = Math.min(c.y, c.pickup.y) - 0.3, y1 = Math.max(c.hopper.y + c.hopper.h + 0.7, c.pickup.y + c.pickup.h) + 0.3;
       if (p.x > x0 && p.x < x1 && p.y > y0 && p.y < y1) return true;
     }
     return false;
@@ -9213,7 +9252,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     G.factories.factories.forEach(function (f) {
       var hz = f.cfg.hopper;
       var mid = { x: hz.x + hz.w / 2, y: hz.y + hz.h / 2 };
-      var there = inZone(hz, p.x, p.y) || (!f.unlocked && Math.hypot(p.x - mid.x, p.y - mid.y) < cfg.economy.signReach);
+      var onPad = f.unlocked && inZone(hopZone(f), p.x, p.y);
+      f.onPad = onPad; // the pad lights up under you (scenery.js)
+      var there = onPad || (!f.unlocked && Math.hypot(p.x - mid.x, p.y - mid.y) < cfg.economy.signReach);
       if (!f.unlocked) {
         if (!there) return;
         // Build it by standing on its sign, like a plot.
@@ -9251,6 +9292,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // It stays a swap until you step off, and the hopper takes all you
       // bring by hand (playtest 4: one crop at a time, then "Hopper full!").
       if (!there && f.swap) there = true;
+      // Close but not on it, with crops it wants: say where (playtest 9).
+      if (!there && G.carry.items.length) {
+        var hzp = hopZone(f), dx = Math.max(hzp.x - p.x, 0, p.x - hzp.x - hzp.w), dy = Math.max(hzp.y - p.y, 0, p.y - hzp.y - hzp.h);
+        var ins0 = CR.factory.recipeOf(f).inputs;
+        if (Math.hypot(dx, dy) < 2 && Math.hypot(p.vx || 0, p.vy || 0) < 0.3 && G.carry.items.some(function (it) { return ins0[it]; })) {
+          f.nearT = (f.nearT || 0) + dt;
+          if (f.nearT > 0.8 && G.time - (f.nearSaid || -9) > 4) {
+            f.nearSaid = G.time;
+            var ns = iso.toScreen(mid.x, mid.y, 20);
+            fx.text(ns.x, ns.y - 20, 'Step onto the DROP pad', { color: '#fff59d', size: 16, max: 1.4, rise: 16 });
+          }
+        } else f.nearT = 0;
+      }
       if (!there || !G.carry.items.length || fx.countFlying('stack')) { f.dropTimer = 0; return; }
       f.dropTimer = (f.dropTimer || 0) - dt;
       var target = iso.toScreen(mid.x, mid.y - 1.2, 50), hi = G.carry.items.length - 1, wantedAny = false;
@@ -9471,7 +9525,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // No cutting while you stand where you unload (balance bot: a big
     // machine's reach covers the near fields from the stall and barn mat, so
     // each item unloaded was cut again at once and the basket never emptied).
-    var dropSpot = atStall(p) || (G.barn.unlocked && inZone(cfg.barn.mat, p.x, p.y));
+    var dropSpot = atStall(p) || (G.barn.unlocked && inZone(barnZone(), p.x, p.y));
     // Nor while you carry factory goods: they're on their way to the stall
     // (playtest 8: the walk back through the fields filled you up again).
     var ci0 = G.carry.items, goodsOn = ci0.length > 0 && ci0[ci0.length - 1].indexOf(':') >= 0;
@@ -9481,6 +9535,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var gs0 = iso.toScreen(p.x, p.y, 30);
       var gf0 = CR.factory.byId(G.factories, G.item.shelf(ci0[ci0.length - 1]));
       fx.text(gs0.x, gs0.y - 96, cap(gf0 ? gf0.cfg.goods : 'goods') + ' first: take them to the stall', { color: '#fff59d', size: 15, max: 1.4, rise: 12 });
+    }
+    // Standing in a bare patch: say the crops come back (playtest 9: new
+    // players wandered for a minute before seeing that they regrow).
+    var bare = !cuts.length && !goodsOn && !dropSpot && !CR.field.isFull(G.carry) && G.stats.cut < 3000;
+    var bpl = bare && CR.field.plotAt(field, p.x, p.y);
+    if (bpl && bpl.unlocked) for (var bx = -1; bx <= 1 && bpl; bx++) for (var by = -1; by <= 1 && bpl; by++) {
+      if (CR.field.plotAt(field, p.x + bx, p.y + by) === bpl && CR.field.growthIn(field, bpl, Math.floor(p.x + bx), Math.floor(p.y + by)) >= 1) bpl = null;
+    }
+    G.bareT = bpl && bpl.unlocked ? (G.bareT || 0) + dt : 0;
+    if (G.bareT > 1.5 && G.time - (G.bareSaid || -99) > 12) {
+      G.bareSaid = G.time;
+      var bs0 = iso.toScreen(p.x, p.y, 30);
+      fx.text(bs0.x, bs0.y - 96, 'Crops regrow: back in a few seconds', { color: '#fff59d', size: 15, max: 1.6, rise: 12 });
     }
     if (cuts.length) {
       onCuts(cuts, nowMs);
@@ -9540,7 +9607,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var tcx = ps.x + svx * 0.12, tcy = ps.y - 30 + (p.vx + p.vy) * 16 * 0.12;
     // A quick look at what you just bought, then back to you (playtest 4:
     // bigger fields and stalls changed off screen, under the menu).
-    if (G.camLook && G.camLook.t > 0) {
+    // It waits until the menu closes (playtest 9: the camera moved away
+    // behind the open menu).
+    if (G.camLook && G.camLook.t > 0 && !(ui.menuOpen && ui.menuOpen())) {
       G.camLook.t -= dt;
       var lk = iso.toScreen(G.camLook.x, G.camLook.y);
       tcx = lk.x; tcy = lk.y + 60; // a little low: the menu covers the bottom
@@ -9567,6 +9636,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
   // Normal price of one (a Golden rush doesn't make orders bigger).
   function worth(sid) { return CR.economy.itemPrice(cfg, G.item.show(sid)) / (cfg.rush || 1); }
+  G.worth = worth;
   function goalProgress() {
     var made = {};
     G.factories.factories.forEach(function (f) { made[f.id] = f.made; });
@@ -9596,7 +9666,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Orders ask for your best sellers, not carrots once tomatoes are worth
     // 5x (playtest 7).
     var oItems = Object.keys(G.stand.shelves).sort(function (a, b) { return worth(b) - worth(a); }).slice(0, 3);
-    if (G.ordersOpen() && CR.goals.refill(G.board, cfg, G.rand, oItems, itemDemand, worth, dt)) {
+    if (G.ordersOpen() && CR.goals.refill(G.board, cfg, G.rand, oItems, itemDemand, worth, dt, G.rates.money)) {
       ui.goalsNews();
     }
     var r = CR.goals.tick(G.board, dt);
@@ -9612,6 +9682,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ui.toast('Order filled!', E.fmt(r.order.n) + ' ' + G.item.name(r.order.item).toLowerCase() + ' sold. Bonus +' + E.fmt(r.order.reward), G.item.icon(r.order.item));
     } else if (r) {
       ui.toast('Order missed', 'Time ran out on ' + E.fmt(r.order.n) + ' ' + G.item.name(r.order.item).toLowerCase() + '. Pick another one!', G.item.icon(r.order.item));
+      // Said where you look too (playtest 9: it just disappeared).
+      var ms0 = iso.toScreen(G.player.x, G.player.y, 30);
+      fx.text(ms0.x, ms0.y - 110, 'Order missed: time ran out', { color: '#ffcdd2', size: 18, max: 1.8, rise: 14 });
       fx.sound.full();
     }
 
@@ -9676,7 +9749,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!gt && G.stats.cut < 40) return;
     // Its clocks stop while a menu is open (playtest 6: the rush ran out
     // in Settings).
-    var ev = CR.goals.goldenTick(G.golden, cfg, G.rand, ui.menuOpen && ui.menuOpen() ? 0 : dt, !!gt);
+    // The next one comes only from time in the fields: golden crops are
+    // the reward for harvesting yourself (Tom 12:18; playtest 9: standing
+    // at the till earned 4x what harvesting did).
+    var mdt = ui.menuOpen && ui.menuOpen() ? 0 : dt;
+    var pp = CR.field.plotAt(field, G.player.x, G.player.y), inField = pp && pp.unlocked;
+    var ev = CR.goals.goldenTick(G.golden, cfg, G.rand, mdt, !!gt, inField ? mdt : 0);
     if (ev === 'spawn') {
       var t = CR.field.pickGolden(field, G.player.x, G.player.y, cfg.golden.radius, G.rand, 60, function (tx, ty) {
         // Well inside the screen, clear of the HUD at the top.
@@ -10092,9 +10170,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // never said a tomato farmer would fix it).
   G.shortFix = function (sid) {
     var f = CR.factory.byId(G.factories, sid);
+    // Waiting on its pallet: fetch them (playtest 9: "No jars! Feed the
+    // cannery" with 80 jars waiting).
+    if (f && f.out.length) return cap(f.cfg.goods) + ' wait at the ' + f.cfg.name.toLowerCase() + ': fetch them';
+    if (f && CR.factory.hasInputs(f)) return 'The ' + f.cfg.name.toLowerCase() + ' is making more';
     if (f) return 'Feed the ' + f.cfg.name.toLowerCase();
     var pl = field.plots.filter(function (q) { return q.unlocked && q.crop === sid; })[0];
-    if (pl && !(G.farmers.count[pl.id] > 0)) return 'Hire a ' + cfg.crops[sid].name.toLowerCase().replace(/s$/, '').replace(/oe$/, 'o').replace(/ie$/, 'y') + ' farmer';
+    // Only once you can pay for one (playtest 9: "Hire a carrot farmer"
+    // at 8 coins, with the farmer at 30).
+    if (pl && !(G.farmers.count[pl.id] > 0) && G.money >= actions.prices.farmer(pl.id)) return 'Hire a ' + cfg.crops[sid].name.toLowerCase().replace(/s$/, '').replace(/oe$/, 'o').replace(/ie$/, 'y') + ' farmer';
     return 'Harvest more';
   };
 
