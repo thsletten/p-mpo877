@@ -7698,8 +7698,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         });
       } else {
         var up = cfg.stand.upgrades;
-        var bn = ui.bottleneck();
-        if (bn) list.push({ key: 'bottleneck', icon: ['stand', 'shelves'], title: bn[0], sub: bn[1], noBuy: true, stats: true });
+        // Always there, so the rows below never jump as it changes.
+        var bn = ui.bottleneck() || ['The stall is running smoothly', 'Customers find what they want and get served in time'];
+        list.push({ key: 'bottleneck', icon: ['stand', 'shelves'], title: bn[0], sub: bn[1], noBuy: true, stats: true });
         var nTills = G.stand.tills.length, maxTills = cfg.stand.tills.length;
         var sellers = G.stand.tills.filter(function (t) { return t.keeper; }).length;
         list.push({ key: 'keeper', icon: ['seller', 0], title: 'Hire a seller',
@@ -7865,11 +7866,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       renderCards();
     };
 
-    function renderCards() {
+    // soft: update the same cards in place (the refresh as money changes),
+    // so a button being pressed is never swapped out under your finger
+    // (playtest 8: the first tap after opening the menu was lost).
+    function renderCards(soft) {
       var list = ui.focus ? focusCards(ui.focus) : cardsFor(ui.tab);
       // What you can see now is no longer new.
       list.forEach(function (it) { if (affordable(it)) ui.seenAff[it.key + ':' + it.price] = true; });
-      fillCards(ui.cards, list, renderCards);
+      fillCards(ui.cards, list, renderCards, soft === true);
     }
 
     // A sign on the farm you can pay for: "Go there" shows you the way
@@ -7912,7 +7916,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           var pp = el.querySelector('.pips');
           if (pp && it.max) pp.outerHTML = pips(it.level, it.max, it.bar);
           var bb = el.querySelector('.buy');
-          if (bb) setBuy(bb, it);
+          if (bb && !bb.classList.contains('need')) setBuy(bb, it);
         });
         return;
       }
@@ -8202,7 +8206,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
 
     ui.refreshPanel = function () {
-      if (!ui.shop.hidden) renderCards();
+      if (!ui.shop.hidden) renderCards(true);
       CR.render.icon(ui.toolIcon, 'toolPill', G.tier, G);
     };
     ui.bumpMoney = function () { bump(ui.cash); };
@@ -8308,7 +8312,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         ui.dotT = 0.4;
         ui.dot.hidden = !newAffordable();
         // Keep the open shop's buttons honest as money changes.
-        if (!ui.shop.hidden && (L.shopMoney !== shownMoney || ui.focus)) { L.shopMoney = shownMoney; renderCards(); }
+        if (!ui.shop.hidden && (L.shopMoney !== shownMoney || ui.focus)) { L.shopMoney = shownMoney; renderCards(true); }
       }
     };
 
