@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v56)</p>
+    <p class="ver">Crop Rush 1.0 (v57)</p>
   </div>
 </div>
 
@@ -691,7 +691,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // they did when every field could grow the best crop.
     plots: [
       { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 30, costGrowth: 1.6 } },
-      { id: 2, arm: 'left', slot: 0, crop: 'tomato', cost: 60, /* was 100 (playtest 13: weaker players never saved it) */ grow: { length0: 14, growth: 1.35, maxLevel: 40, costBase: 160, costGrowth: 1.6 } },
+      { id: 2, arm: 'left', slot: 0, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 14, growth: 1.35, maxLevel: 40, costBase: 400, costGrowth: 1.6 } },
       { id: 3, arm: 'right', slot: 1, crop: 'corn', cost: 1500, grow: { length0: 26, growth: 1.35, maxLevel: 40, costBase: 2400, costGrowth: 1.6 } },
       { id: 4, arm: 'left', slot: 1, crop: 'pumpkin', cost: 10000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 47, growth: 1.35, maxLevel: 40, costBase: 16000, costGrowth: 1.6 } },
       { id: 5, arm: 'right', slot: 2, crop: 'sunflower', cost: 4e6, grow: { length0: 84, growth: 1.35, maxLevel: 40, costBase: 6.4e6, costGrowth: 1.6 } },
@@ -1040,7 +1040,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Away earnings: `share` of what your helpers made a second lately, for
     // up to maxSeconds; less than minSeconds away pays nothing. Tom (v55):
     // "make the idle money lower" (it paid the full helper rate).
-    offline: { maxSeconds: 7200, minSeconds: 30, share: 0.3 },
+    offline: { maxSeconds: 7200, minSeconds: 30, share: 0.1 },
 
     // Legacy (legacy.js): sell the farm for Golden seeds =
     // floor((all you ever earned / per) ^ power); each one ever got adds
