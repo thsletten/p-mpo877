@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v58)</p>
+    <p class="ver">Crop Rush 1.0 (v59)</p>
   </div>
 </div>
 
@@ -675,7 +675,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // yields[L] crops, for you and the farmers. Level L+1 costs
     // max(seed, minCost) x costMult x costGrowth^L, so the first is dearer
     // than the seed.
-    seedUpgrade: { yields: [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100], minCost: 25, costMult: 3, costGrowth: 3.2 },
+    seedUpgrade: { yields: [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100], minCost: 25, costMult: 10, costGrowth: 3.2 }, // costMult was 3 (Tom 2026-09-26: seeds too good)
     plantTime: 3,
 
     // Field length (outward, tiles) at grow level L is
