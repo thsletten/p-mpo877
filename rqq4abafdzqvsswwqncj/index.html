@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v65)</p>
+    <p class="ver">Crop Rush 1.0 (v66)</p>
   </div>
 </div>
 
@@ -891,6 +891,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // level adds widthPer to their reach, up to widthCaps[your tool tier],
       // so their machines stay smaller than yours.
       toolCosts: [0, 100, 600, 2900, 10000],
+      // Upgrades are per field (Tom 2026-09-26); a field's cost (field cost /
+      // plotRef) ^ plotPow x these, at least 1x.
+      plotRef: 250, plotPow: 0.2,
       widthBase: 11000, widthGrowth: 2.4, widthPer: 0.15, widthMax: 25, widthCaps: [0, 0, 0, 0, 4, 10, 18, 25],
       engineMax: 15, engineBase: 10000, engineGrowth: 2.2,
       // Harvest trucks (Tom 2026-09-25: a truck beside the combine takes
@@ -907,7 +910,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Their swing: all around them, reachMult x the tool's base reach (no
       // tool levels), one swing every swingEvery s (Tom 2026-09-24: farmers
       // cut an area too, growing slower than yours).
-      reachMult: 0.6, minReach: 0, swingEvery: 0.45, stopTime: 0.3, // on foot they stand still stopTime s after each cut (Tom 2026-09-26)
+      reachMult: 0.6, minReach: 0, swingEvery: 0.45, stopTime: 0.5, // on foot they stand still stopTime s after each cut (Tom 2026-09-26)
       lookRows: 40
     },
 
@@ -2283,7 +2286,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   'use strict';
 
   function create(config) {
-    return { list: [], count: {}, tool: 0, carrier: 0, boots: 0, width: 0, truck: 0, carts: {}, nextId: 1, cfg: config.farmers };
+    return { list: [], count: {}, up: {}, carts: {}, nextId: 1, cfg: config.farmers };
+  }
+
+  // Each field's farmers have their own upgrades (Tom 2026-09-26: "farmers
+  // should be upgraded per plot"): fs.up[plotId] = { tool, carrier, boots,
+  // width, truck }. Every function below that takes `u` reads those five.
+  function up(fs, plotId) {
+    return fs.up[plotId] || (fs.up[plotId] = { tool: 0, carrier: 0, boots: 0, width: 0, truck: 0 });
+  }
+  // A field's farmer upgrades cost more the dearer the field:
+  // (field cost / plotRef) ^ plotPow, at least 1 (the first two fields).
+  function plotMult(config, plotCost) {
+    var f = config.farmers;
+    return Math.max(1, Math.pow((plotCost || 0) / (f.plotRef || 1), f.plotPow || 0));
   }
 
   // What the next farmer for a field costs: `onPlot` already work there.
@@ -2299,46 +2315,46 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return Math.round(Math.max(f.hireBase * Math.pow(f.hireGrowth, onPlot), (plotCost || 0) * Math.pow(2, onPlot)));
   }
 
-  function toolCost(config, tier) {
+  function toolCost(config, tier, plotCost) {
     var c = config.farmers.toolCosts[tier];
-    return c == null ? Infinity : c;
+    return c == null ? Infinity : Math.round(c * plotMult(config, plotCost));
   }
 
   // Farmers stop at the pallet truck (carrierMax): the lorries are for the
   // barn's helpers, and your own machine always holds more.
-  function carrierCost(config, level) {
+  function carrierCost(config, level, plotCost) {
     var f = config.farmers;
     if (f.carrierMax != null && level >= f.carrierMax) return Infinity;
-    return CR.barn.carrierCost(config, f.carrierBase, f.carrierGrowth, level);
+    return Math.round(CR.barn.carrierCost(config, f.carrierBase, f.carrierGrowth, level) * plotMult(config, plotCost));
   }
 
   // Boots while they walk; once they drive (a tractor) the same levels go
   // on as engine levels, up to engineMax, never cheaper than their tractor.
   function driving(fs, config) { return !!CR.economy.toolFor(config, fs.tool, 0).vehicle; }
   function bootsMax(config, drives) { var f = config.farmers; return drives ? f.engineMax : f.bootsMax; }
-  function bootsCost(config, level, drives) {
+  function bootsCost(config, level, drives, plotCost) {
     var f = config.farmers;
     if (level >= bootsMax(config, drives)) return Infinity;
     var c = f.bootsBase * Math.pow(f.bootsGrowth, level);
     if (level >= f.bootsMax) c = Math.max(c, f.engineBase * Math.pow(f.engineGrowth, level - f.bootsMax));
-    return Math.round(c);
+    return Math.round(c * plotMult(config, plotCost));
   }
 
   // Wider mower for their machines: how far it can go with your tool tier.
   function widthCap(config, playerTier) { var caps = config.farmers.widthCaps; return caps[Math.min(playerTier, caps.length - 1)] || 0; }
-  function widthCost(config, level) {
+  function widthCost(config, level, plotCost) {
     var f = config.farmers;
-    return level >= f.widthMax ? Infinity : Math.round(f.widthBase * Math.pow(f.widthGrowth, level));
+    return level >= f.widthMax ? Infinity : Math.round(f.widthBase * Math.pow(f.widthGrowth, level) * plotMult(config, plotCost));
   }
   function canWiden(fs, config, playerTier) {
     return driving(fs, config) && fs.width < widthCap(config, playerTier) && widthCost(config, fs.width) < Infinity;
   }
   // Harvest trucks: level 0 none, 1 bought, then Bigger bed levels.
   // truckCost(config, level) is the price of going from `level` to the next.
-  function truckCost(config, level) {
+  function truckCost(config, level, plotCost) {
     var t = config.farmers.truck;
     if (level >= t.bedMax) return Infinity;
-    return level === 0 ? t.cost : Math.round(t.bedBase * Math.pow(t.bedCostGrowth, level - 1));
+    return Math.round((level === 0 ? t.cost : t.bedBase * Math.pow(t.bedCostGrowth, level - 1)) * plotMult(config, plotCost));
   }
   function truckBed(fs, config) {
     var t = config.farmers.truck;
@@ -2386,7 +2402,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       id: fs.nextId++, crop: plot.crop, plotId: plot.id,
       x: at.x, y: at.y, fx: 0, fy: -1, moving: false, walkT: 0,
       phase: 'field', target: null, wait: 0, harvested: 0, swingT: 0, swing: 0,
-      carry: CR.field.createCarry(carrierSize(fs, config))
+      carry: CR.field.createCarry(carrierSize(up(fs, plot.id), config))
     };
     fs.list.push(fm);
     return fm;
@@ -2488,9 +2504,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // With harvest trucks, fs.carts[farmerId] is that machine's truck (id
   // 'cart<farmerId>'): it collects from the machine and delivers.
   function update(fs, config, field, stand, spots, dt, barn) {
-    var events = [], sp = speed(fs, config), tl = tool(fs, config), size = carrierSize(fs, config);
+    var events = [], TK = config.farmers.truck, per = {};
     var tol = field.reachTolerance == null ? 0.5 : field.reachTolerance, slots = {}, of = {};
-    var trucks = hasTrucks(fs, config), TK = config.farmers.truck, bed = truckBed(fs, config);
+    // Each field's farmers move with their own field's upgrades.
+    function kit(plotId) {
+      if (per[plotId]) return per[plotId];
+      var u = up(fs, plotId);
+      return (per[plotId] = { u: u, sp: speed(u, config), tl: tool(u, config), size: carrierSize(u, config), trucks: hasTrucks(u, config), bed: truckBed(u, config) });
+    }
     fs.list.forEach(function (fm) {
       slots[fm.id] = of[fm.plotId] = of[fm.plotId] || 0; of[fm.plotId]++;
     });
@@ -2569,7 +2590,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
 
     fs.list.forEach(function (fm) {
-      var plot = field.plotById[fm.plotId];
+      var plot = field.plotById[fm.plotId], K = kit(fm.plotId), sp = K.sp, tl = K.tl, size = K.size, trucks = K.trucks;
       fm.swingT = (fm.swingT || 0) - dt;
       fm.stopT = Math.max(0, (fm.stopT || 0) - dt);
       fm.swing = Math.max(0, (fm.swing || 0) - dt / 0.3);
@@ -2585,7 +2606,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         if (trucks) { fm.moving = false; return; }
         dispatch(fm, standSpot()); return;
       }
-      var rt = route(plot, slots[fm.id], of[fm.plotId], tl, tol, lookRows(fs, config, plot, sp, tl));
+      var rt = route(plot, slots[fm.id], of[fm.plotId], tl, tol, lookRows(K.u, config, plot, sp, tl));
       // On foot they stop and swing: one swing every swingEvery s cuts
       // everything ripe in reach, all around, and they stand still for
       // stopTime s after it (Tom 2026-09-26: "stop a short period at the
@@ -2631,10 +2652,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // drives beside it while it pours its harvest in, then drives off to
     // deliver when the bed is full, or when nothing is ripe for a moment
     // and it has a load. The machine's storage fills while it is away.
-    Object.keys(fs.carts).forEach(function (k) { if (!trucks || !fs.list.some(function (fm) { return String(fm.id) === k; })) delete fs.carts[k]; });
-    if (!trucks) return events;
+    Object.keys(fs.carts).forEach(function (k) { if (!fs.list.some(function (fm) { return String(fm.id) === k && kit(fm.plotId).trucks; })) delete fs.carts[k]; });
     fs.list.forEach(function (m) {
-      var tr = fs.carts[m.id], v = sp * TK.speed;
+      var K = kit(m.plotId);
+      if (!K.trucks) return;
+      var tr = fs.carts[m.id], v = K.sp * TK.speed, bed = K.bed, tl = K.tl;
       if (!tr) {
         var home = spots.barn || spots.truck;
         tr = fs.carts[m.id] = { id: 'cart' + m.id, plotId: m.plotId, x: home.x, y: home.y, fx: 0, fy: -1, moving: false, walkT: 0,
@@ -2666,7 +2688,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   CR.farmers = {
-    create: create, hire: hire, update: update, nearestRipe: nearestRipe, route: route, nextOnRoute: nextOnRoute,
+    create: create, up: up, plotMult: plotMult, hire: hire, update: update, nearestRipe: nearestRipe, route: route, nextOnRoute: nextOnRoute,
     hireCost: hireCost, toolCost: toolCost, carrierCost: carrierCost, bootsCost: bootsCost, bootsMax: bootsMax, driving: driving,
     widthCost: widthCost, widthCap: widthCap, canWiden: canWiden, look: look,
     truckCost: truckCost, truckBed: truckBed, canBuyTruck: canBuyTruck, hasTrucks: hasTrucks, lookRows: lookRows,
@@ -5821,10 +5843,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // A hired farmer: overalls and a straw hat, carrying their load in
   // whatever their rung on the carrier ladder is (basket up to pallet truck).
   function drawFarmer(ctx, G, it, time) {
-    var fm = it.fm, tier = G.farmers.tool, cid = CR.farmers.carrier(G.farmers, G.cfg).id;
+    var fm = it.fm, fu = CR.farmers.up(G.farmers, fm.plotId), tier = fu.tool, cid = CR.farmers.carrier(fu, G.cfg).id;
     // Their swing: a ring on the ground as wide as what it cuts.
     if (fm.swing > 0 && tier < 4) {
-      var rr = CR.farmers.tool(G.farmers, G.cfg).reach + G.cfg.reachTolerance, sg = ws(fm.x, fm.y);
+      var rr = CR.farmers.tool(fu, G.cfg).reach + G.cfg.reachTolerance, sg = ws(fm.x, fm.y);
       ctx.save();
       ctx.globalAlpha = fm.swing * 0.85;
       ctx.strokeStyle = '#fffde7'; ctx.lineWidth = 3;
@@ -5853,8 +5875,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (tier >= 4) {
       // Farmers with a tractor or combine drive a smaller one of their own
       // (Tom: visible big upgrades), with what they cut in a box at the back.
-      var V = CR.vehicles, lk = CR.farmers.look(G.farmers, G.cfg), comb = lk !== 'tractor', mega = lk === 'mega', col = mega ? '#43a047' : comb ? '#f2c230' : '#e53935';
-      var reach = CR.farmers.tool(G.farmers, G.cfg).reach;
+      var V = CR.vehicles, lk = CR.farmers.look(fu, G.cfg), comb = lk !== 'tractor', mega = lk === 'mega', col = mega ? '#43a047' : comb ? '#f2c230' : '#e53935';
+      var reach = CR.farmers.tool(fu, G.cfg).reach;
       var parts = comb ? V.combine({ body: col, trim: mega ? '#ffc400' : '#37474f', header: mega ? '#ffc400' : null, half: Math.max(0.6, reach / (mega ? 0.95 : 0.85) * 0.45), time: time })
         : V.tractor({ body: col, trim: '#f4c430' });
       var n = fm.carry.items.length;
@@ -5881,7 +5903,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // harvest arcs from its spout into the bed.
   function drawCart(ctx, G, it, time) {
     var tr = it.tr, V = CR.vehicles, n = tr.carry.items.length, crop = n ? tr.carry.items[n - 1] : null;
-    var cc = crop && G.cfg.crops[crop], lv = G.farmers.truck;
+    var cc = crop && G.cfg.crops[crop], lv = CR.farmers.up(G.farmers, tr.plotId).truck;
     V.render(ctx, V.lorry({ cab: lv >= 6 ? '#ffc400' : lv >= 3 ? '#1e88e5' : '#2e7d32', box: 'tipper', body: lv >= 6 ? '#455a64' : '#8d6e63',
       stripe: '#f4c430', fill: n ? Math.max(0.2, n / Math.max(1, tr.carry.limit)) : 0, load: cc ? cc.color : '#e0b84a' }),
       tr.x, tr.y, tr.fx || 0.7, tr.fy || 0.7, { scale: 0.6 + Math.min(0.25, lv * 0.03), shadow: [-1.55, 1.6, -0.5, 0.5] });
@@ -7885,43 +7907,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         });
       } else if (tab === 'farmers') {
         var FM = CR.farmers, fs = G.farmers;
+        // Per field (Tom 2026-09-26): its farmers, then their own upgrades
+        // once the field has any.
         G.field.plots.forEach(function (plot) {
           if (!plot.unlocked) return;
           var n = fs.count[plot.id] || 0, max = cfg.farmers.maxPerPlot, price = P.farmer(plot.id);
-          list.push({ key: 'farmer' + plot.id, icon: ['farmer', plot.crop], title: 'Field ' + plot.id + ' farmers',
+          list.push({ key: 'farmer' + plot.id, icon: ['farmer', plot.crop], title: cfg.crops[plot.crop].name + ' farmers',
             // The shared price said first, so the 2-line card never cuts it
             // (playtest 7, fifth round in a row: 90 jumped to 270).
             sub: farmerGain(plot, n, max), gain: n < max ? farmerCoins(plot, n) : 0,
             level: n, max: max, price: price, done: !(price < Infinity), act: function () { actions.hireFarmer(plot.id); } });
+          if (n) farmerUpCards(plot).forEach(function (c) { list.push(c); });
         });
-        // Tools up to a tractor; from then on (Tom 2026-09-25) storage,
-        // speed and cut width.
-        var nt = cfg.tools[fs.tool + 1], canTool = FM.canUpgradeTool(fs, cfg, G.tier), drives = FM.driving(fs, cfg);
-        if (nt && FM.toolCost(cfg, fs.tool + 1) < Infinity) list.push({ key: 'ftool', icon: ['tool', fs.tool + 1], title: 'Farmer ' + nt.name.toLowerCase() + 's',
-          sub: canTool ? (nt.vehicle ? 'They drive and cut without stopping' : 'Every farmer cuts a wider circle') : 'Get the ' + nt.name.toLowerCase() + ' yourself first',
-          price: P.farmerTool(), locked: !canTool, act: actions.farmerTool });
-        if (drives) {
-          var wcap = FM.widthCap(cfg, G.tier), wok = FM.canWiden(fs, cfg, G.tier), wdone = fs.width >= cfg.farmers.widthMax;
-          list.push({ key: 'fwidth', icon: ['tool', FM.look(fs, cfg) === 'tractor' ? 4 : 5], title: 'Farmer wider mower',
-            sub: wdone ? 'As wide as it goes' : wok ? 'Cut ' + FM.tool(fs, cfg).reach.toFixed(1) + ' → ' + (FM.tool(fs, cfg).reach + cfg.farmers.widthPer).toFixed(1) + ' tiles around' + (fs.width === 4 || fs.width === 14 ? ', and a bigger machine' : '')
-              : 'Get a bigger machine yourself first', level: fs.width, max: cfg.farmers.widthMax,
-            price: P.farmerWidth(), done: wdone, locked: !wdone && !wok && fs.width >= wcap, act: actions.farmerWidth });
-        }
-        // Harvest trucks (Tom 2026-09-25): one beside every machine, so the
-        // machines never leave the field; then bigger beds.
-        if (drives) {
-          var tk = cfg.farmers.truck, tmax = tk.bedMax, tdone = fs.truck >= tmax;
-          list.push({ key: 'ftruck', icon: ['cart', fs.truck], title: fs.truck ? 'Bigger truck bed' : 'Harvest trucks',
-            sub: tdone ? 'The biggest bed there is' : fs.truck ? 'Bed ' + G.fmt(FM.truckBed(fs, cfg)) + ' → ' + G.fmt(FM.truckBed(Object.assign({}, fs, { truck: fs.truck + 1 }), cfg)) + ' per trip'
-              : 'A truck drives beside every machine and takes the harvest home. Machines never stop to deliver',
-            level: fs.truck, max: tmax, price: P.farmerTruck(), done: tdone, act: actions.farmerTruck });
-        }
-        var fst = carrierCard('fcarrier', 'Farmer', fs.carrier, P.farmerCarrier(), actions.farmerCarrier, false, cfg.farmers.carrierMax);
-        if (drives) { fst.title = 'Farmer storage'; fst.sub = fs.truck ? 'Holds the harvest while the truck is away' : fst.sub.replace(' a trip', ' per trip'); }
-        list.push(fst);
-        var bmax = FM.bootsMax(cfg, drives);
-        list.push({ key: 'fboots', icon: ['boots', fs.boots], title: drives ? 'Farmer engines' : 'Farmer boots', sub: drives ? 'Farmers drive faster' : 'Farmers walk faster',
-          level: fs.boots, max: bmax, price: P.farmerBoots(), done: fs.boots >= bmax, act: actions.farmerBoots });
       } else if (tab === 'barn') {
         var barn = G.barn, BN = CR.barn, WK = CR.workers, wk = G.workers;
         if (!barn.unlocked) {
@@ -8131,6 +8128,38 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     // A step up the carrier ladder for a group of helpers (Tom: baskets,
     // crates, trolleys, then forklifts).
+    // One field's farmer upgrades (Tom 2026-09-26: per field). Tools up to
+    // a tractor; from then on (Tom 2026-09-25) storage, speed, cut width
+    // and harvest trucks. Card keys end in the field id.
+    function farmerUpCards(plot) {
+      var FM = CR.farmers, P = actions.prices, u = FM.up(G.farmers, plot.id), id = plot.id, out = [], who = cfg.crops[plot.crop].name;
+      var nt = cfg.tools[u.tool + 1], canTool = FM.canUpgradeTool(u, cfg, G.tier), drives = FM.driving(u, cfg);
+      if (nt && FM.toolCost(cfg, u.tool + 1) < Infinity) out.push({ key: 'ftool' + id, icon: ['tool', u.tool + 1], title: who + ' farmers: ' + nt.name.toLowerCase() + 's',
+        sub: canTool ? (nt.vehicle ? 'They drive and cut without stopping' : 'They cut a wider circle') : 'Get the ' + nt.name.toLowerCase() + ' yourself first',
+        price: P.farmerTool(id), locked: !canTool, act: function () { actions.farmerTool(id); } });
+      if (drives) {
+        var wcap = FM.widthCap(cfg, G.tier), wok = FM.canWiden(u, cfg, G.tier), wdone = u.width >= cfg.farmers.widthMax;
+        out.push({ key: 'fwidth' + id, icon: ['tool', FM.look(u, cfg) === 'tractor' ? 4 : 5], title: who + ' farmers: wider mower',
+          sub: wdone ? 'As wide as it goes' : wok ? 'Cut ' + FM.tool(u, cfg).reach.toFixed(1) + ' → ' + (FM.tool(u, cfg).reach + cfg.farmers.widthPer).toFixed(1) + ' tiles around' + (u.width === 4 || u.width === 14 ? ', and a bigger machine' : '')
+            : 'Get a bigger machine yourself first', level: u.width, max: cfg.farmers.widthMax,
+          price: P.farmerWidth(id), done: wdone, locked: !wdone && !wok && u.width >= wcap, act: function () { actions.farmerWidth(id); } });
+        // Harvest trucks (Tom 2026-09-25): one beside every machine, so the
+        // machines never leave the field; then bigger beds.
+        var tk = cfg.farmers.truck, tmax = tk.bedMax, tdone = u.truck >= tmax;
+        out.push({ key: 'ftruck' + id, icon: ['cart', u.truck], title: who + (u.truck ? ' farmers: bigger truck bed' : ' farmers: harvest trucks'),
+          sub: tdone ? 'The biggest bed there is' : u.truck ? 'Bed ' + G.fmt(FM.truckBed(u, cfg)) + ' → ' + G.fmt(FM.truckBed(Object.assign({}, u, { truck: u.truck + 1 }), cfg)) + ' per trip'
+            : 'A truck drives beside each machine and takes the harvest home. Machines never stop to deliver',
+          level: u.truck, max: tmax, price: P.farmerTruck(id), done: tdone, act: function () { actions.farmerTruck(id); } });
+      }
+      var fst = carrierCard('fcarrier' + id, who + ' farmer', u.carrier, P.farmerCarrier(id), function () { actions.farmerCarrier(id); }, false, cfg.farmers.carrierMax);
+      if (drives) { fst.title = who + ' farmers: storage'; fst.sub = u.truck ? 'Holds the harvest while the truck is away' : fst.sub.replace(' a trip', ' per trip'); }
+      out.push(fst);
+      var bmax = FM.bootsMax(cfg, drives);
+      out.push({ key: 'fboots' + id, icon: ['boots', u.boots], title: who + (drives ? ' farmers: engines' : ' farmers: boots'), sub: drives ? 'They drive faster' : 'They walk faster',
+        level: u.boots, max: bmax, price: P.farmerBoots(id), done: u.boots >= bmax, act: function () { actions.farmerBoots(id); } });
+      return out;
+    }
+
     function carrierCard(key, who, level, price, act, noneYet, top) {
       var C = cfg.carriers.slice(0, top != null ? top + 1 : undefined), now = C[Math.min(level, C.length - 1)], next = C[level + 1];
       return { key: key, icon: ['carrier', next ? level + 1 : level], title: next ? who + 's get ' + next.name.toLowerCase() + 's' : who + ' ' + now.name.toLowerCase() + 's',
@@ -8166,7 +8195,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           ? ['Harvested ' + n(pl.harvested) + ' crops here', 'Growing ' + cfg.crops[pl.crop].name.toLowerCase() + ', ' + pl.width + ' × ' + n(pl.length) + ' tiles', (G.farmers.count[pl.id] || 0) + ' of ' + cfg.farmers.maxPerPlot + ' farmers']
           : ['Grows ' + cfg.crops[pl.crop].name.toLowerCase() + ', which sell for ' + n(cfg.crops[pl.crop].price) + ' each', 'Stand on its sign to buy it for ' + n(pl.cost)] };
         list = cardsFor('fields').filter(function (c) { return c.key === 'grow' + f.id || c.key === 'plot' + f.id || (pl.unlocked && c.key === 'better' + pl.crop); })
-          .concat(cardsFor('farmers').filter(function (c) { return c.key === 'farmer' + f.id; }));
+          .concat(cardsFor('farmers').filter(function (c) { return /^(farmer|ftool|fwidth|ftruck|fcarrier|fboots)(\d+)$/.test(c.key) && RegExp.$2 === String(f.id); }));
       } else if (f.kind === 'stand') {
         var st = G.stand;
         var bn2 = ui.bottleneck();
@@ -8175,10 +8204,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       } else if (f.kind === 'farmer') {
         var fm = G.farmers.list.filter(function (q) { return q.id === f.id; })[0];
         if (!fm) return [];
-        var fc = CR.farmers.carrier(G.farmers, cfg);
+        var fc = CR.farmers.carrier(CR.farmers.up(G.farmers, fm.plotId), cfg);
         stats = { icon: ['farmer', fm.crop], lines: ['Harvested ' + n(fm.harvested) + ' crops', 'Works field ' + fm.plotId + ', carries ' + fc.size + ' at a time (' + fc.name.toLowerCase() + ')'] };
         if (G.farmRateOf(fm.crop) >= 1) stats.lines.push('This field\'s farmers: about ' + n(Math.round(G.farmRateOf(fm.crop))) + ' a minute');
-        list = cardsFor('farmers').filter(function (c) { return c.key === 'farmer' + fm.plotId || c.key === 'ftool' || c.key === 'fwidth' || c.key === 'ftruck' || c.key === 'fcarrier' || c.key === 'fboots'; });
+        list = cardsFor('farmers').filter(function (c) { return /^(farmer|ftool|fwidth|ftruck|fcarrier|fboots)(\d+)$/.test(c.key) && RegExp.$2 === String(fm.plotId); });
       } else if (f.kind === 'barn') {
         var bb = G.barn;
         stats = { icon: ['barn', CR.barn.look(cfg, bb.level)], lines: bb.unlocked
@@ -10499,7 +10528,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     });
     var b = G.barn;
     S.barn = { unlocked: b.unlocked, paid: b.paid, level: b.level, items: JSON.parse(JSON.stringify(b.items)), stored: b.stored, sent: b.sent };
-    S.farmers = { tool: G.farmers.tool, carrier: G.farmers.carrier, boots: G.farmers.boots, width: G.farmers.width, truck: G.farmers.truck,
+    S.farmers = { up: JSON.parse(JSON.stringify(G.farmers.up)),
       list: G.farmers.list.map(function (fm) { return { plotId: fm.plotId, harvested: fm.harvested }; }) };
     S.workers = { restockCarrier: G.workers.restockCarrier,
       list: G.workers.list.map(function (w) { return { kind: w.kind, factoryId: w.factoryId, carrier: w.carrier, moved: w.moved }; }) };
@@ -10582,11 +10611,21 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
     // Farmer tools stop at the tractor now (2026-09-25); older saves with
     // a farmer combine or bigger get Wider mower levels instead.
-    var ft = num(S.farmers.tool, 0, G.tier), fmax = cfg.farmers.toolCosts.length - 1;
-    G.farmers.tool = Math.min(ft, fmax); G.farmers.carrier = num(S.farmers.carrier, 0, cfg.carriers.length - 1);
-    G.farmers.width = Math.min(CR.farmers.widthCap(cfg, G.tier), Math.max(S.farmers.width | 0, [0, 5, 12, 20][Math.max(0, ft - fmax)] || 0));
-    G.farmers.boots = Math.min(CR.farmers.bootsMax(cfg, CR.farmers.driving(G.farmers, cfg)), Math.max(0, S.farmers.boots | 0));
-    G.farmers.truck = Math.min(cfg.farmers.truck.bedMax, Math.max(0, S.farmers.truck | 0));
+    // Upgrades per field since v66 (Tom 2026-09-26); older saves had one
+    // set for all farmers, which every field keeps.
+    function loadUp(q) {
+      q = q || {};
+      var ft = num(q.tool, 0, G.tier), fmax = cfg.farmers.toolCosts.length - 1, u = { tool: Math.min(ft, fmax) };
+      u.carrier = num(q.carrier, 0, cfg.carriers.length - 1);
+      u.width = Math.min(CR.farmers.widthCap(cfg, G.tier), Math.max(q.width | 0, [0, 5, 12, 20][Math.max(0, ft - fmax)] || 0));
+      u.boots = Math.min(CR.farmers.bootsMax(cfg, CR.farmers.driving(u, cfg)), Math.max(0, q.boots | 0));
+      u.truck = Math.min(cfg.farmers.truck.bedMax, Math.max(0, q.truck | 0));
+      return u;
+    }
+    field.plots.forEach(function (pl) {
+      var q = S.farmers.up ? S.farmers.up[pl.id] : S.farmers;
+      if (q) G.farmers.up[pl.id] = loadUp(q);
+    });
     var home = { x: cfg.yard.x + 6, y: cfg.yard.y + 4.5 };
     S.farmers.list.forEach(function (q) {
       var pl = q && field.plotById[q.plotId];
@@ -10832,6 +10871,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   var BARN_NAMES = { crates: 'Crate store', shed: 'Barn shed', barn: 'Big red barn', silo: 'First silo', silos: 'Twin silos' };
+  function fup(id) { return CR.farmers.up(G.farmers, id); }
+  function fieldName(id) { return cfg.crops[field.plotById[id].crop].name; }
   function carrierName(c) { return /^[aeiou]/i.test(c.name) ? 'an ' + c.name.toLowerCase() : 'a ' + c.name.toLowerCase(); }
   function barnCheer(text, big) {
     var b = cfg.barn, s = iso.toScreen(b.x + b.w / 2, b.y + b.h / 2, 60);
@@ -10864,11 +10905,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       tillLocked: function () { return nextKeeperTill() >= 0; },
       farmer: function (plotId) { return CR.farmers.hireCost(cfg, G.farmers.count[plotId] || 0, G.farmers.list.length, field.plotById[plotId].cost); },
       betterSeed: function (crop) { return G.seeds[crop] ? ECON.seedUpgradeCost(cfg, crop, G.seedLv[crop] || 0) : Infinity; },
-      farmerTool: function () { return CR.farmers.toolCost(cfg, G.farmers.tool + 1); },
-      farmerCarrier: function () { return CR.farmers.carrierCost(cfg, G.farmers.carrier); },
-      farmerBoots: function () { return CR.farmers.bootsCost(cfg, G.farmers.boots, CR.farmers.driving(G.farmers, cfg)); },
-      farmerWidth: function () { return CR.farmers.widthCost(cfg, G.farmers.width); },
-      farmerTruck: function () { return CR.farmers.truckCost(cfg, G.farmers.truck); },
+      // Farmer upgrades are per field (Tom 2026-09-26).
+      farmerTool: function (id) { return CR.farmers.toolCost(cfg, fup(id).tool + 1, field.plotById[id].cost); },
+      farmerCarrier: function (id) { return CR.farmers.carrierCost(cfg, fup(id).carrier, field.plotById[id].cost); },
+      farmerBoots: function (id) { var u = fup(id); return CR.farmers.bootsCost(cfg, u.boots, CR.farmers.driving(u, cfg), field.plotById[id].cost); },
+      farmerWidth: function (id) { return CR.farmers.widthCost(cfg, fup(id).width, field.plotById[id].cost); },
+      farmerTruck: function (id) { return CR.farmers.truckCost(cfg, fup(id).truck, field.plotById[id].cost); },
       barn: function () { return CR.barn.upgradeCost(cfg, G.barn.level); },
       restocker: function () { return CR.workers.restockerCost(cfg, CR.workers.restockers(G.workers)); },
       loader: function (fid) { return CR.workers.loaderFor(G.workers, fid) ? Infinity : CR.workers.loaderCost(cfg, CR.factory.byId(G.factories, fid).cfg); },
@@ -10892,15 +10934,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       applySeeds();
       celebrate(cfg.crops[crop].name + ': ' + field.yields[crop] + ' per plant!', G.seedLv[crop] % 3 === 0);
     },
-    farmerTool: function () {
-      if (!CR.farmers.canUpgradeTool(G.farmers, cfg, G.tier) || !pay(actions.prices.farmerTool())) return;
-      G.farmers.tool++; bought();
-      celebrate('Farmers get ' + cfg.tools[G.farmers.tool].name + 's!', false);
+    farmerTool: function (id) {
+      var u = fup(id);
+      if (!CR.farmers.canUpgradeTool(u, cfg, G.tier) || !pay(actions.prices.farmerTool(id))) return;
+      u.tool++; bought();
+      celebrate(fieldName(id) + ' farmers get ' + cfg.tools[u.tool].name + 's!', false);
     },
-    farmerCarrier: function () {
-      if (!(actions.prices.farmerCarrier() < Infinity) || !pay(actions.prices.farmerCarrier())) return;
-      G.farmers.carrier++; bought();
-      celebrate('Farmers get ' + carrierName(CR.farmers.carrier(G.farmers, cfg)) + '!', G.farmers.carrier % 2 === 0);
+    farmerCarrier: function (id) {
+      var u = fup(id);
+      if (!(actions.prices.farmerCarrier(id) < Infinity) || !pay(actions.prices.farmerCarrier(id))) return;
+      u.carrier++; bought();
+      celebrate(fieldName(id) + ' farmers get ' + carrierName(CR.farmers.carrier(u, cfg)) + '!', u.carrier % 2 === 0);
     },
     // The barn: a bigger one holds more, and big steps change how it looks.
     barnUp: function () {
@@ -10932,22 +10976,25 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       w.carrier++; bought();
       factoryCheer(f, f.cfg.name + ' loader gets ' + carrierName(CR.barn.carrier(cfg, w.carrier)) + '!', w.carrier % 2 === 0);
     },
-    farmerBoots: function () {
-      if (!pay(actions.prices.farmerBoots())) return;
-      G.farmers.boots++; bought();
-      celebrate(CR.farmers.driving(G.farmers, cfg) ? 'Farmers drive faster!' : 'Farmers walk faster!', false);
+    farmerBoots: function (id) {
+      var u = fup(id);
+      if (!(actions.prices.farmerBoots(id) < Infinity) || !pay(actions.prices.farmerBoots(id))) return;
+      u.boots++; bought();
+      celebrate(fieldName(id) + (CR.farmers.driving(u, cfg) ? ' farmers drive faster!' : ' farmers walk faster!'), false);
     },
-    farmerWidth: function () {
-      if (!CR.farmers.canWiden(G.farmers, cfg, G.tier) || !pay(actions.prices.farmerWidth())) return;
-      var was = CR.farmers.look(G.farmers, cfg);
-      G.farmers.width++; bought();
-      var now = CR.farmers.look(G.farmers, cfg);
-      celebrate(now !== was ? 'Farmers get ' + (now === 'mega' ? 'big combines' : 'combines') + '!' : 'Farmers cut wider!', now !== was);
+    farmerWidth: function (id) {
+      var u = fup(id);
+      if (!CR.farmers.canWiden(u, cfg, G.tier) || !pay(actions.prices.farmerWidth(id))) return;
+      var was = CR.farmers.look(u, cfg);
+      u.width++; bought();
+      var now = CR.farmers.look(u, cfg);
+      celebrate(now !== was ? fieldName(id) + ' farmers get ' + (now === 'mega' ? 'big combines' : 'combines') + '!' : fieldName(id) + ' farmers cut wider!', now !== was);
     },
-    farmerTruck: function () {
-      if (!CR.farmers.canBuyTruck(G.farmers, cfg) || !pay(actions.prices.farmerTruck())) return;
-      G.farmers.truck++; bought();
-      celebrate(G.farmers.truck === 1 ? 'Harvest trucks roll out!' : 'Bigger truck beds!', G.farmers.truck === 1);
+    farmerTruck: function (id) {
+      var u = fup(id);
+      if (!CR.farmers.canBuyTruck(u, cfg) || !pay(actions.prices.farmerTruck(id))) return;
+      u.truck++; bought();
+      celebrate(u.truck === 1 ? fieldName(id) + ' harvest trucks roll out!' : 'Bigger truck beds!', u.truck === 1);
     },
     // Another till in the row: more customers served at once.
     buyTill: function () {
