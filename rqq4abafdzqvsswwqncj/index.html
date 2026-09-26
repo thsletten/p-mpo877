@@ -95,6 +95,8 @@ button { font-family: var(--font); cursor: pointer; }
 .carry b { font-size: 16px; font-weight: 700; min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; }
 .carryBar { flex: 1; height: 14px; border-radius: 7px; background: rgba(255, 255, 255, 0.2); overflow: hidden; box-shadow: inset 0 2px 0 rgba(0,0,0,.25); }
 #carryFill { height: 100%; width: 0; background: linear-gradient(#ffe082, #ffb300); border-radius: 7px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.12); }
+@keyframes carryGlow { 0% { box-shadow: 0 0 0 0 rgba(255,235,59,.9); transform: scale(1); } 30% { box-shadow: 0 0 0 7px rgba(255,235,59,.55); transform: scale(1.06); } 100% { box-shadow: 0 0 0 14px rgba(255,235,59,0); transform: scale(1); } }
+.carry.glow { animation: carryGlow .5s ease-out; }
 .carry.full #carryFill { background: linear-gradient(#ff8a80, #e53935); }
 .carry.full { animation: pulse 0.5s ease-in-out infinite alternate; }
 @keyframes pulse { to { transform: scale(1.06); } }
@@ -137,83 +139,165 @@ button { font-family: var(--font); cursor: pointer; }
   background: #ff3d00; border: 3px solid #fff; animation: pop 0.8s ease-in-out infinite alternate;
 }
 @keyframes pop { to { transform: scale(1.2); } }
-.tab { position: relative; }
-.tab.new::after { content: ''; position: absolute; top: -3px; right: -3px; width: 12px; height: 12px; border-radius: 50%; background: #ff3d00; border: 2px solid #fff; }
-
-/* ---- sheets ---- */
+/* ---- sheets: menu A, the polished sheet (Tom 2026-09-26) ---- */
 .sheet {
   position: fixed; left: 50%; bottom: 0; transform: translateX(-50%);
-  width: min(100vw, 480px); max-height: 72vh; display: flex; flex-direction: column;
-  background: linear-gradient(#fff9ec, #f6e7c8);
-  border: 4px solid var(--woodDark); border-bottom: 0; border-radius: 26px 26px 0 0;
-  box-shadow: 0 -8px 30px rgba(0,0,0,.35);
+  width: min(100vw, 480px); max-height: 76vh; display: flex; flex-direction: column;
+  background: linear-gradient(#fff9ec, #f5e4c2);
+  border: 4px solid var(--woodDark); border-bottom: 0; border-radius: 28px 28px 0 0;
+  box-shadow: 0 -10px 30px rgba(0,0,0,.3);
   color: var(--ink);
-  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px);
+  padding: 0 10px calc(env(safe-area-inset-bottom, 0px) + 4px);
 }
 .sheet[hidden] { display: none; }
+/* The list fades out at the bottom edge. */
+.sheet::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 26px; pointer-events: none; border-radius: 0;
+  background: linear-gradient(rgba(245,228,194,0), #f5e4c2); }
 /* One fixed height for the upgrades sheet, whatever the tab, so the tab row
    never jumps under your finger (playtest 1). */
-#shop { height: min(72vh, 640px); }
+#shop { height: min(76vh, 660px); }
 /* Every sheet's list scrolls inside it (playtest 2: Settings and Goals were
    cut off): a flex child needs min-height 0 to shrink below its content. */
 .sheet .cards, .sheet .scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; }
-/* A short rise, not a slide up the whole screen: buttons are where they end
-   up almost at once, so early taps land (playtest 2: taps missed while it
-   slid). */
 /* No slide-in: taps aimed during it landed 11-18 px off (playtest 11). */
 .sheetHead {
-  display: flex; align-items: center; justify-content: center; position: relative;
-  margin: 0 -12px 8px; padding: 12px; border-radius: 20px 20px 0 0;
-  background: linear-gradient(#c98a4b, #a8692c); color: #fff;
-  box-shadow: inset 0 -4px 0 rgba(0,0,0,.18);
+  display: flex; align-items: center; justify-content: center; position: relative; flex: none;
+  height: 56px; margin: 0 -10px; padding: 0 56px; border-radius: 24px 24px 0 0;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0) 0 38px, rgba(90,50,15,.07) 38px 40px), linear-gradient(#cf9153, #a8692c);
+  color: #fff; box-shadow: inset 0 -4px 0 rgba(0,0,0,.18), inset 0 2px 0 rgba(255,255,255,.25);
 }
-.sheetHead h2 { margin: 0; font-size: 24px; font-weight: 700; text-shadow: 0 2px 0 rgba(0,0,0,.3); }
+.sheetHead h2 { margin: 0; font-size: 24px; font-weight: 700; text-shadow: 0 2px 0 rgba(0,0,0,.3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .close {
-  position: absolute; right: 10px; top: 8px; width: 38px; height: 38px; border-radius: 50%;
-  border: 3px solid #fff; background: #e5533d; color: #fff; font-size: 24px; line-height: 1; font-weight: 700;
+  position: absolute; right: 8px; top: 6px; width: 44px; height: 44px; border-radius: 50%; padding: 0;
+  border: 3px solid #fff; background: #e5533d; color: #fff; font-size: 26px; line-height: 1; font-weight: 700;
   box-shadow: 0 3px 0 rgba(0,0,0,.3);
 }
-.tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+
+/* Tabs: an icon, the name, and how many things there you can buy now. */
+.tabs { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 12px 0 8px; }
 .tab {
-  flex: 1 1 auto; min-width: 0; border: 0; border-radius: 12px; padding: 8px 4px; font-size: 13px; font-weight: 700;
-  background: #ead3a8; color: #8a5a2b; box-shadow: 0 3px 0 #cfae78;
+  position: relative; min-width: 0; height: 58px; border: 0; border-radius: 15px; padding: 4px 2px 3px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: #ecd6ad; color: #8a5a2b; box-shadow: 0 3px 0 #cfae78; font-size: 12px; font-weight: 700;
 }
-.tab.on { background: #ffc629; color: #5a3500; box-shadow: 0 3px 0 #d18a00; }
-.cards { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding: 2px 2px 6px; }
+.tab canvas { width: 28px; height: 28px; display: block; }
+.tab:not(.on) canvas { opacity: .85; }
+.tab span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab.on { background: linear-gradient(#ffd84d, #ffc629); color: #5a3500; box-shadow: 0 3px 0 #d18a00; transform: translateY(-2px); }
+.tab em { position: absolute; top: -6px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: #ff3d00;
+  color: #fff; font-style: normal; font-size: 11.5px; line-height: 16px; border: 2px solid #fff; text-align: center; }
+.tab em[hidden] { display: none; }
+
+.cards { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 0 26px; scrollbar-width: none; }
+.cards::-webkit-scrollbar { display: none; }
+/* Section headings: a small caption with a rule, and a count on the right. */
+.section { flex: none; display: flex; align-items: center; gap: 8px; margin: 6px 2px -2px; font-size: 12px; font-weight: 700; letter-spacing: .6px;
+  text-transform: uppercase; color: #a0703a; }
+.section::after { content: ''; flex: 1; height: 2px; background: #ead7b3; border-radius: 1px; }
+.section em { order: 2; font-style: normal; letter-spacing: 0; text-transform: none; font-size: 11.5px; background: #ead7b3; color: #7d4a1f; padding: 1px 7px; border-radius: 8px; }
+.section em:empty { display: none; }
+
+/* Chips: which field (or factory) the tab shows. Four fit; more scroll sideways. */
+.pick { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: calc((100% - 18px) / 4); gap: 6px;
+  overflow-x: auto; padding: 2px 0 5px; scrollbar-width: none; touch-action: pan-x pan-y; }
+.pick::-webkit-scrollbar { display: none; }
+.chip { position: relative; min-width: 0; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  padding: 5px 3px 4px; border-radius: 14px; background: #fff; box-shadow: 0 3px 0 #e2c99a; border: 2.5px solid transparent;
+  font-size: 11.5px; font-weight: 700; color: #7a5a3a; }
+.chip canvas { width: 28px; height: 28px; display: block; }
+.chip span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip.on { border-color: #43a047; background: #effae6; color: #1f5d22; box-shadow: 0 3px 0 #9ccc80; }
+.chip.locked canvas { filter: grayscale(1); opacity: .45; }
+.chip.locked { color: #a08466; }
+.chip.dot::after { content: ''; position: absolute; top: 5px; right: 6px; width: 9px; height: 9px; border-radius: 50%; background: #43a047; box-shadow: 0 0 0 2px #fff; }
+.chip.locked::after { content: ''; position: absolute; top: 4px; right: 5px; width: 13px; height: 13px; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 11V8a5 5 0 0 1 10 0v3' fill='none' stroke='%238d7a60' stroke-width='2.6'/%3E%3Crect x='4.5' y='10.5' width='15' height='11' rx='3' fill='%238d7a60'/%3E%3Ccircle cx='12' cy='16' r='1.8' fill='%23f3ede2'/%3E%3C/svg%3E"); }
+
+/* ---- cards: a picture with its level, the effect as before -> after, pips
+   and a price button. */
 .card {
-  display: flex; align-items: center; gap: 10px;
-  background: #fff; border-radius: 16px; padding: 8px 8px 8px 8px;
+  position: relative; flex: none; display: flex; align-items: center; gap: 10px;
+  background: #fff; border-radius: 18px; padding: 9px; border: 2.5px solid transparent;
   box-shadow: 0 3px 0 #e2c99a;
 }
-.card .pic { width: 54px; height: 54px; border-radius: 14px; background: #e8f5e0; flex: none; display: block; }
-.card .txt { flex: 1; min-width: 0; }
-.card h3 { margin: 0; font-size: 17px; font-weight: 700; }
-.card p { margin: 1px 0 0; font-size: 13px; color: #8a6a4a; font-weight: 500; }
 /* Buy cards keep one height whatever their text says, so the next tap after
    a purchase lands where it did (playtest 5: rows grew a line after a buy). */
-.card:not(.stats) p { line-height: 1.3; min-height: 3.9em; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-/* One row, however many levels (playtest 9: they wrapped onto two). */
-.pips { display: flex; gap: 3px; margin-top: 4px; flex-wrap: nowrap; }
-.pips i { flex: 0 1 12px; min-width: 3px; height: 7px; border-radius: 4px; background: #eadcc2; }
-.pips i.on { background: #66bb6a; }
+.card:not(.stats):not(.info) { min-height: 104px; }
+.picBox { position: relative; width: 60px; height: 60px; flex: none; border-radius: 16px; background: #e9f6df; display: grid; place-items: center; }
+.card .pic { width: 56px; height: 56px; display: block; }
+.card.poor .picBox { background: #f3ede2; }
+.card.max .picBox { background: #fff3c4; }
+.card.lock .picBox, .card.off .picBox { background: #efe9df; }
+.card.lock .pic { filter: grayscale(1); opacity: .4; }
+.card.lock .picBox::after { content: ''; position: absolute; inset: 0; background: center / 24px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 11V8a5 5 0 0 1 10 0v3' fill='none' stroke='%238d7a60' stroke-width='2.6'/%3E%3Crect x='4.5' y='10.5' width='15' height='11' rx='3' fill='%238d7a60'/%3E%3Ccircle cx='12' cy='16' r='1.8' fill='%23f3ede2'/%3E%3C/svg%3E"); }
+.card.stats .picBox { background: #ffe9a8; }
+.picBox .lv { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: #3b2412; color: #fff;
+  font-size: 10.5px; font-weight: 700; line-height: 14px; padding: 0 6px; border-radius: 8px; border: 2px solid #fff; }
+.picBox .lv:empty { display: none; }
+.card.max .lv { background: #e09400; }
+.card .txt { flex: 1; min-width: 0; }
+.card h3 { margin: 0; font-size: 16.5px; font-weight: 700; line-height: 1.15; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card p { margin: 2px 0 0; font-size: 13px; line-height: 1.25; color: #7a5a3a; font-weight: 500; }
+.card:not(.stats) p { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.card p b { color: var(--ink); font-weight: 700; }
+.card p b.up { color: #2e7d32; }
+.card p .arr { display: inline-block; width: 13px; height: 10px; margin: 0 2px; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='M1 5h10M7.5 1.5 11 5 7.5 8.5' fill='none' stroke='%23a08466' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.card.lock p { color: #9c8b73; }
+/* Best buy: the best payback you can pay for now. The ribbon sits in the gap
+   above the card, so it never moves a row. */
+.card.best { border-color: #ffc629; background: linear-gradient(100deg, #fff8dc, #fff 60%); box-shadow: 0 3px 0 #f0c040; }
+.bestTag { display: none; position: absolute; top: -11px; left: 12px; align-items: center; gap: 3px; background: #ff7a1a; color: #fff;
+  font-size: 11px; font-weight: 700; line-height: 15px; padding: 1px 8px 1px 6px; border-radius: 9px; box-shadow: 0 2px 0 #c95400; letter-spacing: .3px; text-transform: uppercase; }
+.bestTag .icon { width: 12px; height: 12px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z' fill='%23fff3c4'/%3E%3C/svg%3E"); }
+.card.best .bestTag { display: inline-flex; }
+/* A field's heading in its tab: its name and what its farmers bring. */
+.card.info { background: #fff6dd; box-shadow: none; padding: 6px 10px 6px 7px; border-radius: 14px; gap: 8px; }
+.card.info .picBox { width: 34px; height: 34px; background: none; }
+.card.info .pic { width: 34px; height: 34px; }
+.card.info h3 { font-size: 16px; }
+.card.info p { font-size: 11.5px; color: #a08466; margin-top: 0; }
+.card .tag { flex: none; font-size: 12px; font-weight: 700; color: #2e7d32; background: #e3f4d8; padding: 4px 8px; border-radius: 10px; white-space: nowrap; }
+.card .tag:empty { display: none; }
+
+/* Level pips, and "3/5" beside them. */
+.pips { display: flex; align-items: center; gap: 3px; margin-top: 5px; flex-wrap: nowrap; }
+.pips > i { flex: 0 1 13px; min-width: 3px; height: 7px; border-radius: 4px; background: #eadcc2; }
+.pips > i.on { background: #66bb6a; }
+.pips.full > i.on { background: #ffc629; }
+.pips .bar { flex: 1 1 auto; max-width: 130px; height: 7px; border-radius: 4px; background: #eadcc2; overflow: hidden; }
+.pips .bar i { display: block; height: 100%; background: #66bb6a; border-radius: 4px; }
+.pips.full .bar i { background: #ffc629; }
+.pips em { flex: none; font-style: normal; font-size: 11px; font-weight: 600; color: #a08466; margin-left: 4px; font-variant-numeric: tabular-nums; }
+
+/* The price button: green when you can buy, grey with what's missing when
+   you can't, dashed and locked, or gold when maxed. */
 .buy {
-  flex: none; min-width: 92px; height: 48px; border: 0; border-radius: 14px;
-  display: flex; align-items: center; justify-content: center; gap: 3px;
-  background: linear-gradient(#7ed957, #43a047); color: #fff; font-size: 17px; font-weight: 700;
-  box-shadow: 0 4px 0 #1f6b24; text-shadow: 0 2px 0 rgba(0,0,0,.25);
+  position: relative; flex: none; min-width: 100px; height: 48px; border: 0; border-radius: 14px; padding: 0 8px;
+  display: flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap;
+  background: linear-gradient(#8ae262, #43a047); color: #fff; font-size: 17px; font-weight: 700; line-height: 1;
+  box-shadow: 0 4px 0 #1f6b24, inset 0 2px 0 rgba(255,255,255,.35); text-shadow: 0 2px 0 rgba(0,0,0,.22);
+  font-variant-numeric: tabular-nums;
 }
 .buy .icon { width: 20px; height: 20px; }
 .buy.pb { flex-direction: column; gap: 0; line-height: 1.05; }
-.buy.pb span { display: flex; align-items: center; gap: 3px; }
-.buy.pb { min-width: 104px; padding: 0 6px; }
+.buy.pb span { display: flex; align-items: center; gap: 4px; }
 .buy.pb small .icon { width: 12px; height: 12px; vertical-align: -2px; }
-.buy.pb small { font-size: 10px; font-weight: 700; opacity: .92; text-shadow: none; white-space: nowrap; }
+.buy.pb small { font-size: 10.5px; font-weight: 600; margin-top: 3px; opacity: .95; text-shadow: none; white-space: nowrap; }
 .buy:active { transform: translateY(3px); box-shadow: 0 1px 0 #1f6b24; }
 /* Resting for half a second after a buy, so a slow double tap buys once. */
 .buy.cool { animation: buyCool .5s linear both; }
 @keyframes buyCool { 0% { filter: brightness(1.35) saturate(.4); transform: scale(.94); } 70% { filter: brightness(1.15) saturate(.7); transform: scale(.98); } 100% { filter: none; transform: none; } }
-.buy.poor { background: linear-gradient(#d7ccc8, #a1887f); box-shadow: 0 4px 0 #6d4c41; }
-.buy.done, .buy:disabled { background: #e0d6c2; color: #9c8b73; box-shadow: none; text-shadow: none; }
+.buy.poor { background: #ece4d6; color: #7a6650; box-shadow: 0 4px 0 #cdbda3; text-shadow: none; }
+.buy.poor .icon.coin { filter: grayscale(.9); opacity: .65; }
+.buy.poor small { color: #9a846a; }
+.buy.poor:active { box-shadow: 0 1px 0 #cdbda3; }
+.buy:disabled, .buy.off { background: #e0d6c2; color: #9c8b73; box-shadow: none; text-shadow: none; }
+.buy.lock { background: rgba(255,255,255,.5); color: #9c8b73; border: 2.5px dashed #d2bf9d; box-shadow: none; text-shadow: none; font-size: 16px; }
+.buy.lock .icon { width: 15px; height: 15px; }
+.buy.max { background: linear-gradient(#fff5cc, #ffd54a); color: #7a4d00; box-shadow: 0 4px 0 #e0a100, inset 0 2px 0 rgba(255,255,255,.6);
+  text-shadow: none; letter-spacing: .5px; text-transform: uppercase; }
+.buy.max .icon { width: 16px; height: 16px; }
+.icon.lock { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 11V8a5 5 0 0 1 10 0v3' fill='none' stroke='%238d7a60' stroke-width='2.6'/%3E%3Crect x='4.5' y='10.5' width='15' height='11' rx='3' fill='%238d7a60'/%3E%3Ccircle cx='12' cy='16' r='1.8' fill='%23f3ede2'/%3E%3C/svg%3E"); }
+.icon.star { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z' fill='%23ff9800'/%3E%3C/svg%3E"); }
 .opt {
   display: flex; align-items: center; justify-content: space-between;
   background: #fff; border-radius: 14px; padding: 12px 14px; margin: 6px 0; font-size: 18px; font-weight: 600;
@@ -253,12 +337,12 @@ body:not(.playing) #hud, body:not(.playing) #dock { opacity: 0; pointer-events: 
 }
 
 /* Seed picker on a field card: tap a seed to replant. */
-.seeds { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-.seed { width: 34px; height: 34px; padding: 2px; border: 0; border-radius: 9px; background: #f3e4c4; box-shadow: 0 2px 0 #d9bf8c; }
+.seeds { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.seed { width: 44px; height: 44px; padding: 4px; border: 0; border-radius: 12px; background: #f3e4c4; box-shadow: 0 3px 0 #d9bf8c; }
 .seed canvas { width: 100%; height: 100%; display: block; }
-.seed.on { background: #ffc629; box-shadow: 0 2px 0 #d18a00, 0 0 0 2px #fff inset; }
-.seed.word { width: auto; padding: 0 9px; font: 700 13px 'Fredoka', system-ui, sans-serif; color: #6d4c2f; }
-.seed.mark { box-shadow: 0 2px 0 #d9bf8c, 0 0 0 2px #ffc629 inset; }
+.seed.on { background: #ffc629; box-shadow: 0 3px 0 #d18a00, 0 0 0 2px #fff inset; }
+.seed.word { width: auto; min-width: 44px; padding: 0 12px; font: 700 14px 'Fredoka', system-ui, sans-serif; color: #6d4c2f; }
+.seed.mark { box-shadow: 0 3px 0 #d9bf8c, 0 0 0 2px #ffc629 inset; }
 
 /* The menu of a thing you tapped: no tabs, and a stats card on top. */
 #shop.focus .tabs { display: none; }
@@ -295,7 +379,6 @@ body:not(.playing) #hud, body:not(.playing) #dock { opacity: 0; pointer-events: 
   position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%;
   background: #ff3d00; border: 3px solid #fff; animation: pop 0.8s ease-in-out infinite alternate;
 }
-.section { margin: 6px 4px 0; font-size: 15px; font-weight: 700; color: #8a5a2b; text-transform: uppercase; letter-spacing: .5px; }
 
 /* Next unlock: always on screen, fills with your money (tap it to go there). */
 .next {
@@ -429,7 +512,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 .winSeeds .icon { width: 30px; height: 38px; animation: pulse .45s ease-in-out infinite alternate; }
 .winSeeds .icon:nth-child(2) { width: 40px; height: 50px; animation-delay: .15s; }
 
-.buy.need { font-size: 12px; background: #ffccbc; color: #bf360c; box-shadow: 0 3px 0 #e64a19; }
+.buy.need { font-size: 12.5px; background: #ece4d6; color: #8a4b2a; box-shadow: 0 4px 0 #cdbda3; text-shadow: none; }
 .awayNext { margin: 4px 0 10px; font-weight: 700; color: #2e7d32; }
 .awayNext[hidden] { display: none; }
 
@@ -475,12 +558,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 <div id="shop" class="sheet" hidden>
   <div class="sheetHead"><h2>Upgrades</h2><button type="button" class="close" data-close="shop" aria-label="Close">&times;</button></div>
   <div class="tabs">
-    <button type="button" class="tab on" data-tab="gear">Gear</button>
-    <button type="button" class="tab" data-tab="fields">Fields</button>
-    <button type="button" class="tab" data-tab="farmers">Farmers</button>
-    <button type="button" class="tab" data-tab="factory">Factories</button>
-    <button type="button" class="tab" data-tab="barn">Barn</button>
-    <button type="button" class="tab" data-tab="stand">Stand</button>
+    <button type="button" class="tab on" data-tab="gear"><canvas width="64" height="64"></canvas><span>Gear</span><em hidden></em></button>
+    <button type="button" class="tab" data-tab="fields"><canvas width="64" height="64"></canvas><span>Fields</span><em hidden></em></button>
+    <button type="button" class="tab" data-tab="factory"><canvas width="64" height="64"></canvas><span>Factories</span><em hidden></em></button>
+    <button type="button" class="tab" data-tab="barn"><canvas width="64" height="64"></canvas><span>Barn</span><em hidden></em></button>
+    <button type="button" class="tab" data-tab="stand"><canvas width="64" height="64"></canvas><span>Stand</span><em hidden></em></button>
   </div>
   <div class="cards" id="cards"></div>
 </div>
@@ -542,7 +624,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v67)</p>
+    <p class="ver">Crop Rush 1.0 (v68)</p>
   </div>
 </div>
 
@@ -3558,6 +3640,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     flyers: [],
     texts: [],
     rings: [],
+    stars: [],
     shakeAmp: 0,
     shakeX: 0,
     shakeY: 0,
@@ -3569,7 +3652,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // ---- particles --------------------------------------------------------
 
   // Leaves and dirt spraying out of a cut crop.
-  fx.burst = function (x, y, colors, count, power) {
+  fx.burst = function (x, y, colors, count, power, big) {
     power = power || 1;
     for (var i = 0; i < count && fx.particles.length < MAX_PARTICLES; i++) {
       var a = Math.random() * Math.PI * 2;
@@ -3583,7 +3666,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         vz: 80 + Math.random() * 160 * power,
         rot: Math.random() * 6.28,
         vr: (Math.random() - 0.5) * 18,
-        size: 2.5 + Math.random() * 3,
+        size: (2.5 + Math.random() * 3) * (big || 1),
         color: colors[i % colors.length],
         life: 0,
         max: 0.45 + Math.random() * 0.35
@@ -3593,6 +3676,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   fx.ring = function (x, y, color) {
     fx.rings.push({ x: x, y: y, t: 0, max: 0.28, color: color || '#fff' });
+  };
+
+  // Feel C (Haul): small sparkles that drift up (regrown crops twinkle).
+  fx.sparkle = function (x, y, n, color) {
+    for (var i = 0; i < n && fx.particles.length < MAX_PARTICLES; i++) {
+      fx.particles.push({ x: x + (Math.random() - 0.5) * 16, y: y + (Math.random() - 0.5) * 8, z: 4 + Math.random() * 10,
+        vx: (Math.random() - 0.5) * 20, vy: (Math.random() - 0.5) * 8, vz: 50 + Math.random() * 60,
+        rot: 0, vr: 5, size: 1.4 + Math.random() * 1.4, color: color || '#fffde7',
+        life: 0, max: 0.45 + Math.random() * 0.35, floaty: true });
+    }
+  };
+
+  // A small white impact star where a crop is pulled out.
+  fx.star = function (x, y, color, size) {
+    if (fx.stars.length > 40) return;
+    fx.stars.push({ x: x, y: y, t: 0, max: 0.13, color: color || '#fff', size: size || 1, rot: Math.random() * 0.8 });
   };
 
   fx.text = function (x, y, text, opts) {
@@ -3653,10 +3752,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       p.life += dt;
       if (p.life >= p.max) { fx.particles.splice(i, 1); continue; }
       p.x += p.vx * dt; p.y += p.vy * dt;
-      p.vz -= 520 * dt; p.z += p.vz * dt;
+      p.vz -= (p.floaty ? 60 : 520) * dt; p.z += p.vz * dt;
       if (p.z < 0) { p.z = 0; p.vz *= -0.3; p.vx *= 0.6; p.vy *= 0.6; }
       p.vx *= 1 - 2.5 * dt; p.vy *= 1 - 2.5 * dt;
       p.rot += p.vr * dt;
+    }
+    for (i = fx.stars.length - 1; i >= 0; i--) {
+      fx.stars[i].t += dt;
+      if (fx.stars[i].t >= fx.stars[i].max) fx.stars.splice(i, 1);
     }
     for (i = fx.rings.length - 1; i >= 0; i--) {
       fx.rings[i].t += dt;
@@ -3767,6 +3870,29 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       tone('sine', f, f * 2.1, 0.09, 0.32, when);
       tone('triangle', f * 2, f * 3, 0.05, 0.08, when);
     },
+    // A soft crunch: a light thump, a short rip and the bright pop.
+    crunch: function (semitone, when, weight) {
+      if (!ready()) return;
+      var w = weight || 1, f = semis(420, semitone + (Math.random() - 0.5) * 0.8);
+      tone('sine', 170 * (0.9 + Math.random() * 0.2), 60, 0.09, 0.22 * w, when);
+      noise(1800 + Math.random() * 1400, 0.9, 0.07, 0.18, when, 700);
+      tone('sine', f, f * 2.2, 0.08, 0.26, (when || 0) + 0.012);
+      tone('triangle', f * 2, f * 3, 0.05, 0.07, (when || 0) + 0.012);
+    },
+    // The cut (Tom 16:02 picked sound 3 on the sound page): a soft
+    // classic pop, always at the same pitch.
+    cutPop: function (when, vol) {
+      if (!ready()) return;
+      var v = vol || 1;
+      noise(2200, 1.2, 0.05, 0.12 * v, when);
+      tone('sine', 440, 900, 0.09, 0.32 * v, when);
+      tone('triangle', 880, 1300, 0.05, 0.05 * v, when);
+    },
+    // A level-up for the haul number: a quick bright arpeggio.
+    level: function (k) {
+      if (!ready()) return;
+      [0, 4, 7, 12].forEach(function (s, i) { tone('triangle', semis(659, s + k * 2), semis(659, s + k * 2), 0.14, 0.15, i * 0.045); });
+    },
     tick: function (semitone, when) {
       if (!ready()) return;
       var f = semis(880, semitone);
@@ -3800,6 +3926,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       tone('sine', f, f, 0.22, 0.3, 0.05);
       tone('sine', f * 1.26, f * 1.26, 0.35, 0.3, 0.11);
       tone('square', f * 2.52, f * 2.52, 0.06, 0.04, 0.11);
+    },
+    // A rising three-note chime for each quarter of the basket.
+    quarter: function (q) {
+      if (!ready()) return;
+      [0, 4, 7].forEach(function (s, i) { tone('sine', semis(784, s + q * 2), semis(784, s + q * 2), 0.18, 0.14, i * 0.05); });
+    },
+    fanfare: function () {
+      if (!ready()) return;
+      [0, 4, 7, 12, 7, 12, 16].forEach(function (s, i) { tone('triangle', semis(523.25, s), semis(523.25, s), i === 6 ? 0.6 : 0.16, 0.2, i * 0.09); tone('sine', semis(261.6, s), semis(261.6, s), 0.2, 0.1, i * 0.09); });
     },
     done: function () {
       if (!ready()) return;
@@ -4963,6 +5098,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.beginPath(); ctx.ellipse(r.x, r.y, 8 + 24 * k, 4 + 12 * k, 0, 0, TAU); ctx.stroke();
     }
     ctx.globalAlpha = 1;
+    for (i = 0; i < fx.stars.length; i++) {
+      var st = fx.stars[i], sk = st.t / st.max, R = (10 + 16 * sk) * st.size, r2 = R * 0.22;
+      ctx.globalAlpha = 1 - sk * sk;
+      ctx.fillStyle = st.color;
+      ctx.save(); ctx.translate(st.x, st.y - 8); ctx.rotate(st.rot); ctx.scale(1, 0.75);
+      ctx.beginPath();
+      for (var sp = 0; sp < 8; sp++) {
+        var sa = sp * Math.PI / 4, sr = sp % 2 ? r2 : R;
+        if (sp) ctx.lineTo(Math.cos(sa) * sr, Math.sin(sa) * sr); else ctx.moveTo(sr, 0);
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    ctx.globalAlpha = 1;
     for (i = 0; i < fx.particles.length; i++) {
       var p = fx.particles[i];
       ctx.globalAlpha = Math.min(1, 2.5 * (1 - p.life / p.max));
@@ -5050,6 +5198,39 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // Floating text, drawn in screen pixels and kept on screen, below the HUD
   // bars and above the buttons (playtest 1: "+16 on the shelves" went off
   // the right edge and under the bars).
+  // Feel C: this trip's haul as one big number beside your stack. It grows
+  // with the haul and punches every time it goes up.
+  function drawHaul(ctx, G, view, camX, camY, z) {
+    var H = G.haul;
+    if (!H || !H.n || !G.carry.items.length) return;
+    H.bump = Math.max(0, (H.bump || 0) - 0.08);
+    H.pop = Math.max(0, (H.pop || 0) - 0.04);
+    // The number rolls up to the real value instead of jumping.
+    H.shown = H.shown == null ? 0 : H.shown + Math.max(1, (H.v - H.shown) * 0.25);
+    if (H.shown > H.v) H.shown = H.v;
+    var COLS = ['#ffffff', '#fff176', '#ffd54f', '#ffb74d', '#ff8a65', '#f06292', '#ba68c8', '#64b5f6', '#4dd0e1', '#81c784', '#ffffff'];
+    var col = (H.lv || 0) >= 10 ? 'hsl(' + ((Date.now() / 5) % 360) + ',90%,70%)' : COLS[H.lv || 0];
+    var top = stackTop(G), p = ws(G.player.x, G.player.y);
+    var sx = (p.x - camX) * z + view.W / 2 + 34, sy = (top.y - camY) * z + view.H / 2 + 6;
+    var k = Math.max(0.8, z), size = Math.round((17 + Math.min(17, 2.6 * Math.log(1 + H.v))) * k * (1 + 0.2 * H.bump + 0.5 * Math.sin(Math.PI * H.pop) * H.pop));
+    var txt = CR.economy.formatMoney(Math.floor(H.shown));
+    sx = Math.max(40, Math.min(view.W - 60, sx));
+    sy = Math.max((G.hudBottom || 130) + 20, Math.min(view.H - 130, sy));
+    ctx.save();
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+    // A coin, then the number.
+    var r = size * 0.42;
+    ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.arc(sx + r, sy + 1.5, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#ffd54f'; ctx.beginPath(); ctx.arc(sx + r, sy, r, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#fff8e1'; ctx.beginPath(); ctx.arc(sx + r * 0.7, sy - r * 0.3, r * 0.28, 0, TAU); ctx.fill();
+    ctx.font = '900 ' + size + 'px Fredoka, system-ui, sans-serif';
+    ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(40,20,0,0.85)';
+    ctx.strokeText(txt, sx + r * 2 + 4, sy);
+    ctx.fillStyle = H.bump > 0.6 ? '#fff' : col;
+    ctx.fillText(txt, sx + r * 2 + 4, sy);
+    ctx.restore();
+  }
+
   function drawTexts(ctx, G, view, camX, camY, z) {
     var fx = CR.fx, top = (G.hudBottom || 130) + 6, bottom = view.H - 110, k = Math.max(0.7, z);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -5346,6 +5527,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Joystick, in screen pixels.
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     S.vignette(ctx, view);
+    drawHaul(ctx, G, view, camX, camY, z);
     drawTexts(ctx, G, view, camX, camY, z);
     if (G.guide && (!G.full || asked)) drawGuideEdge(ctx, G, view, camX, camY, z, time);
     var js = G.input.stick;
@@ -7762,6 +7944,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       rush: $('rush'), rushMult: $('rushMult'), rushTime: $('rushTime'),
       toasts: $('toasts'), toastQ: [], toastT: 0, goalsT: 0,
       last: {}, tab: 'gear', dotT: 0,
+      // The field and factory chips picked in their tabs; the order the
+      // cards were sorted in, per view, kept while the menu stays open.
+      field: 1, fac: G.factories.factories[0] && G.factories.factories[0].id, memo: {}, resort: false,
       head: document.querySelector('#shop .sheetHead h2'),
       focus: null // { kind, id } while the shop shows one thing you tapped
     };
@@ -7783,14 +7968,21 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Lists scroll by dragging with a mouse too, like a finger does on a
     // phone (playtest 2: testers with a mouse couldn't scroll); a drag
     // never counts as a tap on a button.
+    // The row of field or factory chips scrolls sideways the same way.
     Array.prototype.forEach.call(document.querySelectorAll('.sheet .cards, .sheet .scroll'), function (el) {
       var d = null;
-      el.addEventListener('pointerdown', function (e) { if (e.pointerType === 'mouse') d = { y: e.clientY, top: el.scrollTop, moved: false }; });
+      el.addEventListener('pointerdown', function (e) {
+        if (e.pointerType !== 'mouse') return;
+        var row = e.target.closest ? e.target.closest('.pick') : null;
+        d = { x: e.clientX, y: e.clientY, top: el.scrollTop, row: row, left: row ? row.scrollLeft : 0, moved: false, side: false };
+      });
       window.addEventListener('pointermove', function (e) {
         if (!d) return;
-        var dy = e.clientY - d.y;
-        if (Math.abs(dy) > 6) d.moved = true;
-        if (d.moved) el.scrollTop = d.top - dy;
+        var dy = e.clientY - d.y, dx = e.clientX - d.x;
+        if (d.row && !d.moved && Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) { d.moved = true; d.side = true; }
+        if (Math.abs(dy) > 6 && !d.side) d.moved = true;
+        if (d.side) d.row.scrollLeft = d.left - dx;
+        else if (d.moved) el.scrollTop = d.top - dy;
       });
       window.addEventListener('pointerup', function () {
         if (d && d.moved) { el._dragged = true; setTimeout(function () { el._dragged = false; }, 0); }
@@ -7804,9 +7996,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       [ui.shop, ui.settings, ui.goals, $('legacy')].forEach(function (s) { s.hidden = s !== sheet || !s.hidden; });
       // Each open starts at the top (playtest 9: the old scroll put taps
       // on the wrong row).
-      if (!ui.shop.hidden) { renderCards(); ui.cards.scrollTop = 0; }
+      // Each open also sorts the upgrades by price, once (Tom 2026-09-26);
+      // while it stays open the rows keep their places.
+      if (!ui.shop.hidden) { ui.resort = true; renderCards(); ui.cards.scrollTop = 0; newAffordable(); }
       if (!ui.goals.hidden) { ui.goalsDot.hidden = true; renderGoals(); $('goalCards').scrollTop = 0; }
-      if (!$('legacy').hidden) renderLegacy();
+      if (!$('legacy').hidden) { ui.legacyResort = true; renderLegacy(); $('legacyCards').scrollTop = 0; }
     }
     function unfocus() {
       ui.focus = null;
@@ -7850,20 +8044,37 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         return;
       }
       if (nu.tab) {
-        unfocus(); ui.goals.hidden = true; ui.settings.hidden = true; ui.shop.hidden = false;
-        document.querySelector('.tab[data-tab="' + nu.tab + '"]').click();
+        ui.goals.hidden = true; ui.settings.hidden = true; $('legacy').hidden = true;
+        showTab(nu.tab, nu);
       } else {
         G.guideTo(nu.sign);
         ui.toast(nu.name, 'Follow the yellow arrows to its sign on the farm and stand still on it to pay.', nu.icon);
       }
     });
+    // Opens the shop on a tab. The Farmers tab is part of Fields now (Tom
+    // 2026-09-26, menu A): a field's farmers open on that field's chip, a
+    // factory's loader on that factory's.
+    function showTab(tab, nu) {
+      if (tab === 'farmers') {
+        tab = 'fields';
+        var pl = nu && nu.icon && G.field.plots.filter(function (p) { return p.unlocked && p.crop === nu.icon[1]; })[0];
+        if (pl) ui.field = pl.id;
+      }
+      if (tab === 'factory' && nu && nu.name) {
+        var fa = G.factories.factories.filter(function (f) { return nu.name.indexOf(f.cfg.name) === 0; })[0];
+        if (fa) ui.fac = fa.id;
+      }
+      unfocus();
+      ui.shop.hidden = false;
+      ui.tab = tab;
+      Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (o) { o.classList.toggle('on', o.dataset.tab === tab); });
+      ui.resort = true;
+      renderCards();
+      ui.cards.scrollTop = 0;
+      newAffordable();
+    }
     Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
-      t.addEventListener('click', function () {
-        unfocus();
-        ui.tab = t.dataset.tab;
-        Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (o) { o.classList.toggle('on', o === t); });
-        renderCards();
-      });
+      t.addEventListener('click', function () { showTab(t.dataset.tab); });
     });
     // Options are kept on this device (not in the farm's save).
     var OPT_KEY = cfg.save.key + '-options', opts = { sound: true, music: true, vib: true };
@@ -7905,69 +8116,60 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     $('cashBtn').addEventListener('click', function () { G.money += 1e6; bump(ui.cash); });
 
     // ---- the shop
-    function pips(level, max, bar) {
-      if (bar || max > 12) return '<div class="pips"><i style="flex:1 1 auto;width:100%;position:relative;overflow:hidden"><i class="on" style="position:absolute;left:0;top:0;height:100%;width:' + Math.round(level / max * 100) + '%"></i></i></div>';
-      var h = '<div class="pips">';
-      for (var i = 0; i < max; i++) h += '<i' + (i < level ? ' class="on"' : '') + '></i>';
-      return h + '</div>';
+    // Level pips with "3/5" beside them; a bar when there are many levels
+    // (or for goals, `bar`, whose text already says the numbers).
+    function pips(it) {
+      var level = it.level, max = it.max, full = it.done ? ' full' : '', h;
+      if (it.bar || max > 12) h = '<div class="pips' + full + '"><span class="bar"><i style="width:' + Math.max(0, Math.min(100, Math.round(level / max * 100))) + '%"></i></span>';
+      else {
+        h = '<div class="pips' + full + '">';
+        for (var i = 0; i < max; i++) h += '<i' + (i < level ? ' class="on"' : '') + '></i>';
+      }
+      return h + (it.bar ? '' : '<em>' + G.fmt(level) + '/' + G.fmt(max) + '</em>') + '</div>';
     }
+    // "Carry 5 → 10": the number now, an arrow and the next one in green
+    // (menu A, Tom 2026-09-26).
+    var NUM = '(\\+?\\d[\\d.,]*(?:[KMBT]|[a-z]{2}(?![a-z]))?%?)';
+    var BEFORE_AFTER = new RegExp(NUM + ' → ' + NUM, 'g');
+    function effect(sub) {
+      return String(sub == null ? '' : sub).replace(BEFORE_AFTER, '<b>$1</b><i class="arr"></i><b class="up">$2</b>');
+    }
+    function tiles(x) { return String(Math.round(x * 100) / 100); }
 
     // One card: { key, icon: [kind, arg], title, sub, level, max, price, done, locked, act }
     function cardsFor(tab) {
       var list = [], P = actions.prices;
       if (tab === 'gear') {
         var tool = cfg.tools[G.tier], next = cfg.tools[G.tier + 1];
-        var maxed = G.toolLevel >= tool.levels;
+        var maxed = G.toolLevel >= tool.levels, reach = CR.economy.toolReach;
         list.push({ key: 'tool', icon: ['tool', G.tier], title: tool.upgradeName + (G.tier ? ' ' + tool.name : ''),
-          sub: maxed ? 'Fully upgraded' : 'Reach further', level: G.toolLevel, max: tool.levels,
-          price: P.tool(), done: maxed, act: actions.upgradeTool });
+          sub: maxed ? 'Reach ' + tiles(reach(cfg, G.tier, G.toolLevel)) + ' tiles. Fully upgraded' : 'Reach ' + tiles(reach(cfg, G.tier, G.toolLevel)) + ' → ' + tiles(reach(cfg, G.tier, G.toolLevel + 1)) + ' tiles',
+          level: G.toolLevel, max: tool.levels, price: P.tool(), done: maxed, act: actions.upgradeTool });
         if (next) list.push({ key: 'next', icon: ['tool', G.tier + 1], title: 'Get ' + next.name,
           sub: maxed ? (next.vehicle ? 'Drive and harvest wide' : 'Harvest more at once') : 'Max your ' + tool.name + ' first',
           price: next.cost, locked: !maxed, act: actions.nextTool });
         list.push({ key: 'carry', icon: ['basket', G.carryLevel], title: 'Bigger basket',
           sub: 'Carry ' + G.carry.limit + (P.carry() < Infinity ? ' → ' + CR.economy.carryLimit(cfg, G.carryLevel + 1, G.tier, G.toolLevel) : ''),
           level: G.carryLevel, max: cfg.carry.limits.length - 1, price: P.carry(), done: !(P.carry() < Infinity), act: actions.carry });
-        list.push({ key: 'boots', icon: ['boots', G.boots], title: 'Boots', sub: 'Walk faster',
+        var bs = function (l) { return '+' + Math.round(cfg.boots.speedBonus * 100 * l) + '%'; };
+        list.push({ key: 'boots', icon: ['boots', G.boots], title: 'Boots',
+          sub: 'Walk speed ' + bs(G.boots) + (G.boots < cfg.boots.maxLevel ? ' → ' + bs(G.boots + 1) : ''),
           level: G.boots, max: cfg.boots.maxLevel, price: P.boots(), done: G.boots >= cfg.boots.maxLevel, act: actions.boots });
-        list.push({ key: 'engine', icon: ['engine', G.engine], title: 'Engine', sub: tool.vehicle ? 'Drive faster' : 'For the tractor and combine',
+        var es = function (l) { return '+' + Math.round(cfg.engine.speedBonus * 100 * l) + '%'; };
+        list.push({ key: 'engine', icon: ['engine', G.engine], title: 'Engine',
+          sub: tool.vehicle ? 'Drive speed ' + es(G.engine) + (G.engine < cfg.engine.maxLevel ? ' → ' + es(G.engine + 1) : '') : 'For the tractor and combine',
           level: G.engine, max: cfg.engine.maxLevel, price: P.engine(), done: G.engine >= cfg.engine.maxLevel,
           locked: !tool.vehicle, act: actions.engine });
       } else if (tab === 'fields') {
         // Each field grows its own crop (Tom 2026-09-25): per open field,
         // growing it and better seeds for its crop; then the next field.
-        var nextShown = false;
         G.field.plots.forEach(function (plot) {
-          var c = cfg.crops[plot.crop], k = plot.crop;
-          if (plot.unlocked) {
-            var price = CR.economy.plotGrowCost(cfg, plot.id, plot.level);
-            list.push({ key: 'grow' + plot.id, icon: ['crop', k], title: 'Field ' + plot.id + ': ' + c.name,
-              sub: 'Grow it bigger', level: plot.level, max: plot.maxLevel,
-              price: price, done: !(price < Infinity), act: function () { actions.growPlot(plot.id); } });
-            var lv = G.seedLv[k] || 0, y = CR.economy.seedYield(cfg, lv), bp = P.betterSeed(k);
-            list.push({ key: 'better' + k, icon: ['crop', k], title: 'Better seeds: ' + c.name,
-              sub: y + ' per plant' + (bp < Infinity ? ' → ' + CR.economy.seedYield(cfg, lv + 1) : ''),
-              level: lv, max: cfg.seedUpgrade.yields.length - 1, price: bp, done: !(bp < Infinity), act: function () { actions.betterSeed(k); },
-              gain: bp < Infinity ? G.farmRateOf(k) * (CR.economy.seedYield(cfg, lv + 1) / y - 1) * G.worth(k) : 0 });
-          } else if (!nextShown) {
-            nextShown = true;
-            list.push({ key: 'plot' + plot.id, icon: ['crop', k], title: 'Field ' + plot.id + ': ' + c.name,
-              sub: 'New crop, sells for ' + G.fmt(c.price) + ' each. Stand on its sign to buy it', price: plot.cost, locked: true, info: true, go: 'plot' + plot.id });
-          }
+          if (plot.unlocked || plot === nextPlot()) list = list.concat(fieldOwn(plot));
         });
       } else if (tab === 'farmers') {
-        var FM = CR.farmers, fs = G.farmers;
         // Per field (Tom 2026-09-26): its farmers, then their own upgrades
-        // once the field has any.
-        G.field.plots.forEach(function (plot) {
-          if (!plot.unlocked) return;
-          var n = fs.count[plot.id] || 0, max = cfg.farmers.maxPerPlot, price = P.farmer(plot.id);
-          list.push({ key: 'farmer' + plot.id, icon: ['farmer', plot.crop], title: cfg.crops[plot.crop].name + ' farmers',
-            // The shared price said first, so the 2-line card never cuts it
-            // (playtest 7, fifth round in a row: 90 jumped to 270).
-            sub: farmerGain(plot, n, max), gain: n < max ? farmerCoins(plot, n) : 0,
-            level: n, max: max, price: price, done: !(price < Infinity), act: function () { actions.hireFarmer(plot.id); } });
-          if (n) farmerUpCards(plot).forEach(function (c) { list.push(c); });
-        });
+        // once the field has any. Shown under each field now.
+        G.field.plots.forEach(function (plot) { if (plot.unlocked) list = list.concat(fieldFarm(plot)); });
       } else if (tab === 'barn') {
         var barn = G.barn, BN = CR.barn, WK = CR.workers, wk = G.workers;
         if (!barn.unlocked) {
@@ -8084,6 +8286,39 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       return list;
     }
 
+    // The first field not bought yet: the only locked one the menu shows.
+    function nextPlot() {
+      return G.field.plots.filter(function (p) { return !p.unlocked; })[0] || null;
+    }
+    // One field's own cards: growing it and better seeds for its crop, or
+    // its sign while it is for sale.
+    function fieldOwn(plot) {
+      var P = actions.prices, c = cfg.crops[plot.crop], k = plot.crop;
+      if (!plot.unlocked) {
+        return [{ key: 'plot' + plot.id, icon: ['crop', k], title: c.name + ' field',
+          sub: 'New crop, sells for ' + G.fmt(c.price) + ' each. Stand on its sign to buy it', price: plot.cost, locked: true, info: true, go: 'plot' + plot.id }];
+      }
+      var price = CR.economy.plotGrowCost(cfg, plot.id, plot.level), grows = price < Infinity;
+      var lv = G.seedLv[k] || 0, y = CR.economy.seedYield(cfg, lv), bp = P.betterSeed(k);
+      return [{ key: 'grow' + plot.id, icon: ['field', plot.level], title: 'Grow field',
+        sub: 'Rows ' + G.fmt(plot.length) + (grows ? ' → ' + G.fmt(CR.field.plotSize(plot.grow, plot.level + 1).length) : ', as big as it gets'),
+        level: plot.level, max: plot.maxLevel, price: price, done: !grows, act: function () { actions.growPlot(plot.id); } },
+      { key: 'better' + k, icon: ['crop', k], title: 'Better seeds',
+        sub: 'Per plant ' + y + (bp < Infinity ? ' → ' + CR.economy.seedYield(cfg, lv + 1) : ''),
+        level: lv, max: cfg.seedUpgrade.yields.length - 1, price: bp, done: !(bp < Infinity), act: function () { actions.betterSeed(k); },
+        gain: bp < Infinity ? G.farmRateOf(k) * (CR.economy.seedYield(cfg, lv + 1) / y - 1) * G.worth(k) : 0 }];
+    }
+    // One field's farmers: hiring, then their own upgrades once there are any.
+    function fieldFarm(plot) {
+      var n = G.farmers.count[plot.id] || 0, max = cfg.farmers.maxPerPlot, price = actions.prices.farmer(plot.id);
+      var list = [{ key: 'farmer' + plot.id, icon: ['farmer', plot.crop], title: n >= max ? 'Farmers' : n ? 'Hire farmer ' + (n + 1) : 'Hire a farmer',
+        // The shared price said first, so the 2-line card never cuts it
+        // (playtest 7, fifth round in a row: 90 jumped to 270).
+        sub: farmerGain(plot, n, max), gain: n < max ? farmerCoins(plot, n) : 0,
+        level: n, max: max, price: price, done: !(price < Infinity), act: function () { actions.hireFarmer(plot.id); } }];
+      return n ? list.concat(farmerUpCards(plot)) : list;
+    }
+
     // What another farmer really adds: a field only regrows so fast, so a
     // second farmer on a busy field splits the same crops (playtest 11: a
     // 270-3,000 coin trap, with each farmer's output halved).
@@ -8179,32 +8414,33 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // crates, trolleys, then forklifts).
     // One field's farmer upgrades (Tom 2026-09-26: per field). Tools up to
     // a tractor; from then on (Tom 2026-09-25) storage, speed, cut width
-    // and harvest trucks. Card keys end in the field id.
+    // and harvest trucks. Card keys end in the field id. They show under
+    // their field, so the titles no longer name its crop (menu A).
     function farmerUpCards(plot) {
-      var FM = CR.farmers, P = actions.prices, u = FM.up(G.farmers, plot.id), id = plot.id, out = [], who = cfg.crops[plot.crop].name;
+      var FM = CR.farmers, P = actions.prices, u = FM.up(G.farmers, plot.id), id = plot.id, out = [];
       var nt = cfg.tools[u.tool + 1], canTool = FM.canUpgradeTool(u, cfg, G.tier), drives = FM.driving(u, cfg);
-      if (nt && FM.toolCost(cfg, u.tool + 1) < Infinity) out.push({ key: 'ftool' + id, icon: ['tool', u.tool + 1], title: who + ' farmers: ' + nt.name.toLowerCase() + 's',
+      if (nt && FM.toolCost(cfg, u.tool + 1) < Infinity) out.push({ key: 'ftool' + id, icon: ['tool', u.tool + 1], title: 'Farmer ' + nt.name.toLowerCase() + 's',
         sub: canTool ? (nt.vehicle ? 'They drive and cut without stopping' : 'They cut a wider circle') : 'Get the ' + nt.name.toLowerCase() + ' yourself first',
         price: P.farmerTool(id), locked: !canTool, act: function () { actions.farmerTool(id); } });
       if (drives) {
         var wcap = FM.widthCap(cfg, G.tier), wok = FM.canWiden(u, cfg, G.tier), wdone = u.width >= cfg.farmers.widthMax;
-        out.push({ key: 'fwidth' + id, icon: ['tool', FM.look(u, cfg) === 'tractor' ? 4 : 5], title: who + ' farmers: wider mower',
+        out.push({ key: 'fwidth' + id, icon: ['tool', FM.look(u, cfg) === 'tractor' ? 4 : 5], title: 'Wider mowers',
           sub: wdone ? 'As wide as it goes' : wok ? 'Cut ' + FM.tool(u, cfg).reach.toFixed(1) + ' → ' + (FM.tool(u, cfg).reach + cfg.farmers.widthPer).toFixed(1) + ' tiles around' + (u.width === 4 || u.width === 14 ? ', and a bigger machine' : '')
             : 'Get a bigger machine yourself first', level: u.width, max: cfg.farmers.widthMax,
           price: P.farmerWidth(id), done: wdone, locked: !wdone && !wok && u.width >= wcap, act: function () { actions.farmerWidth(id); } });
         // Harvest trucks (Tom 2026-09-25): one beside every machine, so the
         // machines never leave the field; then bigger beds.
         var tk = cfg.farmers.truck, tmax = tk.bedMax, tdone = u.truck >= tmax;
-        out.push({ key: 'ftruck' + id, icon: ['cart', u.truck], title: who + (u.truck ? ' farmers: bigger truck bed' : ' farmers: harvest trucks'),
+        out.push({ key: 'ftruck' + id, icon: ['cart', u.truck], title: u.truck ? 'Bigger truck beds' : 'Harvest trucks',
           sub: tdone ? 'The biggest bed there is' : u.truck ? 'Bed ' + G.fmt(FM.truckBed(u, cfg)) + ' → ' + G.fmt(FM.truckBed(Object.assign({}, u, { truck: u.truck + 1 }), cfg)) + ' per trip'
             : 'A truck drives beside each machine and takes the harvest home. Machines never stop to deliver',
           level: u.truck, max: tmax, price: P.farmerTruck(id), done: tdone, act: function () { actions.farmerTruck(id); } });
       }
-      var fst = carrierCard('fcarrier' + id, who + ' farmer', u.carrier, P.farmerCarrier(id), function () { actions.farmerCarrier(id); }, false, cfg.farmers.carrierMax);
-      if (drives) { fst.title = who + ' farmers: storage'; fst.sub = u.truck ? 'Holds the harvest while the truck is away' : fst.sub.replace(' a trip', ' per trip'); }
+      var fst = carrierCard('fcarrier' + id, 'Farmer', u.carrier, P.farmerCarrier(id), function () { actions.farmerCarrier(id); }, false, cfg.farmers.carrierMax);
+      if (drives) { fst.title = 'Farmer storage'; fst.sub = u.truck ? 'Holds the harvest while the truck is away' : fst.sub.replace(' a trip', ' per trip'); }
       out.push(fst);
       var bmax = FM.bootsMax(cfg, drives);
-      out.push({ key: 'fboots' + id, icon: ['boots', u.boots], title: who + (drives ? ' farmers: engines' : ' farmers: boots'), sub: drives ? 'They drive faster' : 'They walk faster',
+      out.push({ key: 'fboots' + id, icon: ['boots', u.boots], title: drives ? 'Farmer engines' : 'Farmer boots', sub: drives ? 'They drive faster' : 'They walk faster',
         level: u.boots, max: bmax, price: P.farmerBoots(id), done: u.boots >= bmax, act: function () { actions.farmerBoots(id); } });
       return out;
     }
@@ -8236,27 +8472,27 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // Always a line, so the rows below never move as it changes
         // (playtest 11: taps landed on a row that had just moved).
         if (fa.unlocked) stats.unshift(fh2 ? '<b>' + fh2[0] + '.</b>' : '<b>Keeping up with its crops.</b>');
-        list = cardsFor('factory').filter(function (c) { return c.key === 'fac' + f.id || c.key === 'learn' + f.id || c.key === 'batch' + f.id || c.key === 'speed' + f.id || c.key === 'loader' + f.id || c.key === 'lcarrier' + f.id; });
+        list = factoryView(fa, true);
         stats = { icon: ['factory', f.id], lines: stats };
       } else if (f.kind === 'field') {
         var pl = G.field.plotById[f.id];
         stats = { icon: ['crop', pl.crop], lines: pl.unlocked
           ? ['Harvested ' + n(pl.harvested) + ' crops here', 'Growing ' + cfg.crops[pl.crop].name.toLowerCase() + ', ' + pl.width + ' × ' + n(pl.length) + ' tiles', (G.farmers.count[pl.id] || 0) + ' of ' + cfg.farmers.maxPerPlot + ' farmers']
           : ['Grows ' + cfg.crops[pl.crop].name.toLowerCase() + ', which sell for ' + n(cfg.crops[pl.crop].price) + ' each', 'Stand on its sign to buy it for ' + n(pl.cost)] };
-        list = cardsFor('fields').filter(function (c) { return c.key === 'grow' + f.id || c.key === 'plot' + f.id || (pl.unlocked && c.key === 'better' + pl.crop); })
-          .concat(cardsFor('farmers').filter(function (c) { return /^(farmer|ftool|fwidth|ftruck|fcarrier|fboots)(\d+)$/.test(c.key) && RegExp.$2 === String(f.id); }));
+        list = pl.unlocked ? fieldSections(pl) : pl === nextPlot() ? fieldOwn(pl) : [];
       } else if (f.kind === 'stand') {
         var st = G.stand;
         var bn2 = ui.bottleneck();
         stats = { icon: ['stand', 'shelves'], lines: ['<b>' + (bn2 ? bn2[0] : 'Running smoothly') + '</b>'].concat(['Served ' + n(st.served) + ' customers', 'Sold ' + n(st.sold) + ' items for ' + n(st.earned), 'About ' + Math.round(60 / CR.stand.demandOf(st).every) + ' customers a minute', 'Buyers now: ' + cfg.stand.stages[CR.stand.stage(cfg, G.standLv.shelves)].buyers.toLowerCase()]) };
-        list = cardsFor('stand');
+        list = [{ section: 'Upgrades' }].concat(cardsFor('stand'));
       } else if (f.kind === 'farmer') {
         var fm = G.farmers.list.filter(function (q) { return q.id === f.id; })[0];
         if (!fm) return [];
         var fc = CR.farmers.carrier(CR.farmers.up(G.farmers, fm.plotId), cfg);
         stats = { icon: ['farmer', fm.crop], lines: ['Harvested ' + n(fm.harvested) + ' crops', 'Works field ' + fm.plotId + ', carries ' + fc.size + ' at a time (' + fc.name.toLowerCase() + ')'] };
         if (G.farmRateOf(fm.crop) >= 1) stats.lines.push('This field\'s farmers: about ' + n(Math.round(G.farmRateOf(fm.crop))) + ' a minute');
-        list = cardsFor('farmers').filter(function (c) { return /^(farmer|ftool|fwidth|ftruck|fcarrier|fboots)(\d+)$/.test(c.key) && RegExp.$2 === String(fm.plotId); });
+        var fpl = G.field.plotById[fm.plotId];
+        list = [{ section: 'Farmers here', tag: (G.farmers.count[fpl.id] || 0) + ' of ' + cfg.farmers.maxPerPlot }].concat(fieldFarm(fpl));
       } else if (f.kind === 'barn') {
         var bb = G.barn;
         stats = { icon: ['barn', CR.barn.look(cfg, bb.level)], lines: bb.unlocked
@@ -8266,10 +8502,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // How many of each crop it holds (Tom: tap the barn to see them).
         var held = Object.keys(cfg.crops).filter(function (c) { return bb.items[c]; });
         if (held.length) stats.counts = held.map(function (c) { return { icon: ['crop', c], n: n(bb.items[c]) + ' / ' + n(CR.barn.capacity(bb, cfg)), label: cfg.crops[c].name }; });
-        list = cardsFor('barn');
+        list = [{ section: 'Upgrades' }].concat(cardsFor('barn'));
       } else if (f.kind === 'player') {
         stats = { icon: ['tool', G.tier], lines: ['You harvested ' + n(G.stats.cut) + ' crops', cfg.tools[G.tier].name + ', carry ' + G.carry.limit] };
-        list = cardsFor('gear');
+        list = [{ section: 'Your tools' }].concat(cardsFor('gear'));
       } else if (f.kind === 'truck') {
         stats = { icon: ['stand', 'prices'], lines: ['Sold ' + n(G.stats.truckItems) + ' items for ' + n(G.stats.truckEarned), 'Pays ' + Math.round(cfg.truck.bulkRate * 100) + '% of the price, for anything'] };
         list = [pricesCard()];
@@ -8278,19 +8514,161 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
     ui.openFocus = function (kind, id) {
       ui.focus = { kind: kind, id: id };
+      // The Fields and Factories tabs open on the one you tapped last.
+      if (kind === 'field' && G.field.plotById[id] && G.field.plotById[id].unlocked) ui.field = id;
+      if (kind === 'factory') ui.fac = id;
       ui.shop.classList.add('focus');
       ui.head.textContent = focusTitle(ui.focus);
       ui.settings.hidden = true; ui.goals.hidden = true;
       ui.shop.hidden = false;
+      ui.resort = true;
       renderCards();
       ui.cards.scrollTop = 0;
     };
+
+    // ---- what a tab shows (menu A, Tom 2026-09-26): a heading, and in
+    // Fields and Factories a row of chips picking the field or factory.
+    function fieldSections(pl) {
+      return [{ section: 'This field' }].concat(fieldOwn(pl),
+        [{ section: 'Farmers here', tag: (G.farmers.count[pl.id] || 0) + ' of ' + cfg.farmers.maxPerPlot }], fieldFarm(pl));
+    }
+    function chips(kind, items, choose) {
+      return { key: 'pick', pick: items, kind: kind, choose: choose };
+    }
+    function fieldView() {
+      var shown = G.field.plots.filter(function (p) { return p.unlocked || p === nextPlot(); });
+      var pl = G.field.plotById[ui.field];
+      if (shown.indexOf(pl) < 0) { pl = shown[0]; ui.field = pl.id; }
+      var list = [chips('field', shown.map(function (p) {
+        return { id: p.id, icon: ['crop', p.crop], name: cfg.crops[p.crop].name, on: p === pl, locked: !p.unlocked,
+          dot: p.unlocked && fieldOwn(p).concat(fieldFarm(p)).some(affordable) };
+      }), function (id) { ui.field = id; })];
+      if (!pl.unlocked) return list.concat(fieldOwn(pl));
+      var n = G.farmers.count[pl.id] || 0, rate = G.farmRateOf(pl.crop);
+      list.push({ key: 'finfo', icon: ['crop', pl.crop], title: cfg.crops[pl.crop].name + ' field', sub: 'Tap the field on the farm to jump here',
+        noBuy: true, cls: 'info', tag: rate >= 1 ? G.fmt(Math.round(rate)) + ' a min' : n ? 'Farmers at work' : 'No farmers yet' });
+      return list.concat(fieldSections(pl));
+    }
+    // One factory's cards; `focus`: for its own menu, without the chips.
+    function factoryView(f, focus) {
+      var id = f.id, all = cardsFor('factory');
+      var of = function (fid) { return all.filter(function (c) { return ['fac', 'learn', 'batch', 'speed', 'loader', 'lcarrier'].some(function (k) { return c.key === k + fid; }); }); };
+      var mine = of(id), list = [];
+      if (!focus) {
+        list.push(chips('factory', G.factories.factories.map(function (q) {
+          return { id: q.id, icon: ['factory', q.id], name: q.cfg.name, on: q === f, locked: !q.unlocked, dot: q.unlocked && of(q.id).some(affordable) };
+        }), function (fid) { ui.fac = fid; }));
+      }
+      if (!f.unlocked) return list.concat(mine);
+      if (!focus) {
+        // What holds it back, always there so the rows never jump (playtest
+        // 10); its own menu says it in the So far card.
+        var fh = ui.factoryHold(f) || [f.cfg.name + ' keeps up', 'It makes ' + f.cfg.goods + ' as fast as its crops come in'];
+        list.push({ key: 'fachold', icon: ['factory', id], title: fh[0], sub: fh[1], noBuy: true, stats: true, cls: 'status' });
+      }
+      return list.concat({ section: 'Making' }, mine.filter(function (c) { return c.key === 'fac' + id; }),
+        { section: 'Upgrades' }, mine.filter(function (c) { return c.key !== 'fac' + id; }));
+    }
+    var TAB_HEAD = { gear: 'Your tools', barn: 'Barn and helpers', stand: 'Your stand' };
+    function tabCards(tab) {
+      if (tab === 'fields' || tab === 'farmers') return fieldView();
+      if (tab === 'factory') {
+        var f = CR.factory.byId(G.factories, ui.fac) || G.factories.factories[0];
+        ui.fac = f.id;
+        return factoryView(f);
+      }
+      return [{ section: TAB_HEAD[tab] || 'Upgrades' }].concat(cardsFor(tab));
+    }
+    function viewKey() {
+      if (ui.focus) return 'focus:' + ui.focus.kind + ':' + ui.focus.id;
+      return ui.tab + (ui.tab === 'fields' ? ':' + ui.field : ui.tab === 'factory' ? ':' + ui.fac : '');
+    }
+
+    // ---- sorting (Tom 2026-09-26: "sorted after cost"). Inside each
+    // section: the upgrades you can buy, cheapest first; then locked ones and
+    // signs; maxed ones last. Info cards above the first upgrade stay on top,
+    // ones below go to the end. Sorted only when a menu opens or its tab or
+    // chip changes: while it stays open, buys and money coming in never move
+    // a row (playtests 8 and 11: taps landed on rows that had just moved).
+    // Cards that come new keep the place of one that went, else go last.
+    function cardKey(it) { return it.section ? '#' + it.section : it.pick ? 'pick' : it.key; }
+    function group(it) {
+      if (it.done) return 2;
+      if (it.locked || it.info || !(it.price < Infinity)) return 1;
+      return 0;
+    }
+    function sortSeg(seg) {
+      var first = -1;
+      seg.forEach(function (it, i) { if (first < 0 && !it.noBuy && !it.pick) first = i; });
+      if (first < 0) return seg.slice();
+      var buys = [], end = [];
+      seg.forEach(function (it, i) {
+        if (i < first) return;
+        if (it.noBuy || it.pick) end.push(it); else buys.push({ it: it, i: i });
+      });
+      buys.sort(function (a, b) {
+        var ga = group(a.it), gb = group(b.it);
+        if (ga !== gb) return ga - gb;
+        if (ga < 2 && a.it.price !== b.it.price) return (a.it.price < Infinity ? a.it.price : 9e300) - (b.it.price < Infinity ? b.it.price : 9e300);
+        return a.i - b.i;
+      });
+      return seg.slice(0, first).concat(buys.map(function (q) { return q.it; }), end);
+    }
+    function keepSeg(seg, was) {
+      var by = {}, fresh = [], out = [];
+      seg.forEach(function (it) { if (was.indexOf(cardKey(it)) >= 0) by[cardKey(it)] = it; else fresh.push(it); });
+      fresh = sortSeg(fresh);
+      var buys = fresh.filter(function (it) { return !it.noBuy && !it.pick; }), rest = fresh.filter(function (it) { return it.noBuy || it.pick; });
+      was.forEach(function (k) {
+        if (by[k]) out.push(by[k]);
+        else if (buys.length) out.push(buys.shift());
+      });
+      // New upgrades go after the last upgrade, before any info at the end.
+      var at = out.length;
+      while (at > 0 && out[at - 1].noBuy) at--;
+      return out.slice(0, at).concat(buys, out.slice(at), rest);
+    }
+    function arrange(list, view, resort) {
+      var segs = [[]], heads = [null];
+      list.forEach(function (it) {
+        if (it.section) { segs.push([]); heads.push(it); }
+        else segs[segs.length - 1].push(it);
+      });
+      var names = heads.map(function (h) { return h ? h.section : ''; });
+      var memo = !resort && ui.memo[view], out = [], keep = {};
+      segs.forEach(function (seg, i) {
+        if (i) out.push(heads[i]);
+        var got = memo && memo[names[i]] ? keepSeg(seg, memo[names[i]]) : sortSeg(seg);
+        keep[names[i]] = got.map(cardKey);
+        out = out.concat(got);
+      });
+      ui.memo[view] = keep;
+      return out;
+    }
+    // Best buy: of what you can pay for now, the one that pays for itself
+    // soonest (from `gain`, as the payback on the buttons). It stays while
+    // it is nearly as good, so the ribbon doesn't hop between two cards.
+    function markBest(list, view) {
+      var best = null, bp = Infinity, prev = null;
+      if (!G.free) list.forEach(function (it) {
+        if (!affordable(it) || !(it.gain >= 0.5)) return;
+        var p = it.price / it.gain;
+        if (p < bp) { bp = p; best = it; }
+        if (ui.best && ui.best.view === view && ui.best.key === it.key) prev = { it: it, p: p };
+      });
+      if (prev && prev.p <= bp * 1.15) best = prev.it;
+      if (best) best.best = true;
+      ui.best = best ? { view: view, key: best.key } : null;
+    }
 
     // soft: update the same cards in place (the refresh as money changes),
     // so a button being pressed is never swapped out under your finger
     // (playtest 8: the first tap after opening the menu was lost).
     function renderCards(soft) {
-      var list = ui.focus ? focusCards(ui.focus) : cardsFor(ui.tab);
+      var list = ui.focus ? focusCards(ui.focus) : tabCards(ui.tab), view = viewKey();
+      list = arrange(list, view, ui.resort);
+      ui.resort = false;
+      markBest(list, view);
       // What you can see now is no longer new.
       list.forEach(function (it) { if (affordable(it)) ui.seenAff[it.key + ':' + it.price] = true; });
       fillCards(ui.cards, list, renderCards, soft === true);
@@ -8303,6 +8681,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     function goThere(it) {
       return (it.go && G.signAt(it.go)) || null;
     }
+    var LOCK = '<i class="icon lock"></i>', STAR = '<i class="icon star"></i>';
     function setBuy(b, it) {
       b.className = 'buy'; b.disabled = false; b.style.animationDelay = '';
       var gs = goThere(it);
@@ -8311,26 +8690,44 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         b.classList.add('go', 'pb');
         if (!G.free && G.money < gs.left) b.classList.add('poor');
       }
-      else if (it.label) { b.textContent = it.label; b.disabled = !!it.locked; }
-      else if (it.done) { b.textContent = it.info ? 'Built' : 'Max'; b.disabled = true; }
+      else if (it.label) { b.textContent = it.label; b.disabled = !!it.locked; if (it.locked) b.classList.add('off'); }
+      else if (it.done) { b.innerHTML = it.info ? 'Built' : STAR + 'Max'; b.classList.add('max'); b.disabled = true; }
       else if (it.cur === 'seed') {
         // Paid in Golden seeds (legacy), never free.
-        b.innerHTML = SEED + G.fmt(it.price);
+        b.innerHTML = (it.locked ? LOCK : SEED) + G.fmt(it.price);
         b.disabled = !!it.locked;
-        if (CR.legacy.free(G.legacy) < it.price) b.classList.add('poor');
+        if (it.locked) b.classList.add('lock');
+        else if (CR.legacy.free(G.legacy) < it.price) b.classList.add('poor');
       }
-      else if (it.info || it.locked) { b.innerHTML = COIN + G.fmt(it.price); b.disabled = true; }
+      else if (it.info || it.locked) { b.innerHTML = LOCK + G.fmt(it.price); b.classList.add('lock'); b.disabled = true; }
       else {
+        var poor = !G.free && G.money < it.price;
         b.innerHTML = G.free ? 'Free' : COIN + G.fmt(it.price);
         // How soon it pays for itself, on the button (playtest 11: payback
-        // lines in the text went unnoticed for two rounds).
+        // lines in the text went unnoticed for two rounds); else what is
+        // still missing.
         if (!G.free && it.gain >= 0.5) {
           b.innerHTML = '<span>' + COIN + G.fmt(it.price) + '</span><small>pays back in ' + payback(it.price / it.gain) + '</small>';
           b.classList.add('pb');
+        } else if (poor && it.price < Infinity) {
+          b.innerHTML = '<span>' + COIN + G.fmt(it.price) + '</span><small>' + G.fmt(Math.ceil(it.price - G.money)) + ' more</small>';
+          b.classList.add('pb');
         }
-        if (!G.free && G.money < it.price) b.classList.add('poor');
+        if (poor) b.classList.add('poor');
       }
       cool(b, it.key);
+    }
+    // How a card looks: ok (you can buy it), poor, max, lock, or off (a
+    // button that waits, like Busy).
+    function stateOf(it) {
+      if (it.noBuy) return '';
+      var gs = goThere(it);
+      if (gs) return 'go ' + (G.free || G.money >= gs.left ? 'ok' : 'poor');
+      if (it.done) return 'max';
+      if (it.label) return it.locked ? 'off' : 'ok';
+      if (it.info || it.locked) return 'lock';
+      if (it.cur === 'seed') return CR.legacy.free(G.legacy) < it.price ? 'poor' : 'ok';
+      return G.free || G.money >= it.price ? 'ok' : 'poor';
     }
     function payback(min) {
       if (min < 1) return Math.max(5, Math.round(min * 12) * 5) + 's';
@@ -8366,20 +8763,47 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ui.buyOk = buyOk;
 
     // Draws cards into a box; `again` redraws after a button is pressed.
-    // An item with `section` is a heading between cards. With `soft`, the
-    // same cards as last time are updated in place, so a button being
-    // pressed is not swapped out under your finger.
+    // An item with `section` is a heading between cards, one with `pick` a
+    // row of chips. With `soft`, the same cards as last time are updated in
+    // place, so a button being pressed is not swapped out under your finger.
+    function sigOf(it) {
+      if (it.section) return '#' + it.section;
+      if (it.pick) return 'pick:' + it.pick.map(function (p) { return p.id + (p.on ? '*' : '') + (p.locked ? '-' : ''); }).join(',');
+      return it.key + (it.noBuy ? '' : '+');
+    }
+    function drawIcon(c, icon) {
+      var k = icon.join(':');
+      if (c._icon === k) return;
+      c._icon = k;
+      CR.render.icon(c, icon[0], icon[1], G);
+    }
+    // The parts of a card that change as you play: its look, level badge,
+    // text, pips, the ribbon and the tag.
+    function paint(el, it) {
+      var st = stateOf(it);
+      el.className = 'card' + (st ? ' ' + st : '') + (it.stats ? ' stats' : '') + (it.cls ? ' ' + it.cls : '') + (it.best ? ' best' : '');
+      el.querySelector('h3').innerHTML = it.title;
+      el.querySelector('p').innerHTML = effect(it.sub);
+      var lv = el.querySelector('.lv');
+      if (lv) lv.textContent = it.max && !it.bar && (it.done || it.level > 0) && st !== 'lock' ? (it.done ? 'MAX' : 'Lv ' + G.fmt(it.level)) : '';
+      drawIcon(el.querySelector('canvas.pic'), it.icon);
+      var pp = el.querySelector('.pips'), ph = it.max ? pips(it) : '';
+      if (pp && ph) { if (pp._h !== ph) { pp.outerHTML = ph; el.querySelector('.pips')._h = ph; } }
+      else if (pp) pp.remove();
+      else if (ph) { el.querySelector('p').insertAdjacentHTML('afterend', ph); el.querySelector('.pips')._h = ph; }
+      var tg = el.querySelector('.tag');
+      if (tg) tg.textContent = it.tag || '';
+    }
     function fillCards(box, list, again, soft) {
-      var sig = list.map(function (it) { return it.section ? '#' + it.section : it.key + (it.noBuy ? '' : '+'); }).join('|');
+      var sig = list.map(sigOf).join('|');
       if (soft && box._sig === sig) {
         list.forEach(function (it, i) {
           var el = box.children[i];
-          if (it.section || !el) return;
+          if (!el) return;
+          if (it.section) { el.querySelector('em').textContent = it.tag || ''; return; }
+          if (it.pick) { it.pick.forEach(function (p, j) { if (el.children[j]) el.children[j].classList.toggle('dot', !!p.dot); }); return; }
           el._it = it;
-          el.querySelector('h3').innerHTML = it.title;
-          el.querySelector('p').innerHTML = it.sub;
-          var pp = el.querySelector('.pips');
-          if (pp && it.max) pp.outerHTML = pips(it.level, it.max, it.bar);
+          paint(el, it);
           var bb = el.querySelector('.buy');
           // "Need X more" goes as soon as you can pay (playtest 12: it
           // stayed after the coins came in).
@@ -8394,20 +8818,47 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       list.forEach(function (it) {
         if (it.section) {
           var hd = document.createElement('h4');
-          hd.className = 'section'; hd.textContent = it.section;
+          hd.className = 'section';
+          hd.innerHTML = '<span></span><em></em>';
+          hd.firstChild.textContent = it.section; hd.lastChild.textContent = it.tag || '';
           box.appendChild(hd);
+          return;
+        }
+        if (it.pick) {
+          // Chips: which field or factory the tab shows (menu A). A green
+          // dot: something there you can buy now.
+          var pr = document.createElement('div'), onChip = null;
+          pr.className = 'pick ' + it.kind;
+          it.pick.forEach(function (p) {
+            var cb = document.createElement('button');
+            cb.type = 'button'; cb.className = 'chip' + (p.on ? ' on' : '') + (p.locked ? ' locked' : '') + (p.dot ? ' dot' : '');
+            cb.dataset.id = p.id;
+            var cc = document.createElement('canvas'); cc.width = 64; cc.height = 64;
+            cb.appendChild(cc);
+            drawIcon(cc, p.icon);
+            var nm = document.createElement('span'); nm.textContent = p.name;
+            cb.appendChild(nm);
+            cb.addEventListener('click', function () {
+              if (p.on) return;
+              it.choose(p.id); ui.resort = true; again();
+            });
+            if (p.on) onChip = cb;
+            pr.appendChild(cb);
+          });
+          box.appendChild(pr);
+          if (onChip && pr.scrollWidth > pr.clientWidth) pr.scrollLeft = Math.max(0, onChip.offsetLeft - (pr.clientWidth - onChip.offsetWidth) / 2);
           return;
         }
         var el = document.createElement('div');
         el._it = it;
-        el.className = 'card' + (it.stats ? ' stats' : '') + (it.cls ? ' ' + it.cls : '');
-        var pic = document.createElement('canvas');
-        pic.className = 'pic'; pic.width = 108; pic.height = 108;
-        el.appendChild(pic);
-        CR.render.icon(pic, it.icon[0], it.icon[1], G);
+        el.className = 'card';
+        var pb = document.createElement('div');
+        pb.className = 'picBox';
+        pb.innerHTML = '<canvas class="pic" width="120" height="120"></canvas><b class="lv"></b>';
+        el.appendChild(pb);
         var txt = document.createElement('div');
         txt.className = 'txt';
-        txt.innerHTML = '<h3>' + it.title + '</h3><p>' + it.sub + '</p>' + (it.max ? pips(it.level, it.max, it.bar) : '');
+        txt.innerHTML = '<h3></h3><p></p>';
         if (it.chips) {
           var row = document.createElement('div');
           row.className = 'seeds';
@@ -8464,7 +8915,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           txt.appendChild(cr);
         }
         el.appendChild(txt);
+        if (it.tag != null) { var tg = document.createElement('span'); tg.className = 'tag'; el.appendChild(tg); }
+        paint(el, it);
         if (it.noBuy) { box.appendChild(el); return; }
+        var rb = document.createElement('span');
+        rb.className = 'bestTag'; rb.innerHTML = STAR + 'Best buy';
+        el.appendChild(rb);
         var b = document.createElement('button');
         b.type = 'button';
         setBuy(b, it);
@@ -8590,12 +9046,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var own = L.has(lg, h.id), needs = h.needs && !L.has(lg, h.needs);
         list.push({ key: 'h' + h.id, icon: HEIR_ICON[h.id] || ['goldSeed', 0], title: h.name,
           sub: h.text + (needs ? ' <i>Needs ' + L.heirloom(cfg, h.needs).name + ' first.</i>' : ''),
-          cur: 'seed', price: h.cost, locked: needs || own, label: own ? 'Owned' : null, cls: own ? 'owned' : '',
+          cur: 'seed', price: h.cost, locked: needs || own, done: own, label: own ? 'Owned' : null, cls: own ? 'owned' : '',
           act: function () { if (G.buyHeirloom(h.id)) renderLegacy(); } });
       });
       return list;
     }
-    function renderLegacy(soft) { fillCards($('legacyCards'), legacyCards(), renderLegacy, soft === true); }
+    // Heirlooms sorted by price like the upgrades: ones you can buy, then
+    // ones that need another first, then the ones you own.
+    function renderLegacy(soft) {
+      var list = arrange(legacyCards(), 'legacy', ui.legacyResort);
+      ui.legacyResort = false;
+      fillCards($('legacyCards'), list, renderLegacy, soft === true);
+    }
     ui.legacySheet = $('legacy');
     $('legacyBtn').addEventListener('click', function () { $('legacyDot').hidden = true; ui.legacySeen = G.legacyGain(); open(ui.legacySheet); });
     ui.askSell = function () {
@@ -8695,14 +9157,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Upgrades button, gone once you've seen it (playtest 5: the badge was
     // always on, and a tester never opened Gear).
     ui.seenAff = {};
+    // Each tab also counts what you can buy there right now (menu A).
+    var TAB_ICON = { fields: ['field', 1], factory: ['factory', 'cannery'], barn: ['barn', 'barn'], stand: ['stand', 'shelves'] };
     function newAffordable() {
-      var tabs = ['gear', 'fields', 'farmers', 'factory', 'barn', 'stand'], any = false, cards = {}, cheapTab = null, cheapest = Infinity;
+      var tabs = ['gear', 'fields', 'factory', 'barn', 'stand'], any = false, cards = {}, cheapTab = null, cheapest = Infinity;
       // Cheap next to what you hold (playtest 12: a basket and boots at a
       // few % of the coins went unbought for 18 min, their dot gone once
       // seen), but only the one cheapest thing (playtest 14: dots sat on
       // all six tabs all the time).
       tabs.forEach(function (t) {
-        cards[t] = cardsFor(t);
+        cards[t] = t === 'fields' ? cardsFor('fields').concat(cardsFor('farmers')) : cardsFor(t);
         cards[t].forEach(function (it) {
           if (affordable(it) && !G.free && it.cur !== 'seed' && G.money >= 100 && it.price <= G.money * 0.15 && it.price < cheapest) { cheapest = it.price; cheapTab = t; }
         });
@@ -8710,7 +9174,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       tabs.forEach(function (t) {
         var fresh = t === cheapTab || cards[t].some(function (it) { return affordable(it) && !ui.seenAff[it.key + ':' + it.price]; });
         var b = document.querySelector('.tab[data-tab="' + t + '"]');
-        if (b) b.classList.toggle('new', fresh);
+        if (b) {
+          b.classList.toggle('new', fresh);
+          var n = cards[t].filter(affordable).length, em = b.querySelector('em');
+          if (em) { em.textContent = n > 99 ? '99+' : n; em.hidden = !n; }
+          var c = b.querySelector('canvas');
+          if (c) drawIcon(c, t === 'gear' ? ['tool', G.tier] : TAB_ICON[t]);
+        }
         any = any || fresh;
       });
       return any;
@@ -9140,8 +9610,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     for (var i = 0; i < cuts.length; i++) {
       var c = cuts[i], crop = cfg.crops[c.crop];
       var s = tileScreen(c.x, c.y);
-      fx.burst(s.x, s.y, [crop.leaf, crop.leaf, crop.color, '#8d5a3b'], many > 6 ? 4 : 8, many > 6 ? 0.8 : 1);
+      fx.burst(s.x, s.y, [crop.leaf, crop.color, crop.leaf, '#8d5a3b'], many > 6 ? 4 : 8, many > 6 ? 0.85 : 1.1, 1.15);
+      if (i < 8) fx.star(s.x, s.y, i % 3 ? '#fff' : '#fff59d', many > 6 ? 0.55 : 0.7);
       fx.ring(s.x, s.y, 'rgba(255,255,255,0.9)');
+      for (var nb = 0; nb < 4 && many < 20; nb++) {
+        var nk = (c.x + (nb === 0) - (nb === 1)) + ',' + (c.y + (nb === 2) - (nb === 3));
+        if (!G.ripePop.has(nk)) G.ripePop.set(nk, 0.35);
+      }
       var delay = Math.min(i, 12) * 0.03;
       if (nOf(c)) fx.fly(c.crop, s.x, s.y - 6, function () { return CR.render.stackTop(G); }, {
         delay: delay, dur: feel.flyTime, pluck: true, kind: 'stack',
@@ -9152,12 +9627,32 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (G.time - G.combo.last <= feel.comboWindow) G.combo.n = Math.min(feel.comboMax, G.combo.n + 1);
       else G.combo.n = 0;
       G.combo.last = G.time;
-      if (i < 6) fx.sound.pop(G.combo.n + crop.pitch, i * 0.035);
-      if (many <= 3 && nOf(c)) fx.text(s.x, s.y - 26, '+' + nOf(c), { color: '#fff', size: 16 + Math.min(8, (c.n || 1) - 1), max: 0.6, rise: 26 });
+      if (i < 4) fx.sound.cutPop(i * 0.045, i ? 0.55 : 1);
     }
-    if (many > 3) {
-      var ps = iso.toScreen(p.x, p.y);
-      fx.text(ps.x + 18, ps.y - 70, '+' + E.fmt(got), { color: '#ffeb3b', size: 22 + Math.min(14, many), max: 0.8 });
+    // Feel C: everything cut this trip adds up in one big number over
+    // your stack (what it will sell for at the stall), Cookie Clicker style.
+    if (got) {
+      var H = G.haul || (G.haul = { n: 0, v: 0, t0: G.time, q: 0, crops: {} });
+      H.n += got;
+      for (var hi = 0; hi < cuts.length; hi++) { H.v += nOf(cuts[hi]) * worth(cuts[hi].crop); H.crops[cuts[hi].crop] = 1; }
+      H.bump = 1; H.held = G.carry.items.length; H.dropT = 0;
+      // The number levels up at 10, 25, 50, 100, 250 ... crops: new colour,
+      // a pop and a little arpeggio.
+      var LV = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000], lv = 0;
+      while (lv < LV.length && H.n >= LV[lv]) lv++;
+      if (lv > (H.lv || 0)) {
+        H.lv = lv; H.pop = 1;
+        fx.sound.level(lv);
+        var lps = iso.toScreen(p.x, p.y, 30);
+        fx.burst(lps.x + 50, lps.y - 60, ['#ffd54f', '#fff', '#ffecb3'], 12, 0.9);
+      }
+      var q = Math.floor(4 * G.carry.items.length / Math.max(1, G.carry.limit));
+      if (q > H.q && q < 4 && G.carry.limit >= 8) {
+        H.q = q;
+        fx.sound.quarter(q);
+        var cb = ui.carryBox;
+        if (cb) { cb.classList.remove('glow'); void cb.offsetWidth; cb.classList.add('glow'); }
+      }
     }
     // Call out the chain every 4 cuts, once each time it climbs past one.
     var tier4 = Math.floor(G.combo.n / 4);
@@ -9175,6 +9670,30 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       p.lastSwing = G.time;
       if (G.tool.arc) fx.sound.swish(0);
     }
+  }
+
+  // Feel C: the trip's total when your basket is empty again, a coin
+  // fountain, and a fanfare when it's your best haul yet. Looks and
+  // sound only: the sale itself pays as before.
+  var BEST_KEY = 'crop-rush-best-haul';
+  function tripDone() {
+    var H = G.haul; G.haul = null;
+    if (H.n < 3) return;
+    var best = 0;
+    try { best = Number(localStorage.getItem(BEST_KEY)) || 0; } catch (e) { /* no storage */ }
+    var p = G.player, ps = iso.toScreen(p.x, p.y, 30);
+    var names = Object.keys(H.crops), what = names.length === 1 ? cfg.crops[names[0]].name.toLowerCase() : 'crops';
+    fx.text(ps.x, ps.y - 110, 'Haul: ' + E.fmt(H.n) + ' ' + what + '!', { color: '#ffeb3b', size: 24 + Math.min(12, Math.log(H.n) * 1.6), max: 1.6, rise: 30 });
+    for (var k = 0; k < 3; k++) fx.burst(ps.x, ps.y - 40, ['#ffd54f', '#ffecb3', '#ffb300'], 10, 1.5);
+    fx.vibrate([20, 30, 20], 0);
+    if (H.v > best * 1.001 && best > 0 && H.n >= 10) {
+      setTimeout(function () {
+        fx.sound.fanfare();
+        fx.shake(5);
+        fx.text(ps.x, ps.y - 150, 'New best haul!', { color: '#ff8a80', size: 26, max: 1.8, rise: 30 });
+      }, 350);
+    }
+    if (H.v > best) try { localStorage.setItem(BEST_KEY, String(H.v)); } catch (e) { /* no storage */ }
   }
 
   function onLandStack() {
@@ -10094,7 +10613,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     G.bob = p.moving ? Math.abs(Math.sin(p.walkT * Math.PI * 2)) * 1.6 : 0;
 
     // Grow, and give crops a little bounce as they ripen again.
-    CR.field.update(field, dt).forEach(function (t) { G.ripePop.set(t.x + ',' + t.y, 1); });
+    var pp0 = G.player, twinkles = 0;
+    CR.field.update(field, dt).forEach(function (t) {
+      G.ripePop.set(t.x + ',' + t.y, 1);
+      // Feel C: a crop that is ready again twinkles, so a field you come
+      // back to looks full of promise.
+      var ddx = t.x + 0.5 - pp0.x, ddy = t.y + 0.5 - pp0.y;
+      if (twinkles < 12 && ddx * ddx + ddy * ddy < 196) { twinkles++; var ts0 = tileScreen(t.x, t.y); fx.sparkle(ts0.x, ts0.y - 6, 2); }
+    });
+    // A trip ends when the basket is empty, or a moment after you stop
+    // unloading with some left over (a full shelf: the rest is for the truck).
+    if (G.haul && G.haul.n) {
+      var hcn = G.carry.items.length;
+      if (hcn < G.haul.held) G.haul.dropT = G.time;
+      G.haul.held = hcn;
+      if (!hcn || (G.haul.dropT && G.time - G.haul.dropT > 1.2)) tripDone();
+    }
     G.ripePop.forEach(function (v, k) {
       v -= dt / 0.4;
       if (v <= 0) G.ripePop.delete(k); else G.ripePop.set(k, v);
@@ -10141,6 +10675,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     G.full = CR.field.isFull(G.carry);
     if (G.full && !wasFull) {
       fx.sound.full();
+      fx.shake(4); G.stackSquash = 1.6;
       fx.vibrate(cfg.feel.vibrateFull, nowMs);
       if (!G.seenFull) {
         G.seenFull = true;
@@ -11291,6 +11826,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // For poking at the game from the browser console while testing.
   CR.game = G;
+
 })(this.CR = this.CR || {});
 
 </script>
