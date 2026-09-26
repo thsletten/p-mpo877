@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v66)</p>
+    <p class="ver">Crop Rush 1.0 (v67)</p>
   </div>
 </div>
 
@@ -998,7 +998,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // (playtest 12: active still equalled idle; harvest-only beat idle by
     // 1.4x, capped at 0.4 of income, while SERVE-only made 1.8x).
     // The floor keeps the first minutes' pace, which testers liked.
-    harvestPay: { share: 0.4, cap: 0.6, floor: 0.6 },
+    // Off since v67 (Tom 2026-09-26 15:47: "should only get money from
+    // selling, not harvesting"); share 0 = no picking pay.
+    harvestPay: { share: 0, cap: 0.6, floor: 0.6 },
     // Golden crops (goals.js): the first comes `first` s in, then one every
     // every[0]..every[1] s, within `radius` tiles of you, for `life` s.
     // The first comes after 2 min (playtest 10: nobody saw one in v50).
@@ -4980,6 +4982,49 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.globalAlpha = 1;
   }
 
+  // Show the way (Tom 2026-09-26): a trail of yellow dots on the ground from
+  // you to the sign, flowing toward it.
+  function drawGuideTrail(ctx, G, time) {
+    var g = G.guide, p = G.player, dx = g.x - p.x, dy = g.y - p.y, d = Math.hypot(dx, dy);
+    if (d < 1.4) return;
+    var ux = dx / d, uy = dy / d, step = 0.9, off = (time * 2.2) % step, n = Math.min(80, Math.floor((d - 1) / step));
+    for (var i = 0; i < n; i++) {
+      var t = 1 + off + i * step;
+      if (t > d - 0.6) break;
+      var q = ws(p.x + ux * t, p.y + uy * t, 1), a = Math.min(1, (t - 1) / 1.2) * (0.55 + 0.45 * Math.sin(time * 5 - i * 0.6));
+      ctx.globalAlpha = Math.max(0.25, a);
+      ellipse(ctx, q.x, q.y + 1.5, 6, 3, 'rgba(60,35,0,0.45)');
+      ellipse(ctx, q.x, q.y, 5, 2.6, '#ffeb3b');
+    }
+    ctx.globalAlpha = 1;
+  }
+  // Over the sign itself: a ring where to stand, a light column and a
+  // bouncing tag with its name and price ("STAND HERE" once you're near).
+  function drawGuideBeacon(ctx, G, time, asked) {
+    var g = G.guide, p = G.player, near = Math.hypot(g.x - p.x, g.y - p.y) < 3, s = ws(g.x, g.y, 0);
+    var pulse = 0.5 + 0.5 * Math.sin(time * 5);
+    ctx.save();
+    ctx.lineWidth = 4; ctx.strokeStyle = 'rgba(255,235,59,' + (0.55 + 0.45 * pulse) + ')';
+    ctx.beginPath(); ctx.ellipse(s.x, s.y, 34 + pulse * 6, 17 + pulse * 3, 0, 0, TAU); ctx.stroke();
+    if (asked) {
+      var gr = ctx.createLinearGradient(0, s.y - 150, 0, s.y);
+      gr.addColorStop(0, 'rgba(255,235,59,0)'); gr.addColorStop(1, 'rgba(255,235,59,0.45)');
+      ctx.fillStyle = gr; ctx.fillRect(s.x - 16, s.y - 150, 32, 150);
+    }
+    var label = near ? 'STAND HERE' : g.name, price = G.fmt(Math.ceil(g.left));
+    var y = s.y - (asked ? 120 : 70) - Math.abs(Math.sin(time * 3)) * 8;
+    ctx.font = '700 14px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    var w = Math.max(ctx.measureText(label).width, ctx.measureText(price + ' coins').width) + 22;
+    ctx.fillStyle = 'rgba(60,35,0,0.35)'; roundRect(ctx, s.x - w / 2 + 2, y - 20, w, 40, 12); ctx.fill();
+    ctx.fillStyle = '#ffeb3b'; roundRect(ctx, s.x - w / 2, y - 22, w, 40, 12); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(s.x - 8, y + 17); ctx.lineTo(s.x + 8, y + 17); ctx.lineTo(s.x, y + 27); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#4e342e'; ctx.fillText(label, s.x, y - 11);
+    ctx.font = '600 12px Fredoka, system-ui, sans-serif';
+    ctx.fillStyle = G.money >= g.left ? '#2e7d32' : '#c62828';
+    ctx.fillText(price + ' coins', s.x, y + 6);
+    ctx.restore();
+  }
+
   // When the sign the arrows lead to is off screen, a yellow pointer with
   // its name at the edge of the screen, toward it (playtest 2: 20 s to find
   // the tomato sign).
@@ -5140,12 +5185,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.lineCap = 'butt';
     }
     drawReach(ctx, G);
-    // "Tap for the way" wins for a while (playtest 8: with a full basket the
-    // arrows went to the stall instead of the sign asked for).
-    var asked = G.guide && G.guideSet != null && G.time - G.guideSet < 25;
+    // "Show the way" wins until you get there or buy it (playtest 8: with a
+    // full basket the arrows went to the stall instead of the sign asked
+    // for; Tom 2026-09-26: "show the way does not work or is not
+    // intuitive", so it also beats a golden crop and draws a trail).
+    var asked = !!(G.guide && G.guideKey);
+    if (asked) drawGuideTrail(ctx, G, time);
     // A golden crop is out: point at it (playtest 10: nobody saw one).
-    if (G.field.golden) drawArrowTo(ctx, G, time, G.field.golden.x + 0.5, G.field.golden.y + 0.5);
-    else if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
+    if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
+    else if (G.field.golden) drawArrowTo(ctx, G, time, G.field.golden.x + 0.5, G.field.golden.y + 0.5);
     else if (G.serveArrow && G.serveArrow.until > G.time) drawArrowTo(ctx, G, time, G.serveArrow.x, G.serveArrow.y);
     else if (G.homeArrow && !G.full) drawArrowTo(ctx, G, time, G.homeArrow.x, G.homeArrow.y);
     else if (G.jarArrow && G.jarArrow.until > G.time) drawArrowTo(ctx, G, time, G.jarArrow.x, G.jarArrow.y);
@@ -5290,6 +5338,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.lineCap = 'butt';
     }
     drawGolden(ctx, G, time);
+    if (G.guide) drawGuideBeacon(ctx, G, time, asked);
     drawFx(ctx, G);
     if (G.full) drawBubble(ctx, G, time);
     if (G.carry.items.length) drawDropHere(ctx, G, time);
@@ -10113,7 +10162,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     factoryStep(dt);
     goalsStep(dt);
     goldenStep(dt);
-    pickPayStep(dt);
+    if (cfg.harvestPay.share > 0) pickPayStep(dt);
     saveStep(dt);
     G.stackVisible = Math.max(0, G.carry.items.length - fx.countFlying('stack'));
 
@@ -10451,7 +10500,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // there", else to the cheapest sign you can pay for in full right now.
   // Each new one is announced once.
   G.guide = null;
-  G.guideTo = function (key) { G.guideKey = key; G.guideSet = G.time; guideStep(1); };
+  // Show the way also flies the camera to the sign for a moment and back
+  // (Tom 2026-09-26: "show the way does not work or is not intuitive").
+  G.guideTo = function (key) {
+    G.guideKey = key; G.guideSet = G.time; guideStep(1);
+    var g = G.signAt(key);
+    if (g) G.camLook = { x: g.x, y: g.y, t: 2.2 };
+  };
   // Crops no stall shelf has room for (playtest 5: testers stood by full
   // shelves with 40-60 carrots and no good option): the arrows point to
   // where they are worth most, a factory that uses them, else the barn,
