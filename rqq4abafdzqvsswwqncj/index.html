@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v59.1)</p>
+    <p class="ver">Crop Rush 1.0 (v63)</p>
   </div>
 </div>
 
@@ -595,8 +595,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   'use strict';
 
   CR.config = {
-    // The farm is a V: fields run up the screen in two arms from the yard at
-    // the bottom, where the stand (and later the factories) sit. Screen up-right
+    // The farm (Tom 2026-09-26): every field runs up-right from the yard's
+    // top edge, the factories stand left of the yard, the barn between them. Screen up-right
     // is -y, screen up-left is -x. The ground has no edge: fields can grow
     // (almost) forever.
     // The yard: close-up camera here, pulling back the farther you walk away.
@@ -622,13 +622,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     tools: [
       { id: 'hands', name: 'Hands', reach: 0, arc: 90, cost: 0, levels: 3, reachPerLevel: 0.2, upgradeBase: 3, upgradeName: 'Gloves' },
       { id: 'sickle', name: 'Sickle', reach: 0.9, arc: 150, cost: 15, levels: 5, reachPerLevel: 0.09, upgradeBase: 20, upgradeName: 'Sharpen' },
-      { id: 'scythe', name: 'Scythe', reach: 1.4, arc: 200, cost: 250, levels: 5, reachPerLevel: 0.14, upgradeBase: 300, upgradeName: 'Sharpen' },
-      { id: 'greatScythe', name: 'Great scythe', reach: 2.0, arc: 230, cost: 2500, levels: 5, reachPerLevel: 0.2, upgradeBase: 3000, upgradeName: 'Sharpen' },
-      { id: 'tractor', name: 'Tractor', reach: 3.0, arc: 360, cost: 15000, levels: 5, reachPerLevel: 0.3, upgradeBase: 18000, upgradeName: 'Wider mower', vehicle: true, speed: 12, hopper: 4, hopperGrowth: 1.25 },
-      { id: 'combine', name: 'Combine', reach: 4.5, arc: 360, cost: 8e6, levels: 10, reachPerLevel: 0.45, upgradeBase: 9.6e6, upgradeName: 'Wider header', vehicle: true, speed: 14, hopper: 13, hopperGrowth: 1.22 },
+      { id: 'scythe', name: 'Scythe', reach: 1.4, arc: 200, cost: 250, levels: 5, reachPerLevel: 0.14, upgradeBase: 270, upgradeName: 'Sharpen' },
+      { id: 'greatScythe', name: 'Great scythe', reach: 2.0, arc: 230, cost: 930, levels: 5, reachPerLevel: 0.2, upgradeBase: 1100, upgradeName: 'Sharpen' },
+      { id: 'tractor', name: 'Tractor', reach: 3.0, arc: 360, cost: 2900, levels: 5, reachPerLevel: 0.3, upgradeBase: 3300, upgradeName: 'Wider mower', vehicle: true, speed: 12, hopper: 4, hopperGrowth: 1.25 },
+      { id: 'combine', name: 'Combine', reach: 4.5, arc: 360, cost: 45000, levels: 10, reachPerLevel: 0.45, upgradeBase: 54000, upgradeName: 'Wider header', vehicle: true, speed: 14, hopper: 13, hopperGrowth: 1.22 },
       // The long game (Tom 2026-09-24 19:40: 10+ hours): two more machines.
-      { id: 'megaCombine', name: 'Mega combine', reach: 6.5, arc: 360, cost: 1.5e11, levels: 10, reachPerLevel: 0.3, upgradeBase: 1.8e11, upgradeName: 'Twin header', vehicle: true, speed: 16, hopper: 200, hopperGrowth: 1.2 },
-      { id: 'skyHarvester', name: 'Sky harvester', reach: 9, arc: 360, cost: 5e13, levels: 10, reachPerLevel: 0.4, upgradeBase: 7e13, upgradeName: 'Bigger vortex', vehicle: true, speed: 20, hopper: 3000, hopperGrowth: 1.3, flying: true }
+      { id: 'megaCombine', name: 'Mega combine', reach: 6.5, arc: 360, cost: 5.9e6, levels: 10, reachPerLevel: 0.3, upgradeBase: 6.5e6, upgradeName: 'Twin header', vehicle: true, speed: 16, hopper: 200, hopperGrowth: 1.2 },
+      { id: 'skyHarvester', name: 'Sky harvester', reach: 9, arc: 360, cost: 6.7e8, levels: 10, reachPerLevel: 0.4, upgradeBase: 7.6e8, upgradeName: 'Bigger vortex', vehicle: true, speed: 20, hopper: 3000, hopperGrowth: 1.3, flying: true }
     ],
     // Machines hold hopper x your carry limit, x hopperGrowth for each of
     // the tool's upgrade levels (Tom 2026-09-25: late customers bought 100K+
@@ -643,24 +643,24 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     boots: { speedBonus: 0.1, maxLevel: 10, baseCost: 20, costGrowth: 1.5 },
     // Engine: speed upgrades for the tractor and combine (Tom, 2026-09-23).
     // One level counts for every vehicle.
-    engine: { speedBonus: 0.2, maxLevel: 10, baseCost: 25000, costGrowth: 1.6 },
+    engine: { speedBonus: 0.2, maxLevel: 10, baseCost: 4100, costGrowth: 1.6 },
 
     // pitch: semitones added to the cut pop for this crop. seed: what its
     // field costs (one field per crop) and the base price of Better seeds.
     crops: {
       carrot:    { name: 'Carrots',      price: 1, seed: 0,    regrow: 6,  pitch: 0,  color: '#f28c28', leaf: '#4caf50', coin: '#f4c430' },
-      tomato:    { name: 'Tomatoes',     price: 5, seed: 100,    regrow: 9,  pitch: 2,  color: '#e53935', leaf: '#388e3c', coin: '#f4c430' },
-      corn:      { name: 'Corn',         price: 20, seed: 1500,   regrow: 12, pitch: 4,  color: '#fdd835', leaf: '#7cb342', coin: '#ffd54f' },
-      pumpkin:   { name: 'Pumpkins',     price: 90, seed: 15000,   regrow: 16, pitch: -3, color: '#fb8c00', leaf: '#558b2f', coin: '#ffca28' },
-      sunflower: { name: 'Sunflowers',   price: 1300, seed: 4e6,  regrow: 20, pitch: 7,  color: '#ffeb3b', leaf: '#689f38', coin: '#ffe082' },
-      wheat:     { name: 'Golden wheat', price: 6000, seed: 3e8, regrow: 25, pitch: 9,  color: '#e6b422', leaf: '#c0a030', coin: '#fff176' },
+      tomato:    { name: 'Tomatoes',     price: 2, seed: 100,    regrow: 9,  pitch: 2,  color: '#e53935', leaf: '#388e3c', coin: '#f4c430' },
+      corn:      { name: 'Corn',         price: 4, seed: 600,   regrow: 12, pitch: 4,  color: '#fdd835', leaf: '#7cb342', coin: '#ffd54f' },
+      pumpkin:   { name: 'Pumpkins',     price: 8, seed: 2900,   regrow: 16, pitch: -3, color: '#fb8c00', leaf: '#558b2f', coin: '#ffca28' },
+      sunflower: { name: 'Sunflowers',   price: 16, seed: 29000,  regrow: 20, pitch: 7,  color: '#ffeb3b', leaf: '#689f38', coin: '#ffe082' },
+      wheat:     { name: 'Golden wheat', price: 32, seed: 2.6e6, regrow: 25, pitch: 9,  color: '#e6b422', leaf: '#c0a030', coin: '#fff176' },
       // Later crops: their fields cost more and more.
-      berry:     { name: 'Strawberries', price: 48000, seed: 1.5e9,    regrow: 30, pitch: 11, color: '#e8283c', leaf: '#2e8b3e', coin: '#fff59d' },
-      melon:     { name: 'Watermelons',  price: 380000, seed: 8e10,   regrow: 35, pitch: -5, color: '#2e7d32', leaf: '#558b2f', coin: '#b9f6ca' },
-      grape:     { name: 'Grapes',       price: 3e6, seed: 1e12,   regrow: 40, pitch: 12, color: '#7b1fa2', leaf: '#689f38', coin: '#e1bee7' },
-      cocoa:     { name: 'Cocoa',        price: 2.5e7, seed: 1.5e13,  regrow: 45, pitch: -1, color: '#8d5524', leaf: '#33691e', coin: '#ffcc80' },
-      coffee:    { name: 'Coffee',       price: 2e8, seed: 6e13, regrow: 50, pitch: 5,  color: '#c62828', leaf: '#1b5e20', coin: '#ffab91' },
-      apple:     { name: 'Golden apples', price: 1.6e9, seed: 3e15, regrow: 60, pitch: 14, color: '#ffc400', leaf: '#43a047', coin: '#ffff8d' }
+      berry:     { name: 'Strawberries', price: 64, seed: 2.9e6,    regrow: 30, pitch: 11, color: '#e8283c', leaf: '#2e8b3e', coin: '#fff59d' },
+      melon:     { name: 'Watermelons',  price: 128, seed: 4.4e6,   regrow: 35, pitch: -5, color: '#2e7d32', leaf: '#558b2f', coin: '#b9f6ca' },
+      grape:     { name: 'Grapes',       price: 256, seed: 1.3e7,   regrow: 40, pitch: 12, color: '#7b1fa2', leaf: '#689f38', coin: '#e1bee7' },
+      cocoa:     { name: 'Cocoa',        price: 512, seed: 3.9e8,  regrow: 45, pitch: -1, color: '#8d5524', leaf: '#33691e', coin: '#ffcc80' },
+      coffee:    { name: 'Coffee',       price: 1024, seed: 7.5e8, regrow: 50, pitch: 5,  color: '#c62828', leaf: '#1b5e20', coin: '#ffab91' },
+      apple:     { name: 'Golden apples', price: 2048, seed: 1.2e9, regrow: 60, pitch: 14, color: '#ffc400', leaf: '#43a047', coin: '#ffff8d' }
     },
 
     // Fields: six wide fields, three up-right and three up-left of the yard,
@@ -675,7 +675,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // yields[L] crops, for you and the farmers. Level L+1 costs
     // max(seed, minCost) x costMult x costGrowth^L, so the first is dearer
     // than the seed.
-    seedUpgrade: { yields: [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100], minCost: 1000, costMult: 10, costGrowth: 3.2 }, // costMult was 3 (Tom 2026-09-26: seeds too good); minCost was 25 (Tom 2026-09-26 13:00: first carrot seed upgrade at 10,000)
+    seedUpgrade: { yields: [1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 100], minCost: 1000, costMult: 10, costGrowth: 3.2 }, // costMult was 3 (Tom 2026-09-26: seeds too good); minCost was 25 (Tom 2026-09-26 13:00: the first carrot seed upgrade at 10,000)
     plantTime: 3,
 
     // Field length (outward, tiles) at grow level L is
@@ -691,17 +691,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // they did when every field could grow the best crop.
     plots: [
       { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 30, costGrowth: 1.6 } },
-      { id: 2, arm: 'left', slot: 0, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 14, growth: 1.35, maxLevel: 40, costBase: 400, costGrowth: 1.6 } },
-      { id: 3, arm: 'right', slot: 1, crop: 'corn', cost: 1500, grow: { length0: 26, growth: 1.35, maxLevel: 40, costBase: 2400, costGrowth: 1.6 } },
-      { id: 4, arm: 'left', slot: 1, crop: 'pumpkin', cost: 10000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 47, growth: 1.35, maxLevel: 40, costBase: 16000, costGrowth: 1.6 } },
-      { id: 5, arm: 'right', slot: 2, crop: 'sunflower', cost: 4e6, grow: { length0: 84, growth: 1.35, maxLevel: 40, costBase: 6.4e6, costGrowth: 1.6 } },
-      { id: 6, arm: 'left', slot: 2, crop: 'wheat', cost: 3e8, grow: { length0: 151, growth: 1.35, maxLevel: 40, costBase: 4.8e8, costGrowth: 1.6 } },
-      { id: 7, arm: 'right', slot: 3, crop: 'berry', cost: 1.5e9, grow: { length0: 272, growth: 1.35, maxLevel: 40, costBase: 2.4e9, costGrowth: 1.6 } },
-      { id: 8, arm: 'left', slot: 3, crop: 'melon', cost: 8e10, grow: { length0: 490, growth: 1.35, maxLevel: 40, costBase: 1.28e11, costGrowth: 1.6 } },
-      { id: 9, arm: 'right', slot: 4, crop: 'grape', cost: 1e12, grow: { length0: 882, growth: 1.35, maxLevel: 40, costBase: 1.6e12, costGrowth: 1.6 } },
-      { id: 10, arm: 'left', slot: 4, crop: 'cocoa', cost: 1.5e13, grow: { length0: 1587, growth: 1.35, maxLevel: 40, costBase: 2.4e13, costGrowth: 1.6 } },
-      { id: 11, arm: 'right', slot: 5, crop: 'coffee', cost: 6e13, grow: { length0: 2856, growth: 1.35, maxLevel: 40, costBase: 9.6e13, costGrowth: 1.6 } },
-      { id: 12, arm: 'left', slot: 5, crop: 'apple', cost: 3e15, grow: { length0: 5141, growth: 1.35, maxLevel: 40, costBase: 4.8e15, costGrowth: 1.6 } }
+      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 14, growth: 1.35, maxLevel: 40, costBase: 310, costGrowth: 1.6 } },
+      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 600, grow: { length0: 26, growth: 1.35, maxLevel: 40, costBase: 900, costGrowth: 1.6 } },
+      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 2400, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 47, growth: 1.35, maxLevel: 40, costBase: 3000, costGrowth: 1.6 } },
+      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 29000, grow: { length0: 84, growth: 1.35, maxLevel: 40, costBase: 39000, costGrowth: 1.6 } },
+      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 2.6e6, grow: { length0: 151, growth: 1.35, maxLevel: 40, costBase: 2.7e6, costGrowth: 1.6 } },
+      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 2.9e6, grow: { length0: 272, growth: 1.35, maxLevel: 40, costBase: 3.2e6, costGrowth: 1.6 } },
+      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 4.4e6, grow: { length0: 490, growth: 1.35, maxLevel: 40, costBase: 5.5e6, costGrowth: 1.6 } },
+      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 1.3e7, grow: { length0: 882, growth: 1.35, maxLevel: 40, costBase: 3.7e7, costGrowth: 1.6 } },
+      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 3.9e8, grow: { length0: 1587, growth: 1.35, maxLevel: 40, costBase: 4.7e8, costGrowth: 1.6 } },
+      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 7.5e8, grow: { length0: 2856, growth: 1.35, maxLevel: 40, costBase: 7.9e8, costGrowth: 1.6 } },
+      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 5141, growth: 1.35, maxLevel: 40, costBase: 1.3e9, costGrowth: 1.6 } }
     ],
 
     // Factories turn any crop you drop in their hopper into jars worth more,
@@ -710,7 +710,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // sign, like a plot. (Tom asked for factories 2026-09-23; this design is
     // Claude's default until Tom decides otherwise.)
     factories: [
-      // In the open middle between the two arms of fields (Tom, 2026-09-23).
+      // Left of the yard, all fields being on the other side (Tom 2026-09-26:
+      // "all the plots on one side, and all the factories on the other, with
+      // the barn in the middel top"). Two by two: first ones nearest the yard.
       // Each factory makes one recipe at a time from the crops it needs
       // (Tom, 2026-09-24: crop-specific factories, upgrade for more recipes,
       // later factories need more than one ingredient). You start with its
@@ -722,45 +724,45 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // ingredient. makeTime starts slow (Tom 2026-09-24: too fast at first);
       // speed upgrades take it down x speedMult per level.
       // goods: what the pick-up mat and the shop call its products.
-      { id: 'cannery', name: 'Cannery', product: 'jar', goods: 'jars', x: 19, y: 22, w: 3, h: 3, cost: 400, // Tom 2026-09-26 (was 250)
-        hopper: { x: 19, y: 25, w: 3, h: 1 }, // stand here to drop crops in
-        pickup: { x: 22.4, y: 23.6, w: 1.3, h: 1.2 }, // stand here to pick up its goods
+      { id: 'cannery', name: 'Cannery', product: 'jar', goods: 'jars', x: 18, y: 29, w: 3, h: 3, cost: 400, // Tom 2026-09-26 (was 250)
+        hopper: { x: 18, y: 32, w: 3, h: 1 }, // stand here to drop crops in
+        pickup: { x: 21.4, y: 30.6, w: 1.3, h: 1.2 }, // stand here to pick up its goods
         makeTime: 4, valueMult: 8, hopperSize: 30, outSize: 200, walls: ['#c9674a', '#b35238', '#9b4430'],
         recipes: [
           { id: 'carrot', name: 'Canned carrots', inputs: { carrot: 1 }, learn: 0 },
-          { id: 'tomato', name: 'Canned tomatoes', inputs: { tomato: 1 }, learn: 1500 },
-          { id: 'corn', name: 'Canned corn', inputs: { corn: 1 }, learn: 4500 },
-          { id: 'pumpkin', name: 'Pumpkin soup', inputs: { pumpkin: 1 }, learn: 60000 }
+          { id: 'tomato', name: 'Canned tomatoes', inputs: { tomato: 1 }, learn: 600 },
+          { id: 'corn', name: 'Canned corn', inputs: { corn: 1 }, learn: 1600 },
+          { id: 'pumpkin', name: 'Pumpkin soup', inputs: { pumpkin: 1 }, learn: 5900 }
         ] },
-      { id: 'juicer', name: 'Juice press', product: 'juice', goods: 'juice', x: 13, y: 22, w: 3, h: 3, cost: 8000, // was 25,000 (playtest 12: nothing to buy between 1.5K and 25K)
-        hopper: { x: 13, y: 25, w: 3, h: 1 }, pickup: { x: 16.4, y: 23.6, w: 1.3, h: 1.2 },
+      { id: 'juicer', name: 'Juice press', product: 'juice', goods: 'juice', x: 18, y: 35, w: 3, h: 3, cost: 2200, // was 25,000 (playtest 12: nothing to buy between 1.5K and 25K)
+        hopper: { x: 18, y: 38, w: 3, h: 1 }, pickup: { x: 21.4, y: 36.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 10, hopperSize: 30, outSize: 200, walls: ['#66bb6a', '#43a047', '#2e7d32'],
         recipes: [
           { id: 'veggie', name: 'Veggie juice', inputs: { carrot: 2, tomato: 2 }, learn: 0 },
-          { id: 'harvest', name: 'Harvest juice', inputs: { carrot: 1, tomato: 1, corn: 2 }, learn: 300000 },
-          { id: 'berry', name: 'Berry juice', inputs: { berry: 2, tomato: 1 }, learn: 3e9 },
-          { id: 'melon', name: 'Melon cooler', inputs: { melon: 1, berry: 1 }, learn: 2.5e10 },
-          { id: 'grape', name: 'Grape juice', inputs: { grape: 2 }, learn: 1.5e11 }
+          { id: 'harvest', name: 'Harvest juice', inputs: { carrot: 1, tomato: 1, corn: 2 }, learn: 11000 },
+          { id: 'berry', name: 'Berry juice', inputs: { berry: 2, tomato: 1 }, learn: 3.4e6 },
+          { id: 'melon', name: 'Melon cooler', inputs: { melon: 1, berry: 1 }, learn: 4e6 },
+          { id: 'grape', name: 'Grape juice', inputs: { grape: 2 }, learn: 5.9e6 }
         ] },
-      { id: 'bakery', name: 'Bakery', product: 'pie', goods: 'baked goods', x: 19, y: 16, w: 3, h: 3, cost: 3e7,
-        hopper: { x: 19, y: 19, w: 3, h: 1 }, pickup: { x: 22.4, y: 17.6, w: 1.3, h: 1.2 },
+      { id: 'bakery', name: 'Bakery', product: 'pie', goods: 'baked goods', x: 11, y: 29, w: 3, h: 3, cost: 140000,
+        hopper: { x: 11, y: 32, w: 3, h: 1 }, pickup: { x: 14.4, y: 30.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 15, hopperSize: 30, outSize: 200, walls: ['#ffcc80', '#f0a860', '#d98c40'],
         recipes: [
           { id: 'cornbread', name: 'Corn bread', inputs: { corn: 2, sunflower: 1 }, learn: 0 },
-          { id: 'pumpkinpie', name: 'Pumpkin pie', inputs: { pumpkin: 2, wheat: 1 }, learn: 1e8 },
-          { id: 'carrotcake', name: 'Carrot cake', inputs: { carrot: 4, wheat: 1, sunflower: 1 }, learn: 5e8 },
-          { id: 'berrypie', name: 'Berry pie', inputs: { berry: 2, wheat: 1 }, learn: 6e9 },
-          { id: 'applepie', name: 'Apple pie', inputs: { apple: 1, wheat: 2 }, learn: 1.5e15 }
+          { id: 'pumpkinpie', name: 'Pumpkin pie', inputs: { pumpkin: 2, wheat: 1 }, learn: 590000 },
+          { id: 'carrotcake', name: 'Carrot cake', inputs: { carrot: 4, wheat: 1, sunflower: 1 }, learn: 2.7e6 },
+          { id: 'berrypie', name: 'Berry pie', inputs: { berry: 2, wheat: 1 }, learn: 3.7e6 },
+          { id: 'applepie', name: 'Apple pie', inputs: { apple: 1, wheat: 2 }, learn: 1.1e9 }
         ] },
-      { id: 'candy', name: 'Candy factory', product: 'candy', goods: 'candy', x: 13, y: 16, w: 3, h: 3, cost: 3e9,
-        hopper: { x: 13, y: 19, w: 3, h: 1 }, pickup: { x: 16.4, y: 17.6, w: 1.3, h: 1.2 },
+      { id: 'candy', name: 'Candy factory', product: 'candy', goods: 'candy', x: 11, y: 35, w: 3, h: 3, cost: 3.4e6,
+        hopper: { x: 11, y: 38, w: 3, h: 1 }, pickup: { x: 14.4, y: 36.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 24, hopperSize: 30, outSize: 200, walls: ['#f48fb1', '#ec6f9c', '#d25584'],
         recipes: [
           { id: 'gummies', name: 'Berry gummies', inputs: { berry: 2, sunflower: 1 }, learn: 0 },
-          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 1e11 },
-          { id: 'chocolate', name: 'Chocolate', inputs: { cocoa: 2, sunflower: 1 }, learn: 1.5e13 },
-          { id: 'mocha', name: 'Mocha bites', inputs: { cocoa: 1, coffee: 1 }, learn: 2.5e14 },
-          { id: 'toffee', name: 'Golden toffee', inputs: { apple: 1, cocoa: 1, wheat: 2 }, learn: 1.5e15 }
+          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 4.9e6 },
+          { id: 'chocolate', name: 'Chocolate', inputs: { cocoa: 2, sunflower: 1 }, learn: 3.9e8 },
+          { id: 'mocha', name: 'Mocha bites', inputs: { cocoa: 1, coffee: 1 }, learn: 9.6e8 },
+          { id: 'toffee', name: 'Golden toffee', inputs: { apple: 1, cocoa: 1, wheat: 2 }, learn: 1.1e9 }
         ] }
     ],
     // Factory speed upgrades, shared numbers: each level multiplies makeTime
@@ -795,7 +797,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // sale once every till you have has a seller (rebalanced 2026-09-24,
       // Tom: tills and sellers felt unbalanced).
       tills: [{ x: 40, y: 36 }, { x: 41.6, y: 36 }, { x: 43.2, y: 36 }, { x: 44.8, y: 36 }],
-      tillCosts: [0, 1500, 12000, 90000],
+      tillCosts: [0, 600, 2600, 6900],
       // The SERVE mat behind each till; you serve anywhere within servePad
       // of it (playtest 1: the mat was too small to stop on).
       cashier: { dx: 0, dy: -1.7, w: 1.5, h: 1.5, servePad: 0.7, stickPad: 1.3, slow: 0.5 },
@@ -830,7 +832,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // 2026-09-25 12:48): serving takes a seller 2x as long.
       keeperSlow: 2.0,     // a hired seller takes this many times longer
       keeperPay: 1,        // and hands over this share of each sale
-      keeperCosts: [300, 2500, 20000, 150000],
+      keeperCosts: [270, 930, 3500, 8200],
       queuePatience: 20,   // seconds a queue waits with nobody at the till
       priceMultiplier: 1,
       walkTime: 1.8,       // seconds from arriving to reaching a shelf when the game gives no walkSecs
@@ -841,12 +843,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       unloadInterval: 0.06, // seconds between items flying off your stack
       unloadTime: 1.0,      // a full stack never takes longer than this to unload
       // Who buys at each stage of the shop (shelves tiers), and what they
-      // carry off: the stall grows from families to space traders.
+      // carry off: the stall grows from families to space traders (Tom
+      // 2026-09-26: roadside stall, farm shop, supermarket, distribution hub,
+      // harbour).
       stages: [
         { buyers: 'Families', carry: 'baskets and crates', color: '#e5533d' },
-        { buyers: 'Grocers', carry: 'hand carts', color: '#ffb300' },
-        { buyers: 'Restaurant buyers', carry: 'trolleys', color: '#43a047' },
-        { buyers: 'Supermarket buyers', carry: 'pallets', color: '#1e88e5' },
+        { buyers: 'Locals', carry: 'shopping baskets', color: '#7cb342' },
+        { buyers: 'Shoppers', carry: 'trolleys', color: '#e53935' },
+        { buyers: 'Store buyers', carry: 'pallets', color: '#1e88e5' },
         { buyers: 'Exporters', carry: 'containers', color: '#ef6c00' },
         { buyers: 'Space traders', carry: 'hover crates', color: '#7e57c2' }
       ],
@@ -861,7 +865,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // stand.stages), so one sale can be a crate, a pallet or a
         // container. Past level steepAfter each costs steepGrowth x the last.
         shelves:   { baseCost: 30,  costGrowth: 1.4, growth: 1.3, maxLevel: 60, steepAfter: 10, steepGrowth: 2.0,
-          tiers: ['Farm stall', 'Market hall', 'Wholesale market', 'Food terminal', 'Export harbour', 'Spaceport'], perTier: 10 },
+          // Tom 2026-09-26: local stall, then supermarket, distribution hub, harbour.
+          tiers: ['Roadside stall', 'Farm shop', 'Supermarket', 'Distribution hub', 'Harbour', 'Spaceport'], perTier: 10 },
         // maxLevel is 25 unless an upgrade says otherwise.
         // Advertising: 25 levels in five kinds, each shown by its own name.
         signboard: { baseCost: 50,  costGrowth: 1.35, mult: 0.9, steepAfter: 10, steepGrowth: 2.2,
@@ -885,9 +890,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // then engine levels up to engineMax) and cut width: each Wider mower
       // level adds widthPer to their reach, up to widthCaps[your tool tier],
       // so their machines stay smaller than yours.
-      toolCosts: [0, 100, 1500, 15000, 250000],
-      widthBase: 300000, widthGrowth: 2.4, widthPer: 0.15, widthMax: 25, widthCaps: [0, 0, 0, 0, 4, 10, 18, 25],
-      engineMax: 15, engineBase: 250000, engineGrowth: 2.2,
+      toolCosts: [0, 100, 600, 2900, 10000],
+      widthBase: 11000, widthGrowth: 2.4, widthPer: 0.15, widthMax: 25, widthCaps: [0, 0, 0, 0, 4, 10, 18, 25],
+      engineMax: 15, engineBase: 10000, engineGrowth: 2.2,
       // Harvest trucks (Tom 2026-09-25: a truck beside the combine takes
       // the harvest away so it never stops). Once farmers drive, buying
       // them gives every machine a truck that drives beside it (the
@@ -896,7 +901,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // field, their storage holds the harvest while the truck is away.
       // The bed holds bedMult x the farmers' storage, bedGrowth x more per
       // Bigger bed level; it drives speed x as fast as they do.
-      truck: { cost: 400000, bedMult: 3, bedGrowth: 1.6, bedMax: 10, bedBase: 1000000, bedCostGrowth: 3.5, speed: 1.6, reach: 2.6, pourTime: 0.6 },
+      truck: { cost: 12000, bedMult: 3, bedGrowth: 1.6, bedMax: 10, bedBase: 16000, bedCostGrowth: 3.5, speed: 1.6, reach: 2.6, pourTime: 0.6 },
       carrierBase: 60, carrierGrowth: 6, carrierMax: 8, // their rung on the carrier ladder (steep, Tom 06:17), up to the pallet truck
       bootsBonus: 0.1, bootsMax: 10, bootsBase: 60, bootsGrowth: 1.5,
       // Their swing: all around them, reachMult x the tool's base reach (no
@@ -912,9 +917,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // capacity[L]; going up a level costs cost x upgradeGrowth^(L+1). looks:
     // the level each look starts at.
     barn: {
-      x: 25.9, y: 28.7, w: 4.2, h: 2.4, // the barn itself is 3.1 wide; silos go in the rest
-      mat: { x: 26.1, y: 31.5, w: 2.8, h: 1.1 }, // clear of the barn's walls, so buying it never traps you
-      after: 'cannery', cost: 600, // a little earlier (playtest 7: mid-game surplus had nowhere to go)
+      x: 19.8, y: 22.4, w: 4.2, h: 2.4, // the barn itself is 3.1 wide; silos go in the rest
+      mat: { x: 20, y: 25.2, w: 2.8, h: 1.1 }, // clear of the barn's walls, so buying it never traps you
+      after: 'cannery', cost: 380, // a little earlier (playtest 7: mid-game surplus had nowhere to go)
       capacity: [100, 250, 500, 1500, 5000, 15000, 50000, 150000, 500000, 2000000],
       upgradeGrowth: 3.5,
       looks: { crates: 0, shed: 2, barn: 4, silo: 7, silos: 9 }
@@ -953,16 +958,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // the carrier ladder together from carrierBase; each loader climbs its
     // own from its price (Tom: per factory); x carrierGrowth a step (steep,
     // Tom 06:17). A loader's factory hopper holds hopperLoads trips' worth.
+    // They keep up with the rest (Tom 2026-09-26): a restocker trip is at
+    // least shelfShare of a shelf, a loader trip at least batchLoads of its
+    // factory's batches, and every barn level makes them barnSpeed faster.
     workers: {
-      speed: 2.6,
-      restocker: { max: 8, cost: 1500, growth: 5, carrierBase: 3000, carrierGrowth: 6, shelfShare: 0.125 },
-      loader: { cost: 2000, costMult: 2, carrierGrowth: 6, hopperLoads: 2 }
+      speed: 2.6, barnSpeed: 0.12,
+      restocker: { max: 8, cost: 600, growth: 5, carrierBase: 1100, carrierGrowth: 6, shelfShare: 0.25 },
+      loader: { cost: 770, costMult: 2, carrierGrowth: 6, hopperLoads: 2, batchLoads: 2 }
     },
 
     helpers: {
       picker: { baseCost: 200, costGrowth: 1.15, share: 0.15, cap: 0.5 },
-      restocker: { cost: 500 },
-      cashier: { cost: 800 }
+      restocker: { cost: 350 },
+      cashier: { cost: 440 }
     },
 
     economy: {
@@ -992,13 +1000,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // every[0]..every[1] s, within `radius` tiles of you, for `life` s.
     // The first comes after 2 min (playtest 10: nobody saw one in v50).
     // Cutting it: a rush (rushChance) or a lucky harvest worth luckySeconds
-    // of your income (at most luckyCap of this farm's earnings, at least
-    // luckyMin).
+    // of your income (at least luckyMin; at most luckyCap of this farm's
+    // earnings and a rush at most rushCapSeconds of income when those are
+    // set, 0 = no limit).
     // They are the reward for harvesting yourself and should be worth
     // finding (Tom 2026-09-25 12:18), so a lucky harvest is 3 min of income,
     // but rarer: they came every 50-100 s (Tom 12:48 "appear too often").
     golden: { first: 120, every: [180, 360], life: 14, radius: 10,
-      rushChance: 0.5, rush: { mult: 7, time: 30 }, rushCapSeconds: 120, luckySeconds: 180, luckyCap: 0.5, luckyMin: 5, rushWait: 60 },
+      rushChance: 0.5, rush: { mult: 7, time: 30 }, rushCapSeconds: 0, luckySeconds: 180, luckyCap: 0, luckyMin: 5, rushWait: 60 }, // Tom 2026-09-26: "no limit in earnings on golden crop" (rush cap was 120 s of income, lucky cap 0.5 of earnings)
 
     // Big goals (goals.js): the road through the whole game, kept across
     // farms. `kind` is what is measured (see goals.bigGoalValue) and `need`
@@ -1012,7 +1021,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       { id: 'firstSale', name: 'Sell your first farm', kind: 'runs', need: 1 },
       { id: 'mega', name: 'Drive the Mega combine', kind: 'tier', need: 6 },
       { id: 'nineCrops', name: 'Grow nine crops', kind: 'seeds', need: 9 },
-      { id: 'quadrillion', name: 'Make a quadrillion', kind: 'earned', need: 1e15 },
+      { id: 'bigMoney', name: 'Make 100 billion', kind: 'earned', need: 1e11 },
       { id: 'seeds100', name: 'Hold 100 Golden seeds', kind: 'gseeds', need: 100 },
       { id: 'sky', name: 'Farm from the sky', kind: 'tier', need: 7 },
       { id: 'heirlooms', name: 'Own every heirloom', kind: 'heirlooms', need: 15 },
@@ -1047,7 +1056,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // `bonus` to every price. Heirlooms cost unspent seeds; `start` is what
     // each new farm begins with, `effect` changes a number for good (main.js).
     legacy: {
-      per: 2e15, power: 0.65, bonus: 0.1, // was 1e12; world 1 is ~8 h now (Tom 2026-09-25): the first seed comes near its end, about 6-8 by golden apples
+      per: 6e8, power: 0.65, bonus: 0.1, // was 2e15 before crop prices doubled per crop (Tom 2026-09-26); world 1 is ~8 h (Tom 2026-09-25): about 6-8 seeds by golden apples
       heirlooms: [
         { id: 'nestEgg', name: 'Nest egg', text: 'Every new farm starts with 500 coins.', cost: 1, start: { money: 500 } },
         { id: 'sickle', name: 'Family sickle', text: 'Start every farm with the Sickle.', cost: 2, start: { tier: 1 } },
@@ -1058,15 +1067,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         { id: 'farmhand', name: 'Loyal farmhand', text: 'A farmer works field 1 from the start.', cost: 16, start: { farmer: true } },
         { id: 'nightShift', name: 'Night shift', text: 'Away earnings for up to 8 hours.', cost: 20, effect: 'away' },
         { id: 'goldenTouch', name: 'Golden touch', text: 'A Golden rush lasts twice as long.', cost: 30, effect: 'rush', needs: 'clover' },
-        { id: 'savings', name: 'Savings', text: 'Every new farm starts with 250K coins.', cost: 40, start: { money: 250000 }, needs: 'nestEgg' },
+        { id: 'savings', name: 'Savings', text: 'Every new farm starts with 10K coins.', cost: 40, start: { money: 10000 }, needs: 'nestEgg' },
         { id: 'barnDeed', name: 'Barn deed', text: 'Start with the Barn built.', cost: 55, start: { barn: true } },
         { id: 'seedVault', name: 'Seed vault', text: 'Keep every field you opened (they start small).', cost: 75, start: { keepSeeds: true } },
         { id: 'oldTractor', name: 'Old tractor', text: 'Start every farm with the Tractor.', cost: 100, start: { tier: 4 }, needs: 'sickle' },
         { id: 'ribbons', name: 'Blue ribbons', text: 'Keep your milestones and their extra customers.', cost: 140, start: { keepMilestones: true } },
-        { id: 'trustFund', name: 'Trust fund', text: 'Every new farm starts with 1B coins.', cost: 200, start: { money: 1e9 }, needs: 'savings' }
+        { id: 'trustFund', name: 'Trust fund', text: 'Every new farm starts with 3M coins.', cost: 200, start: { money: 3e6 }, needs: 'savings' }
       ]
     },
-    save: { key: 'crop-rush-v1', interval: 2 },
+    save: { key: 'crop-rush-v2', interval: 2 }, // v2: crop prices double per crop (Tom 2026-09-26), old saves' money no longer fits
 
     feel: {
       comboWindow: 0.4,     // s between cuts to keep the chain going
@@ -2806,11 +2815,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function update(ws, config, barn, stand, factories, spots, dt) {
     var events = [];
     ws.list.forEach(function (w) {
-      var sp = speedOf(ws, config, w), size = carrierOf(ws, config, w).size;
+      var sp = speedOf(ws, config, w) * (1 + (config.workers.barnSpeed || 0) * (barn.level || 0)), size = carrierOf(ws, config, w).size;
       // Restockers bring at least a share of a shelf a trip, so the stall
       // keeps up when shelves grow faster than the carrier ladder (review,
       // Tom 2026-09-24 18:58: late game the shelves stood empty).
       if (w.kind === 'restocker') size = Math.max(size, Math.ceil(stand.capacity * (config.workers.restocker.shelfShare || 0)));
+      // Loaders bring at least batchLoads batches a trip, so bigger batches
+      // never starve (Tom 2026-09-26: "the loaders and restocker does not
+      // scale with the rest").
+      if (w.kind === 'loader') {
+        var lf = CR.factory.byId(factories, w.factoryId);
+        if (lf && lf.unlocked) {
+          var ins = CR.factory.recipeOf(lf).inputs, per = 0;
+          for (var ic in ins) per += ins[ic];
+          size = Math.max(size, CR.factory.batchSize(factories, lf) * per * (config.workers.loader.batchLoads || 0));
+        }
+      }
       if (w.phase === 'idle') {
         var home = barnSpot(spots, w);
         if (!w.target || w.target.x !== home.x || w.target.y !== home.y) w.target = home;
@@ -6276,28 +6296,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.fillRect(s.x - 5 + step * 0.3 * dir, y0 - 9 - Math.max(0, step), 4, 9);
     ctx.fillRect(s.x + 1 - step * 0.3 * dir, y0 - 9 - Math.max(0, -step), 4, 9);
     var stg = c.stage || 0;
-    // Buyers grow with the shop: grocers wear aprons, restaurant buyers chef
-    // whites, supermarket buyers a blue polo, exporters hi-vis, and space
-    // traders a suit and a glass helmet.
-    var shirt = stg === 2 || stg === 5 ? '#fafafa' : stg === 3 ? '#1565c0' : stg === 4 ? '#ff9800' : c.shirt;
+    // Buyers grow with the shop: locals and shoppers in their own clothes,
+    // store buyers a blue polo, exporters hi-vis, and space traders a suit
+    // and a glass helmet.
+    var shirt = stg === 5 ? '#fafafa' : stg === 3 ? '#1565c0' : stg === 4 ? '#ff9800' : c.shirt;
     ctx.fillStyle = shirt; roundRect(ctx, s.x - 7.5, y0 - 26, 15, 18, 5); ctx.fill();
     ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(s.x - 7.5, y0 - 12, 15, 3);
-    if (stg === 1) { ctx.fillStyle = '#fffaf0'; roundRect(ctx, s.x - 5.5, y0 - 21, 11, 13, 2); ctx.fill(); ctx.fillStyle = '#4caf50'; ctx.fillRect(s.x - 5.5, y0 - 21, 11, 2); }
     if (stg === 4) { ctx.fillStyle = '#e0f7fa'; ctx.fillRect(s.x - 7.5, y0 - 19, 15, 2); ctx.fillRect(s.x - 7.5, y0 - 14, 15, 2); }
     if (stg === 5) { ctx.fillStyle = '#7e57c2'; ctx.fillRect(s.x - 7.5, y0 - 18, 15, 3); }
     ellipse(ctx, s.x, y0 - 32, 7, 6.8, '#f5c9a0');
-    if (stg !== 2 && stg !== 4 && stg !== 5) ellipse(ctx, s.x, y0 - 36, 7.2, 4, c.hair);
+    if (stg !== 4 && stg !== 5) ellipse(ctx, s.x, y0 - 36, 7.2, 4, c.hair);
     if (!away) {
       ellipse(ctx, s.x - 2.3 + dir * 1.5, y0 - 32, 1, 1.3, '#3b2a1a');
       ellipse(ctx, s.x + 2.3 + dir * 1.5, y0 - 32, 1, 1.3, '#3b2a1a');
       if (c.sad > 0) stroke(ctx, '#8d4a3a', 1.2, s.x - 2 + dir, y0 - 28.5, s.x + 2 + dir, y0 - 28.5, s.x + dir, y0 - 30);
       else stroke(ctx, '#8d4a3a', 1.2, s.x - 2 + dir, y0 - 29.5, s.x + 2 + dir, y0 - 29.5, s.x + dir, y0 - 27.8);
     }
-    if (stg === 2) {
-      // Chef's hat.
-      ctx.fillStyle = '#fff'; ctx.fillRect(s.x - 5.5, y0 - 42, 11, 6);
-      ellipse(ctx, s.x - 3.5, y0 - 44, 4.5, 4, '#fff'); ellipse(ctx, s.x + 3.5, y0 - 44, 4.5, 4, '#fff'); ellipse(ctx, s.x, y0 - 46, 4.5, 4, '#fff');
-    } else if (stg === 3) {
+    if (stg === 3) {
       ellipse(ctx, s.x, y0 - 37, 7.4, 3.6, '#e53935'); ellipse(ctx, s.x + 5 * dir, y0 - 36, 4, 1.6, '#c62828');
     } else if (stg === 4) {
       ellipse(ctx, s.x, y0 - 37, 8.5, 5, '#fdd835'); ellipse(ctx, s.x, y0 - 35, 10, 2, '#f9a825');
@@ -6399,11 +6414,28 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       lift = 8 + Math.sin(time * 4 + c.id) * 2;
       ellipse(ctx, x, y - 2, 14, 4, 'rgba(179,136,255,0.45)');
     }
-    if (stg === 1 || stg === 2) {
-      // Wheels and a frame, then crates on it.
-      ellipse(ctx, x - 8, y - 3, 3.5, 3.5, '#37474f'); ellipse(ctx, x + 8, y - 3, 3.5, 3.5, '#37474f');
-      ctx.fillStyle = '#78909c'; ctx.fillRect(x - 12, y - 8, 24, 3);
-      stroke(ctx, '#78909c', 2, x - 12 * dir, y - 8, x - 16 * dir, y - 24);
+    if (stg === 1) {
+      // Farm shop: a wicker shopping basket on the arm.
+      var bx1 = x - 8 * dir, by1 = y - 18;
+      stroke(ctx, '#8d5a2b', 2, bx1 - 6, by1 - 6, bx1, by1 - 14, bx1 + 6, by1 - 6);
+      drawItem(ctx, look, crop, bx1 - 3, by1 - 8, 0.75, 0); drawItem(ctx, look, crop, bx1 + 3, by1 - 8, 0.75, 0);
+      ctx.fillStyle = '#c8a165'; roundRect(ctx, bx1 - 8, by1 - 7, 16, 10, 3); ctx.fill();
+      ctx.strokeStyle = 'rgba(110,70,30,0.5)'; ctx.lineWidth = 1;
+      for (var wv = -5; wv <= 5; wv += 3.3) { ctx.beginPath(); ctx.moveTo(bx1 + wv, by1 - 6); ctx.lineTo(bx1 + wv, by1 + 2); ctx.stroke(); }
+      return;
+    }
+    if (stg === 2) {
+      // Supermarket: a wire trolley with the shopping in it.
+      ellipse(ctx, x - 8, y - 2, 2.6, 2.6, '#37474f'); ellipse(ctx, x + 8, y - 2, 2.6, 2.6, '#37474f');
+      stroke(ctx, '#90a4ae', 1.5, x - 8, y - 4, x - 10, y - 9); stroke(ctx, '#90a4ae', 1.5, x + 8, y - 4, x + 11, y - 9);
+      var n2 = Math.min(4, 1 + Math.floor(Math.log10(Math.max(1, c.n))));
+      for (var ti = 0; ti < n2; ti++) drawItem(ctx, look, crop, x - 6 + ti * 4, y - 22 + (ti % 2) * 2, 0.8, 0);
+      ctx.strokeStyle = '#b0bec5'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(x - 12, y - 20); ctx.lineTo(x + 13, y - 20); ctx.lineTo(x + 11, y - 9); ctx.lineTo(x - 10, y - 9); ctx.closePath(); ctx.stroke();
+      for (var tg = -8; tg <= 9; tg += 4.2) { ctx.beginPath(); ctx.moveTo(x + tg, y - 20); ctx.lineTo(x + tg - 0.5, y - 9); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(x - 12, y - 14.5); ctx.lineTo(x + 12, y - 14.5); ctx.stroke();
+      stroke(ctx, '#e53935', 2.5, x - 12 * dir, y - 20, x - 16 * dir, y - 25);
+      return;
     }
     var rows = stg === 1 ? 1 : 2, base = y - 8 - lift;
     if (stg === 4) {
@@ -6959,13 +6991,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 </script>
 <script>
 // How the shop looks at each of its six stages (Tom 2026-09-25: "the
-// stalls don't change, only the crates"). Every stage has its own floor,
-// front, shelves and surroundings: a farm stall of crates under a striped
-// awning, a market hall with iron columns and a glass roof, a wholesale
-// market of steel racks under a metal canopy, a food terminal with pallet
-// racking and lorries at loading bays, an export harbour with a gantry,
-// a container ship and container lorries, and a spaceport with hover pods,
-// hover lorries and a rocket. The shop's footprint never moves, so nothing
+// stalls don't change, only the crates"; 2026-09-26: "starting with local
+// stall then after a while supermarket, ware house distribution hub ...
+// then boat harbor"). Every stage has its own floor, front, shelves and
+// surroundings: a roadside stall of crates under a striped awning, a farm
+// shop of baskets on tables under a shingled porch, a supermarket of white
+// shelving under a lit canopy, a distribution hub with pallet racking and
+// lorries at loading bays, a harbour with a gantry, a container ship and
+// container lorries, and a spaceport with hover pods, hover lorries and a
+// rocket. The shop's footprint never moves, so nothing
 // about playing it changes.
 (function (CR) {
   'use strict';
@@ -7063,8 +7097,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   var FLOOR = [
     ['#c98c4f', '#9c6532', '#8a5628', 'rgba(90,50,20,0.28)'],
-    ['#d7b99a', '#a1887f', '#8d6e63', 'rgba(120,80,50,0.3)'],
-    ['#b0bec5', '#78909c', '#607d8b', 'rgba(60,70,80,0.25)'],
+    ['#d9a66b', '#a1693a', '#8a5628', 'rgba(90,50,20,0.3)'],
+    ['#f5f5f5', '#bdbdbd', '#9e9e9e', 'rgba(120,120,120,0.28)'],
     ['#cfd8dc', '#90a4ae', '#78909c', 'rgba(30,136,229,0.35)'],
     ['#8d9ba3', '#546e7a', '#455a64', 'rgba(20,30,40,0.3)'],
     ['#eceff1', '#b0bec5', '#90a4ae', 'rgba(0,229,255,0.6)']
@@ -7074,20 +7108,21 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var a = G.cfg.stand.area, s = stage(G), c = FLOOR[s], i;
     box(ctx, a.x, a.y, a.w, a.h, -2, 6, c[0], c[1], c[2]);
     ctx.strokeStyle = c[3]; ctx.lineWidth = s === 5 ? 1.5 : 1;
-    if (s === 0) {
-      for (i = 1; i < a.h * 3; i++) { var p = ws(a.x, a.y + i / 3, 4), q = ws(a.x + a.w, a.y + i / 3, 4); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
+    if (s <= 1) {
+      // Boards: a rough stall deck, then the farm shop's wider planks.
+      for (i = 1; i < a.h * (s ? 2 : 3); i++) { var p = ws(a.x, a.y + i / (s ? 2 : 3), 4), q = ws(a.x + a.w, a.y + i / (s ? 2 : 3), 4); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke(); }
       return;
     }
-    // Tiles (market), slabs (wholesale), panels (terminal and up).
-    var step = s === 1 ? 0.5 : 1;
+    // Tiles (supermarket), panels (hub and up).
+    var step = s === 2 ? 0.5 : 1;
     if (s === 5) ctx.strokeStyle = 'rgba(0,229,255,' + (0.35 + 0.25 * Math.sin(time * 2)).toFixed(2) + ')';
     for (i = step; i < a.h; i += step) { var p1 = ws(a.x, a.y + i, 4), q1 = ws(a.x + a.w, a.y + i, 4); ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(q1.x, q1.y); ctx.stroke(); }
     for (i = step; i < a.w; i += step) { var p2 = ws(a.x + i, a.y, 4), q2 = ws(a.x + i, a.y + a.h, 4); ctx.beginPath(); ctx.moveTo(p2.x, p2.y); ctx.lineTo(q2.x, q2.y); ctx.stroke(); }
-    if (s === 2 || s === 4) {
-      // Painted edge: yellow lines, or hazard stripes at the harbour.
+    if (s === 2) { ctx.fillStyle = 'rgba(229,57,53,0.55)'; quadPath(ctx, a.x, a.y + a.h - 0.25, a.w, 0.14, 4); ctx.fill(); }
+    if (s === 4) {
+      // Hazard stripes at the harbour.
       for (i = 0; i < a.w * 2; i++) {
-        if (s === 2 && i % 2) continue;
-        ctx.fillStyle = s === 4 ? (i % 2 ? '#212121' : '#ffca28') : '#fdd835';
+        ctx.fillStyle = i % 2 ? '#212121' : '#ffca28';
         quadPath(ctx, a.x + i / 2, a.y + a.h - 0.22, 0.5, 0.16, 4); ctx.fill();
       }
     }
@@ -7109,17 +7144,21 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.stroke();
       });
     } else if (s === 1) {
-      // Market table with a checked cloth.
-      [[0.12, 0.8], [0.8, 0.8]].forEach(function (l) { box(ctx, x + l[0], y + l[1], 0.08, 0.08, 4, 10, '#6d4c41', '#5d4037', '#4e342e'); });
-      box(ctx, x + 0.04, y + 0.06, 0.92, 0.88, 12, 7, '#fffaf0', col, CR.vehicles.shade(col, 0.8));
-      ctx.fillStyle = 'rgba(255,255,255,0.55)';
-      for (k = 0; k < 4; k++) { var a = ws(x + 0.04 + k * 0.23, y + 0.94, 19), b = ws(x + 0.04 + k * 0.23, y + 0.94, 12); if (k % 2) ctx.fillRect(a.x, a.y, 7, b.y - a.y); }
+      // Farm shop: a plank table with a wicker basket on it.
+      [[0.1, 0.84], [0.84, 0.84], [0.84, 0.1]].forEach(function (l) { box(ctx, x + l[0], y + l[1], 0.07, 0.07, 4, 9, '#8d5a2b', '#6d4322', '#5d3a1c'); });
+      box(ctx, x + 0.04, y + 0.06, 0.92, 0.88, 12, 3, '#d9a066', '#a86a34', '#b77a40');
+      box(ctx, x + 0.14, y + 0.16, 0.72, 0.68, 15, 4, '#c8a165', '#9c7440', '#b08650');
+      ctx.strokeStyle = 'rgba(110,70,30,0.45)'; ctx.lineWidth = 1;
+      for (k = 0.2; k < 0.84; k += 0.16) { var w0 = ws(x + 0.14 + k, y + 0.84, 15), w1 = ws(x + 0.14 + k, y + 0.84, 19); ctx.beginPath(); ctx.moveTo(w0.x, w0.y); ctx.lineTo(w1.x, w1.y); ctx.stroke(); }
     } else if (s === 2) {
-      // Steel wire rack, two levels.
-      box(ctx, x + 0.08, y + 0.1, 0.84, 0.8, 4, 2, '#b0bec5', '#78909c', '#90a4ae');
-      box(ctx, x + 0.08, y + 0.1, 0.84, 0.8, 17, 2, '#cfd8dc', '#78909c', '#90a4ae');
-      [[0.08, 0.86], [0.88, 0.86], [0.88, 0.1]].forEach(function (l) { box(ctx, x + l[0], y + l[1], 0.04, 0.04, 4, 15, '#546e7a', '#455a64', '#37474f'); });
-      box(ctx, x + 0.2, y + 0.25, 0.6, 0.5, 6, 8, '#d9a066', '#9c6532', '#b77a40');
+      // Supermarket: white shelving, two shelves, a red price strip.
+      box(ctx, x + 0.08, y + 0.1, 0.84, 0.8, 4, 6, '#fafafa', '#e0e0e0', '#eeeeee');
+      box(ctx, x + 0.08, y + 0.1, 0.84, 0.8, 16, 3, '#ffffff', '#e0e0e0', '#eeeeee');
+      box(ctx, x + 0.08, y + 0.1, 0.84, 0.08, 4, 24, '#fafafa', '#e0e0e0', '#f5f5f5');
+      var t0 = ws(x + 0.1, y + 0.9, 15), t1 = ws(x + 0.9, y + 0.9, 15);
+      stroke(ctx, col, 2.5, t0.x, t0.y, t1.x, t1.y);
+      var tag = ws(x + 0.5, y + 0.9, 13); ctx.fillStyle = '#fffde7'; ctx.fillRect(tag.x - 4, tag.y - 3, 8, 5);
+      box(ctx, x + 0.2, y + 0.25, 0.6, 0.5, 7, 6, '#ffcc80', '#e0a060', '#f0b870');
     } else if (s === 3) {
       // Pallet racking: orange uprights, blue beams, a pallet on top.
       [[0.06, 0.86], [0.88, 0.86], [0.88, 0.08]].forEach(function (l) { box(ctx, x + l[0], y + l[1], 0.06, 0.06, 0, 19, '#ff7043', '#e64a19', '#d84315'); });
@@ -7160,31 +7199,54 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       box(ctx, x0, yF - (depth || 0.12), 1, depth || 0.12, z0, h, sh(c, 1.15), sh(c, 0.95), sh(c, 0.8));
     }
     if (s === 1) {
-      // Market hall: green iron columns and arches under a glass roof.
-      var iron = '#2e7d32';
-      if (post) pillar(x0 + 0.05, iron, 0.14, 62);
-      if (last) pillar(x1 - 0.05, iron, 0.14, 62);
-      var p0 = ws(x0, yF, 48), p1 = ws(x1, yF, 48), m = ws(x0 + 0.5, yF, 58);
-      ctx.strokeStyle = iron; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.quadraticCurveTo(m.x, m.y - 12, p1.x, p1.y); ctx.stroke();
-      beam(60, 5, iron);
-      // Glass roof back over the shelves.
-      ctx.fillStyle = 'rgba(200,235,255,0.2)'; quadPath(ctx, x0, a.y + 0.3, 1, a.h - 0.4, 66); ctx.fill();
-      ctx.strokeStyle = 'rgba(46,125,50,0.55)'; ctx.lineWidth = 1.5; quadPath(ctx, x0, a.y + 0.3, 1, a.h - 0.4, 66); ctx.stroke();
-      if (col === Math.floor(a.w / 2)) {
-        // Hanging clock.
-        var c = ws(x0, yF, 40); stroke(ctx, iron, 2, c.x, c.y - 20, c.x, c.y - 10);
-        ellipse(ctx, c.x, c.y, 10, 10, iron); ellipse(ctx, c.x, c.y, 8, 8, '#fffde7');
-        var t = G.time / 60 * TAU; stroke(ctx, '#263238', 1.5, c.x, c.y, c.x + Math.sin(t) * 6, c.y - Math.cos(t) * 6); stroke(ctx, '#263238', 2, c.x, c.y, c.x + Math.sin(t / 12) * 4, c.y - Math.cos(t / 12) * 4);
+      // Farm shop: wooden posts and a shingled porch roof over the front,
+      // short enough that the baskets behind stay in view.
+      var wood = '#8d5a2b';
+      if (post) pillar(x0 + 0.07, wood, 0.14, 56);
+      if (last) pillar(x1 - 0.07, wood, 0.14, 56);
+      var e0 = ws(x0, yF + 0.35, 48), e1 = ws(x1, yF + 0.35, 48), r0 = ws(x0, yF - 0.9, 60), r1 = ws(x1, yF - 0.9, 60);
+      ctx.fillStyle = '#9c5a33';
+      ctx.beginPath(); ctx.moveTo(e0.x, e0.y); ctx.lineTo(e1.x, e1.y); ctx.lineTo(r1.x, r1.y); ctx.lineTo(r0.x, r0.y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = 'rgba(70,35,15,0.45)'; ctx.lineWidth = 1;
+      for (var sr = 1; sr < 4; sr++) {
+        var f = sr / 4, sa = ws(x0, yF + 0.35 - 1.25 * f, 48 + 12 * f), sb = ws(x1, yF + 0.35 - 1.25 * f, 48 + 12 * f);
+        ctx.beginPath(); ctx.moveTo(sa.x, sa.y); ctx.lineTo(sb.x, sb.y); ctx.stroke();
+        for (var sx = (sr % 2) * 0.125; sx < 1; sx += 0.25) { var sc = ws(x0 + sx, yF + 0.35 - 1.25 * f, 48 + 12 * f), sd = ws(x0 + sx, yF + 0.35 - 1.25 * (f - 0.25), 48 + 12 * (f - 0.25)); ctx.beginPath(); ctx.moveTo(sc.x, sc.y); ctx.lineTo(sd.x, sd.y); ctx.stroke(); }
+      }
+      box(ctx, x0, yF + 0.3, 1, 0.08, 45, 4, '#6d4322', '#5d3a1c', '#4e3017');
+      if (post) {
+        // A flower box by each post.
+        box(ctx, x0 + 0.2, yF + 0.05, 0.6, 0.25, 0, 5, '#7d4a1f', '#6d4322', '#5d3a1c');
+        for (var fl = 0; fl < 3; fl++) { var fp = ws(x0 + 0.3 + fl * 0.2, yF + 0.17, 7); ellipse(ctx, fp.x, fp.y, 3, 3, ['#ec407a', '#ffee58', '#ab47bc'][(col + fl) % 3]); ellipse(ctx, fp.x + 2, fp.y + 2, 2.4, 1.6, '#66bb6a'); }
+      }
+      if (col % 4 === 2) {
+        // A hanging lantern under the porch.
+        var ln = ws(x0 + 0.5, yF + 0.1, 44); stroke(ctx, '#4e342e', 1.2, ln.x, ln.y - 6, ln.x, ln.y);
+        ellipse(ctx, ln.x, ln.y + 3, 3.4, 4, 'rgba(255,213,79,' + (0.75 + 0.2 * Math.sin(G.time * 2 + col)).toFixed(2) + ')');
       }
     } else if (s === 2) {
-      // Wholesale market: steel I-beams and a corrugated canopy.
-      if (post) pillar(x0 + 0.06, '#607d8b', 0.16, 58);
-      if (last) pillar(x1 - 0.06, '#607d8b', 0.16, 58);
-      box(ctx, x0, yF - 1.1, 1, 1.25, 58, 4, '#b0bec5', '#90a4ae', '#78909c');
-      ctx.strokeStyle = 'rgba(55,71,79,0.35)'; ctx.lineWidth = 1;
-      for (var k = 0; k < 4; k++) { var c0 = ws(x0 + k / 4, yF + 0.15, 58), c1 = ws(x0 + k / 4, yF + 0.15, 62); ctx.beginPath(); ctx.moveTo(c0.x, c0.y); ctx.lineTo(c1.x, c1.y); ctx.stroke(); }
-      for (k = 0; k < 2; k++) { ctx.fillStyle = k ? '#212121' : '#fdd835'; quadPath(ctx, x0 + k / 2, yF + 0.05, 0.5, 0.1, 57); ctx.fill(); }
+      // Supermarket: slim white posts, a white fascia with a red stripe and
+      // a light canopy with strip lights over the shelves.
+      if (post) pillar(x0 + 0.06, '#eceff1', 0.12, 60);
+      if (last) pillar(x1 - 0.06, '#eceff1', 0.12, 60);
+      ctx.fillStyle = 'rgba(255,255,255,0.16)'; quadPath(ctx, x0, a.y + 0.3, 1, a.h - 0.4, 66); ctx.fill();
+      ctx.strokeStyle = 'rgba(189,189,189,0.5)'; ctx.lineWidth = 1; quadPath(ctx, x0, a.y + 0.3, 1, a.h - 0.4, 66); ctx.stroke();
+      var sl0 = ws(x0 + 0.2, a.y + a.h / 2, 64), sl1 = ws(x1 - 0.2, a.y + a.h / 2, 64);
+      stroke(ctx, 'rgba(255,255,240,0.95)', 3, sl0.x, sl0.y, sl1.x, sl1.y);
+      beam(56, 10, '#fafafa', 0.16);
+      var rs0 = ws(x0, yF + 0.05, 59), rs1 = ws(x1, yF + 0.05, 59);
+      stroke(ctx, '#e53935', 3, rs0.x, rs0.y, rs1.x, rs1.y);
+      if (col === 0) {
+        // A row of trolleys at the end of the shop.
+        for (var tq = 0; tq < 4; tq++) {
+          var tp = ws(a.x - 0.8, a.y + 0.6 + tq * 0.55, 0);
+          ellipse(ctx, tp.x - 7, tp.y - 1, 2.2, 2.2, '#37474f'); ellipse(ctx, tp.x + 7, tp.y - 1, 2.2, 2.2, '#37474f');
+          ctx.strokeStyle = '#b0bec5'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(tp.x - 11, tp.y - 18); ctx.lineTo(tp.x + 12, tp.y - 18); ctx.lineTo(tp.x + 10, tp.y - 7); ctx.lineTo(tp.x - 9, tp.y - 7); ctx.closePath(); ctx.stroke();
+          for (var tw = -7; tw <= 8; tw += 3.8) { ctx.beginPath(); ctx.moveTo(tp.x + tw, tp.y - 18); ctx.lineTo(tp.x + tw - 0.5, tp.y - 7); ctx.stroke(); }
+          stroke(ctx, '#e53935', 2.5, tp.x - 11, tp.y - 18, tp.x - 14, tp.y - 22);
+        }
+      }
     } else if (s === 3) {
       // Food terminal: a blue portal frame with lights.
       if (post) pillar(x0 + 0.08, '#1e88e5', 0.2, 64);
@@ -7227,13 +7289,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   function nameBoard(ctx, G, s, a, yF, color) {
     var name = G.cfg.stand.upgrades.shelves.tiers[s].toUpperCase();
-    var z = s === 4 ? 106 : s === 1 ? 74 : 76, m = ws(a.x + a.w / 2, yF, z);
+    var z = s === 4 ? 106 : s === 1 ? 70 : 76, m = ws(a.x + a.w / 2, yF, z);
     ctx.font = '700 14px Fredoka, system-ui, sans-serif';
     var sw = ctx.measureText(name).width + 30;
-    var bg = ['#7d4a1f', '#1b5e20', '#0d47a1', '#0d47a1', '#263238', '#102027'][s];
-    var fg = ['#ffe9b0', '#ffd54f', '#ffffff', '#ffffff', '#ffca28', '#80deea'][s];
+    var bg = ['#7d4a1f', '#5d3a1c', '#e53935', '#0d47a1', '#263238', '#102027'][s];
+    var fg = ['#ffe9b0', '#ffe9b0', '#ffffff', '#ffffff', '#ffca28', '#80deea'][s];
     ctx.fillStyle = bg; roundRect(ctx, m.x - sw / 2, m.y - 14, sw, 26, s >= 3 ? 4 : 8); ctx.fill();
-    ctx.strokeStyle = s === 5 ? 'rgba(0,229,255,0.9)' : color; ctx.lineWidth = 2; ctx.stroke();
+    ctx.strokeStyle = s === 5 ? 'rgba(0,229,255,0.9)' : s === 2 ? '#ffffff' : color; ctx.lineWidth = 2; ctx.stroke();
     if (s === 5) { ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 8; }
     ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(name, m.x, m.y);
@@ -8856,6 +8918,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     cfg.factories.forEach(function (f) {
       x0 = Math.min(x0, f.x); y0 = Math.min(y0, f.y); x1 = Math.max(x1, f.pickup.x + f.pickup.w); y1 = Math.max(y1, f.hopper.y + f.hopper.h);
     });
+    // The barn sits above the yard (Tom 2026-09-26 layout): keep it close up too.
+    var bn = cfg.barn;
+    x0 = Math.min(x0, bn.x); y0 = Math.min(y0, bn.y); x1 = Math.max(x1, bn.x + bn.w); y1 = Math.max(y1, bn.mat.y + bn.mat.h);
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
   })();
   G.bulkRun = { n: 0, amount: 0, timer: 0 };
@@ -10275,7 +10340,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       celebrate(null, true);
       // Say it big where you look, and point to the stall (playtest 6: a
       // rare rush has to land), once (playtest 11: three captions at once).
-      ui.showHint('GOLDEN RUSH: ' + r.mult + 'x prices!<br>Starts at the stall, up to +' + E.fmt(G.golden.rushCap || 0));
+      ui.showHint('GOLDEN RUSH: ' + r.mult + 'x prices!<br>Starts at the stall' + (isFinite(G.golden.rushCap) && G.golden.rushCap > 0 ? ', up to +' + E.fmt(G.golden.rushCap) : '') + '!');
       setTimeout(function () { ui.hideHint(); }, 5000);
       fx.sound.done(); fx.sound.tick(19, 0.12); fx.sound.tick(24, 0.24);
     }
