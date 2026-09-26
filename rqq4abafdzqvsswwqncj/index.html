@@ -542,7 +542,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v63)</p>
+    <p class="ver">Crop Rush 1.0 (v64)</p>
   </div>
 </div>
 
@@ -907,7 +907,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Their swing: all around them, reachMult x the tool's base reach (no
       // tool levels), one swing every swingEvery s (Tom 2026-09-24: farmers
       // cut an area too, growing slower than yours).
-      reachMult: 0.6, minReach: 0, swingEvery: 0.45,
+      reachMult: 0.6, minReach: 0, swingEvery: 0.45, stopTime: 0.3, // on foot they stand still stopTime s after each cut (Tom 2026-09-26)
       lookRows: 40
     },
 
@@ -2571,6 +2571,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     fs.list.forEach(function (fm) {
       var plot = field.plotById[fm.plotId];
       fm.swingT = (fm.swingT || 0) - dt;
+      fm.stopT = Math.max(0, (fm.stopT || 0) - dt);
       fm.swing = Math.max(0, (fm.swing || 0) - dt / 0.3);
       fm.pour = Math.max(0, (fm.pour || 0) - dt);
       fm.carry.limit = size;
@@ -2586,8 +2587,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       }
       var rt = route(plot, slots[fm.id], of[fm.plotId], tl, tol, lookRows(fs, config, plot, sp, tl));
       // On foot they stop and swing: one swing every swingEvery s cuts
-      // everything ripe in reach, all around. A machine cuts all the time
-      // as it drives (Tom 2026-09-25: "not stop on each plant").
+      // everything ripe in reach, all around, and they stand still for
+      // stopTime s after it (Tom 2026-09-26: "stop a short period at the
+      // plant to harvest them, like before, but only until they are
+      // tractors"). A machine cuts all the time as it drives (Tom
+      // 2026-09-25: "not stop on each plant").
       var swung = false;
       if (fm.swingT <= 0 && CR.field.plotAt(field, fm.x, fm.y) === plot) {
         var cuts = CR.field.cut(field, fm, tl, fm.carry, true);
@@ -2597,7 +2601,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         });
         if (cuts.length) {
           swung = !fm.target || !fm.target.tile || CR.field.growthIn(field, plot, fm.target.tile.x, fm.target.tile.y) < 1;
-          if (!tl.vehicle) { fm.swingT = fs.cfg.swingEvery; fm.swing = 1; swung = true; }
+          if (!tl.vehicle) { fm.swingT = fs.cfg.swingEvery; fm.swing = 1; swung = true; fm.stopT = fs.cfg.stopTime || 0; }
         }
         if (CR.field.isFull(fm.carry)) return;
       }
@@ -2614,6 +2618,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         return;
       }
       fm.wait = 0;
+      if (fm.stopT > 0) { fm.moving = false; return; }
       // There with the swing ready but nothing cut (someone else got it):
       // on to the next one. If it is still ripe, the next swing cuts it.
       if (walk(fm, sp, dt) && fm.swingT <= 0) {
