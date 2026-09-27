@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v78)</p>
+    <p class="ver">Crop Rush 1.0 (v79)</p>
   </div>
 </div>
 
@@ -903,8 +903,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // v78 (Tom 14:47, a drawing): the arms closer in again, just outside
       // the tills' row, starting a little below the tills and running down
       // towards the gate, with a wider gap between stalls.
-      u: { left: 31.5, right: 41.5, top: 36, armStart: 38.5, pitch: 1.6, mat: 1.2, spots: 16 },
-      area: { x: 31.5, y: 36, w: 11, h: 14.7 },
+      // v79 (Tom 14:53): "closer, and then move apart when additional tills
+      // are added". Each arm stands tillPad tiles out from the ends of the
+      // tills you have; left and right are where they end up with all four.
+      u: { left: 31, right: 42, tillPad: 1.5, top: 36, armStart: 37.8, pitch: 1.6, mat: 1.2, spots: 16 },
+      area: { x: 31, y: 36, w: 12, h: 14 },
       // Where the till and the coin pile stand, and where customers come from.
       // Tills in a row from the end of the stand (Tom: buy more tills and
       // sellers). You serve a till by standing on the mat behind it (the
@@ -10108,7 +10111,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // stall at the top of each arm and grows one stall with every crop and
   // product you unlock, right arm then left, down towards the gate.
   // `area` is the part built so far; sizeStall() sets it.
-  var U = cfg.stand.u, fullArea = cfg.stand.area;
+  // U: the stall's shape now; its arms move out as you buy tills (v79).
+  var U = {}, fullArea = cfg.stand.area;
+  Object.keys(cfg.stand.u).forEach(function (k) { U[k] = cfg.stand.u[k]; });
   var area = { x: U.left, y: U.top, w: U.right + 1 - U.left, h: 2 };
 
   var G = {
@@ -10196,8 +10201,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // the right arm, spot 1 the left, and on down, a gap between each. Moves
   // the shelves and the drop mats with it.
   var spots = 2;
+  G.U = U;
   function sizeStall(n) {
     spots = n = Math.max(2, Math.min(G.shelves.length, n));
+    // The arms stand tillPad out from the ends of the tills bought so far.
+    var T = cfg.stand.tills, x0 = Infinity, x1 = -Infinity;
+    for (var ti = 0; ti < Math.max(1, G.stand.tills.length); ti++) { x0 = Math.min(x0, T[ti].x); x1 = Math.max(x1, T[ti].x + 1); }
+    U.left = x0 - U.tillPad - 1; U.right = x1 + U.tillPad;
+    area.x = G.blocked.x = U.left; area.w = G.blocked.w = U.right + 1 - U.left;
     G.shelves.forEach(function (sh, k) {
       sh.side = k % 2 ? 'left' : 'right';
       sh.x = k % 2 ? U.left : U.right;
