@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v71)</p>
+    <p class="ver">Crop Rush 1.0 (v72)</p>
   </div>
 </div>
 
@@ -729,7 +729,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // boots 20, x1.5; engine 4,100, x1.6.
     // v70.1 (Tom 2026-09-27 08:34: basket upgrades too cheap, "2x the first
     // basket upgrade and scale accordingly"): every step costs twice v70's.
-    carry: { limits: [5, 10, 16, 25, 40, 60, 90, 130], baseCost: 46, costGrowth: 1.67, vehicleHopperMult: 4 },
+    // v72 (Tom 2026-09-27 09:39-09:55: "set the first basket upgrade to
+    // 30", "we don't want to scale linear as the earnings don't", then big
+    // named tiers bought with money, each a new look: "hands to small
+    // basket, to medium basket, to large basket, to small crate and so
+    // on"): 9 tiers (8 buys), carry about x1.5 a step up to v71's top of
+    // 130, so machine hoppers (vehicleHopperMult x carry) stay the same.
+    // The first buy costs 30 and each next one x2.2 (income doubles every
+    // 4-8 min). x2.5 put the tractor at 66 min in the pacing model (v71: 46),
+    // the smaller early carry (8, 11, 17 against 10, 16, 25) costing most of
+    // that; x2.2 is the lowest Tom allowed (tractor 61 min).
+    // Was: [5, 10, 16, 25, 40, 60, 90, 130], 46, x1.67.
+    carry: { limits: [5, 8, 11, 17, 25, 38, 57, 86, 130],
+      names: ['Hands', 'Small basket', 'Medium basket', 'Large basket', 'Small crate', 'Medium crate', 'Large crate', 'Wheelbarrow', 'Big wheelbarrow'],
+      baseCost: 30, costGrowth: 2.2, vehicleHopperMult: 4 },
     boots: { speedBonus: 0.1, maxLevel: 10, baseCost: 90, costGrowth: 2.5 },
     // Engine: speed upgrades for the tractor and combine (Tom, 2026-09-23).
     // One level counts for every vehicle.
@@ -3686,7 +3699,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // a version 1 save loads as it is.
   // 4: v71, factory workers (Tom 2026-09-26 20:53): a save from before has
   // each loader turned into that factory's worker by convertWorkers.
-  var VERSION = 4;
+  // 5: v72, the carry ladder became 9 named tiers (Tom 2026-09-27): a save
+  // from before has its carry level turned into a tier by convertCarry.
+  var VERSION = 5;
 
   // A new game's save: no money, bare hands, only the free field open.
   function create(config) {
@@ -3790,7 +3805,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
     var tier = Math.min(lv(S.tier), config.tools.length - 1);
     S.toolLevel = unfold(S.toolLevel, V2.tools[tier] || config.tools[tier].levels, config.tools[tier].levels);
-    S.carryLevel = step(S.carryLevel, V2.carry, config.carry.limits);
+    // Onto v71's carry table: migrate then turns it into a v72 tier.
+    S.carryLevel = step(S.carryLevel, V2.carry, V4_CARRY);
     S.boots = unfold(S.boots, V2.boots, config.boots.maxLevel);
     S.engine = unfold(S.engine, V2.engine, config.engine.maxLevel);
     Object.keys(S.seedLv || {}).forEach(function (c) { S.seedLv[c] = step(S.seedLv[c], V2.yields, config.seedUpgrade.yields); });
@@ -3854,17 +3870,35 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return S;
   }
 
+  // v72 (Tom 2026-09-27: "hands to small basket, to medium basket ..."):
+  // the carry ladder is 9 named tiers. A version 4 or older save keeps as
+  // much of its carry as it can: its level's carry in v71's table
+  // (V4_CARRY; v68 and v70 had the same) goes to the tier carrying the
+  // most that is not more. So 0-7 carrying 5 ... 130 become tiers
+  // 0, 1, 2, 4, 5, 6, 7, 8 (10 -> 8 is the one that loses a little).
+  var V4_CARRY = [5, 10, 16, 25, 40, 60, 90, 130];
+  function convertCarry(S, config) {
+    var lv = Math.max(0, Math.floor(Number(S.carryLevel) || 0));
+    var have = V4_CARRY[Math.min(lv, V4_CARRY.length - 1)], lim = config.carry.limits, best = 0;
+    for (var i = 0; i < lim.length; i++) if (lim[i] <= have) best = i;
+    S.carryLevel = best;
+    S.v = 5;
+    return S;
+  }
+
   // Brings a loaded save up to this version, once: version 2 is unfolded,
   // version 1 (v68) already has these levels and keeps them. Only its fame
   // (a count of buys) is rescaled, so it brings the same customers at
   // v70's fameBonus as it did at v68's.
   // Then (v71) a version 3 or older save has its loaders turned into
-  // factory workers.
+  // factory workers, and (v72) a version 4 or older save's carry level
+  // becomes a carry tier.
   var V1_FAME = 0.03;
   function migrate(S, config) {
     if (S.v === 2) unfoldLevels(S, config);
     else if (!(S.v >= 3)) S.fame = Math.round(Math.max(0, Number(S.fame) || 0) * V1_FAME / config.stand.fameBonus);
     if (!(S.v >= 4)) convertWorkers(S, config);
+    if (!(S.v >= 5)) convertCarry(S, config);
     S.v = VERSION;
     return S;
   }
@@ -3909,6 +3943,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     deserialize: deserialize,
     unfoldLevels: unfoldLevels,
     convertWorkers: convertWorkers,
+    convertCarry: convertCarry,
     migrate: migrate,
     offlineSeconds: offlineSeconds,
     offlineEarnings: offlineEarnings,
@@ -4933,32 +4968,96 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return { unit: unit, step: CRATE_H };
   }
 
+  // v72 (Tom 2026-09-27): the carry tiers each have their own look.
+  // 0 hands, 1-3 small, medium and large wicker baskets, 4-6 small, medium
+  // and large wooden crates on your back, 7 a wheelbarrow and 8 a big one
+  // with a metal tub, pushed in front of you.
+  function carryTier(G) { return Math.max(0, Math.min(G.carryLevel | 0, G.cfg.carry.limits.length - 1)); }
+  function pushes(tier) { return tier >= 7; }
+  var BARROW_OUT = 27;
+  // Half the width of each tier's basket or crate: it sits that far out
+  // behind your back, so you can see it past you.
+  var GEAR_HW = [0, 7, 9, 11.5, 9, 11, 13.5];
+  // Where the stack starts: the rim of what you carry it in.
+  function carryBase(G, sx, sy, f) {
+    var t = carryTier(G);
+    if (pushes(t)) { var out = BARROW_OUT + (t >= 8 ? 3 : 0); return { x: sx + f.x * out, y: sy + f.y * out * 0.5 - 13, front: true }; }
+    var back = t ? 5 + GEAR_HW[t] * 0.85 : 9;
+    return { x: sx - f.x * back, y: sy - STACK_BASE - f.y * 4 - G.bob, front: false };
+  }
+
+  // Draws a carry tier's basket, crate or wheelbarrow with its rim at
+  // (x, y); dir 1 or -1 is the way you face (the barrow's wheel leads).
+  // The shop icon draws the same thing.
+  function carryGear(ctx, tier, x, y, dir) {
+    dir = dir || 1;
+    if (tier <= 0) return;
+    if (tier <= 3) {
+      // Wicker: a flared basket with woven bands and a bent handle.
+      var hw = GEAR_HW[tier], h = [0, 6, 8, 10][tier];
+      stroke(ctx, '#7d4a1f', 1.8, x - hw * 0.7, y - 2, x + hw * 0.7, y - 2, x, y - 2 - h * 1.5);
+      ctx.fillStyle = '#d9953f'; ctx.beginPath();
+      ctx.moveTo(x - hw, y - 2); ctx.lineTo(x + hw, y - 2); ctx.lineTo(x + hw * 0.72, y - 2 + h); ctx.lineTo(x - hw * 0.72, y - 2 + h); ctx.closePath(); ctx.fill();
+      for (var b = 1; b * 3 < h; b++) { var wy = y - 2 + b * 3, k = 1 - 0.28 * b * 3 / h; stroke(ctx, '#a8692c', 1, x - hw * k + 1, wy, x + hw * k - 1, wy); }
+      for (var r = -2; r <= 2; r++) stroke(ctx, 'rgba(125,74,31,0.45)', 0.8, x + r * hw * 0.35, y - 1, x + r * hw * 0.26, y - 2 + h);
+      ellipse(ctx, x, y - 2, hw + 0.5, 1.6, '#b8742f');
+      if (tier === 3) stroke(ctx, '#c98a3a', 1.6, x - hw * 0.8, y + h * 0.55 - 2, x + hw * 0.8, y + h * 0.55 - 2);
+      return;
+    }
+    if (tier <= 6) {
+      // Wooden crates: slats and a pale top edge; the medium one has dark
+      // corner posts, the large one metal bands too.
+      var cw = GEAR_HW[tier], ch = [0, 0, 0, 0, 7, 9, 11][tier];
+      ctx.fillStyle = '#a8703a'; ctx.fillRect(x - cw, y - 1, cw * 2, ch);
+      for (var sl = 1; sl * 3.2 < ch; sl++) { ctx.fillStyle = '#8a5a2c'; ctx.fillRect(x - cw, y - 1 + sl * 3.2, cw * 2, 0.9); }
+      ctx.fillStyle = '#c98c4f'; ctx.fillRect(x - cw, y - 3, cw * 2, 3);
+      if (tier >= 5) { ctx.fillStyle = '#5d4037'; ctx.fillRect(x - cw, y - 3, 2.2, ch + 2); ctx.fillRect(x + cw - 2.2, y - 3, 2.2, ch + 2); }
+      if (tier >= 6) {
+        ctx.fillStyle = '#90a4ae'; ctx.fillRect(x - cw * 0.45 - 1, y - 3, 2, ch + 2); ctx.fillRect(x + cw * 0.45 - 1, y - 3, 2, ch + 2);
+        ctx.fillStyle = '#eceff1'; ctx.fillRect(x - cw * 0.45 - 0.5, y + 1, 1, 1); ctx.fillRect(x + cw * 0.45 - 0.5, y + 1, 1, 1);
+      }
+      return;
+    }
+    // Wheelbarrows: the wheel leads, the handles come back to your hands.
+    var big = tier >= 8, tw = big ? 15 : 11.5, td = big ? 11 : 8, wr = big ? 5.5 : 4.2;
+    var wx = x + dir * (tw - 1), wy = y + td + 4;
+    ellipse(ctx, x, wy + wr - 1, tw + 2, 3, 'rgba(0,0,0,0.16)');
+    stroke(ctx, '#5d4037', 2, x - dir * tw * 0.5, y + td, wx, wy);
+    stroke(ctx, '#5d4037', 2, x - dir * tw * 0.55, y + td - 1, x - dir * tw * 0.7, y + td + 6);
+    stroke(ctx, big ? '#455a64' : '#6d4424', 2.2, x - dir * (tw - 2), y + 2, x - dir * (tw + 9), y - 5);
+    ellipse(ctx, x - dir * (tw + 9.5), y - 5.3, 1.8, 1.8, '#3e2723');
+    ctx.fillStyle = big ? '#78909c' : '#b5773c'; ctx.beginPath();
+    ctx.moveTo(x - tw, y); ctx.lineTo(x + tw, y); ctx.lineTo(x + dir * tw * 0.55, y + td); ctx.lineTo(x - dir * tw * 0.45, y + td); ctx.closePath(); ctx.fill();
+    if (big) {
+      ctx.fillStyle = '#b0bec5'; ctx.beginPath(); ctx.moveTo(x - tw + 2, y + 1); ctx.lineTo(x + tw - 2, y + 1); ctx.lineTo(x + tw - 4, y + 4); ctx.lineTo(x - tw + 4, y + 4); ctx.closePath(); ctx.fill();
+      ellipse(ctx, x - dir * 3, y + td * 0.6, 1, 1, '#eceff1'); ellipse(ctx, x + dir * 4, y + td * 0.6, 1, 1, '#eceff1');
+      ctx.fillStyle = '#e53935'; ctx.fillRect(x - tw, y - 1.5, tw * 2, 2);
+    } else {
+      stroke(ctx, '#8a5a2c', 1, x - tw * 0.8, y + td * 0.45, x + tw * 0.8, y + td * 0.45);
+      ctx.fillStyle = '#8d5a2b'; ctx.fillRect(x - tw, y - 1.5, tw * 2, 2);
+    }
+    ellipse(ctx, wx, wy, wr, wr, '#263238');
+    ellipse(ctx, wx, wy, wr * 0.45, wr * 0.45, big ? '#ffca28' : '#bdbdbd');
+  }
+
   function stackTop(G, n) {
     var p = G.player, s = ws(p.x, p.y);
     if (G.cfg.tools[G.tier].flying) return { x: s.x, y: s.y - 60 + Math.sin(G.time * 2.4) * 3 };
-    var f = screenFacing(p);
+    var f = screenFacing(p), base = carryBase(G, s.x, s.y, f);
     var count = n == null ? G.stackVisible : n, L = stackLayout(G.stackVisible);
     var h = Math.ceil(count / L.unit) * L.step;
     var sway = G.wob * Math.pow(h / 60, 1.3);
-    return { x: s.x - f.x * 9 + sway, y: s.y - STACK_BASE - f.y * 4 - h - 4 - G.bob };
+    return { x: base.x + sway, y: base.y - h - 4 };
   }
 
   function drawStack(ctx, G, sx, sy, f) {
     var items = G.carry.items, n = G.stackVisible;
+    var base = carryBase(G, sx, sy, f), bx = base.x, by = base.y;
+    // What you carry it in shows even when it's empty (v72: each carry
+    // tier is a look you bought).
+    carryGear(ctx, carryTier(G), bx, by, f.x < -0.05 ? -1 : 1);
     if (!n) return;
     var sp = stackSpacing(n);
-    var bx = sx - f.x * 9, by = sy - STACK_BASE - f.y * 4 - G.bob;
-    // What you carry in grows with Carry upgrades: a basket, then a crate,
-    // then a big banded crate.
-    if (G.carryLevel >= 3) {
-      var big = G.carryLevel >= 6, cw = big ? 13 : 10;
-      ctx.fillStyle = '#a8703a'; ctx.fillRect(bx - cw, by - 1, cw * 2, big ? 9 : 7);
-      ctx.fillStyle = '#c98c4f'; ctx.fillRect(bx - cw, by - 3, cw * 2, 3);
-      if (big) { ctx.fillStyle = '#5d4037'; ctx.fillRect(bx - cw + 3, by - 1, 2, 9); ctx.fillRect(bx + cw - 5, by - 1, 2, 9); }
-    } else {
-      ctx.fillStyle = '#b07a3e';
-      ctx.beginPath(); ctx.ellipse(bx, by + 3, 9, 4.5, 0, 0, TAU); ctx.fill();
-    }
     var L = stackLayout(n);
     if (L.unit > 1) { drawCrateStack(ctx, G, items, n, L, bx, by); return; }
     for (var i = 0; i < n; i++) {
@@ -5179,7 +5278,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (riding) { drawVehicle(ctx, G, sx, sy, f, time, function (x, y) { ctx.save(); ctx.translate(x, y + 7); ctx.scale(0.85, 0.85); rider(0, 0); ctx.restore(); }); return; }
     rider(sx, sy);
     function rider(sx, sy) {
-    if (!away) drawStack(ctx, G, sx, sy, f);
+    // Something on your back is drawn behind you unless you face away; a
+    // wheelbarrow you push goes in front, the other way round.
+    var ahead = pushes(carryTier(G));
+    if (ahead ? away : !away) drawStack(ctx, G, sx, sy, f);
 
     // Legs
     if (!riding) {
@@ -5229,7 +5331,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     drawTool(ctx, G, hx, hy, dir, time);
     ellipse(ctx, hx, hy, 3.2, 3.6, hand);
-    if (away) drawStack(ctx, G, sx, sy, f);
+    if (ahead ? !away : away) drawStack(ctx, G, sx, sy, f);
     }
   }
 
@@ -5938,7 +6040,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     colors: COL,
     icon: function (canvas, kind, arg, G) { CR.scenery.icon(canvas, kind, arg, G); },
     // Drawing helpers shared with scenery.js.
-    h: { ws: ws, box: box, ellipse: ellipse, stroke: stroke, roundRect: roundRect, quadPath: quadPath, drawItem: drawItem }
+    h: { ws: ws, box: box, ellipse: ellipse, stroke: stroke, roundRect: roundRect, quadPath: quadPath, drawItem: drawItem, carryGear: carryGear }
   };
 })(this.CR = this.CR || {});
 
@@ -7181,17 +7283,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     } else if (kind === 'tool' || kind === 'toolPill') {
       toolIcon(ctx, arg);
     } else if (kind === 'basket') {
-      if (arg >= 3) {
-        ctx.fillStyle = '#b8743a'; ctx.fillRect(-16, -6, 32, 20);
-        ctx.fillStyle = '#d9a066'; ctx.fillRect(-16, -10, 32, 6);
-        ctx.fillStyle = '#7d4a1f'; ctx.fillRect(-12, -6, 3, 20); ctx.fillRect(9, -6, 3, 20);
+      // arg: a carry tier (v72), drawn as it looks on you: a basket, a
+      // crate or a wheelbarrow. Tier 0 is your bare hands holding a carrot.
+      var ct = Math.max(0, Math.min(arg | 0, G.cfg.carry.limits.length - 1));
+      if (ct === 0) {
+        drawItem(ctx, 'carrot', G.cfg.crops.carrot, 0, 2, 2, -0.4);
+        ellipse(ctx, -9, 8, 5, 5.5, '#f5c9a0'); ellipse(ctx, 9, 8, 5, 5.5, '#f5c9a0');
       } else {
-        stroke(ctx, '#7d4a1f', 3, -12, -2, 12, -2, 0, -22);
-        ctx.fillStyle = '#d9953f'; ctx.beginPath(); ctx.moveTo(-17, -3); ctx.lineTo(17, -3); ctx.lineTo(13, 15); ctx.lineTo(-13, 15); ctx.closePath(); ctx.fill();
-        stroke(ctx, '#a8692c', 2, -15, 4, 15, 4); stroke(ctx, '#a8692c', 2, -14, 10, 14, 10);
+        var cs = [0, 2.5, 2.05, 1.7, 1.95, 1.65, 1.4, 1.3, 1.1][ct], cy = ct >= 7 ? -5 : ct <= 3 ? 0 : -2;
+        ctx.save(); ctx.translate(ct >= 7 ? 4 : 0, 0); ctx.scale(cs, cs);
+        H.carryGear(ctx, ct, 0, cy, 1);
+        drawItem(ctx, 'carrot', G.cfg.crops.carrot, -3, cy - 4, 0.75, -0.4);
+        drawItem(ctx, 'tomato', G.cfg.crops.tomato, 3, cy - 4.5, 0.75, 0);
+        ctx.restore();
       }
-      drawItem(ctx, 'carrot', G.cfg.crops.carrot, -4, -6, 1.4, -0.4);
-      drawItem(ctx, 'tomato', G.cfg.crops.tomato, 7, -7, 1.4, 0);
     } else if (kind === 'boots') {
       var col = BOOTS[arg >= 10 ? 4 : arg >= 7 ? 3 : arg >= 4 ? 2 : arg >= 1 ? 1 : 0];
       ctx.fillStyle = col;
@@ -8609,9 +8714,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         if (next) list.push({ key: 'next', icon: ['tool', G.tier + 1], title: 'Get ' + next.name,
           sub: maxed ? (next.vehicle ? 'Drive and harvest wide' : 'Harvest more at once') : 'Max your ' + tool.name + ' first',
           price: next.cost, locked: !maxed, act: actions.nextTool });
-        list.push({ key: 'carry', icon: ['basket', G.carryLevel], title: 'Bigger basket',
-          sub: 'Carry ' + G.carry.limit + (P.carry() < Infinity ? ' → ' + CR.economy.carryLimit(cfg, G.carryLevel + 1, G.tier, G.toolLevel) : ''),
-          level: G.carryLevel, max: cfg.carry.limits.length - 1, price: P.carry(), done: !(P.carry() < Infinity), act: actions.carry });
+        // v72: named carry tiers (Tom 2026-09-27: "hands to small basket, to
+        // medium basket ..."). The card is the next one, its icon that look;
+        // the numbers are what you hold now and then (x2 with Deep pockets,
+        // x the hopper on a machine).
+        var cl = G.carryLevel, cTop = cfg.carry.limits.length - 1, cNext = Math.min(cl + 1, cTop), cMore = P.carry() < Infinity;
+        var cNow = CR.economy.carryLimit(cfg, cl, G.tier, G.toolLevel), cThen = Math.round(G.carry.limit * CR.economy.carryLimit(cfg, cNext, G.tier, G.toolLevel) / Math.max(1, cNow));
+        list.push({ key: 'carry', icon: ['basket', cNext], title: cfg.carry.names[cMore ? cNext : cl],
+          sub: cMore ? 'Carry ' + G.fmt(G.carry.limit) + ' → ' + G.fmt(cThen) : 'Carry ' + G.fmt(G.carry.limit) + '. The biggest there is',
+          level: cl, max: cTop, price: P.carry(), done: !cMore, act: actions.carry });
         var bs = function (l) { return '+' + Math.round(cfg.boots.speedBonus * 100 * l) + '%'; };
         list.push({ key: 'boots', icon: ['boots', G.boots], title: 'Boots',
           sub: 'Walk speed ' + bs(G.boots) + (G.boots < cfg.boots.maxLevel ? ' → ' + bs(G.boots + 1) : ''),
@@ -8975,7 +9086,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         if (held.length) stats.counts = held.map(function (c) { return { icon: ['crop', c], n: n(bb.items[c]) + ' / ' + n(CR.barn.capacity(bb, cfg)), label: cfg.crops[c].name }; });
         list = [{ section: 'Upgrades' }].concat(cardsFor('barn'));
       } else if (f.kind === 'player') {
-        stats = { icon: ['tool', G.tier], lines: ['You harvested ' + n(G.stats.cut) + ' crops', cfg.tools[G.tier].name + ', carry ' + G.carry.limit] };
+        stats = { icon: ['tool', G.tier], lines: ['You harvested ' + n(G.stats.cut) + ' crops', cfg.tools[G.tier].name + ', ' + cfg.carry.names[Math.min(G.carryLevel, cfg.carry.names.length - 1)].toLowerCase() + ', carry ' + G.fmt(G.carry.limit)] };
         list = [{ section: 'Your tools' }].concat(cardsFor('gear'));
       } else if (f.kind === 'truck') {
         stats = { icon: ['stand', 'prices'], lines: ['Sold ' + n(G.stats.truckItems) + ' items for ' + n(G.stats.truckEarned), 'Pays ' + Math.round(cfg.truck.bulkRate * 100) + '% of the price, for anything'] };
@@ -11598,7 +11709,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     G.money = Math.max(0, S.money);
     G.tier = num(S.tier, 0, cfg.tools.length - 1);
     G.toolLevel = num(S.toolLevel, 0, cfg.tools[G.tier].levels);
-    G.carryLevel = Math.max(0, S.carryLevel | 0); G.boots = num(S.boots, 0, cfg.boots.maxLevel); G.engine = num(S.engine, 0, cfg.engine.maxLevel);
+    G.carryLevel = Math.max(0, Math.min(cfg.carry.limits.length - 1, S.carryLevel | 0)); G.boots = num(S.boots, 0, cfg.boots.maxLevel); G.engine = num(S.engine, 0, cfg.engine.maxLevel);
     Object.keys(S.seeds).forEach(function (c) { if (cfg.crops[c] && S.seeds[c]) G.seeds[c] = true; });
     Object.keys(S.seedLv).forEach(function (c) { if (cfg.crops[c]) G.seedLv[c] = num(S.seedLv[c], 0, cfg.seedUpgrade.yields.length - 1); });
     applySeeds();
@@ -12140,7 +12251,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     carry: function () {
       if (!(actions.prices.carry() < Infinity) || !pay(actions.prices.carry())) return;
       G.carryLevel++; applyGear(); bought();
-      celebrate('Carry ' + G.carry.limit + '!', false);
+      // v72: say the new tier's name; a big cheer when the kind changes
+      // (a basket, a crate, a wheelbarrow).
+      celebrate(cfg.carry.names[G.carryLevel] + '! Carry ' + E.fmt(G.carry.limit), G.carryLevel === 1 || G.carryLevel === 4 || G.carryLevel === 7);
     },
     boots: function () {
       if (G.boots >= cfg.boots.maxLevel || !pay(actions.prices.boots())) return;
