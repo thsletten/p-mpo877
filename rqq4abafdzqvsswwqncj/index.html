@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v77)</p>
+    <p class="ver">Crop Rush 1.0 (v78)</p>
   </div>
 </div>
 
@@ -684,7 +684,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // is -y, screen up-left is -x. The ground has no edge: fields can grow
     // (almost) forever.
     // The yard: close-up camera here, pulling back the farther you walk away.
-    yard: { x: 25, y: 28, w: 22, h: 19 }, // v77: deeper, under the U-shaped stall
+    yard: { x: 25, y: 28, w: 22, h: 24 }, // v78: deeper, under the U-shaped stall
 
     player: {
       speed: 6.4,          // tiles per second before Boots (doubled 2026-09-23, Tom: all movement 2x)
@@ -900,8 +900,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // crops + 4 factories. area is the whole U when full.
       // v77 (Tom 13:08): the tills back where they were in v75, the arms
       // moved out, well clear of the tills on both sides.
-      u: { left: 27, right: 44, top: 36, armStart: 36, pitch: 1.3, mat: 1.2, spots: 16 },
-      area: { x: 27, y: 36, w: 18, h: 10.1 },
+      // v78 (Tom 14:47, a drawing): the arms closer in again, just outside
+      // the tills' row, starting a little below the tills and running down
+      // towards the gate, with a wider gap between stalls.
+      u: { left: 31.5, right: 41.5, top: 36, armStart: 38.5, pitch: 1.6, mat: 1.2, spots: 16 },
+      area: { x: 31.5, y: 36, w: 11, h: 14.7 },
       // Where the till and the coin pile stand, and where customers come from.
       // Tills in a row from the end of the stand (Tom: buy more tills and
       // sellers). You serve a till by standing on the mat behind it (the
@@ -919,7 +922,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       cashier: { dx: -0.25, dy: -1.7, w: 1.5, h: 1.5, servePad: 0.7, stickPad: 1.3, slow: 0.5 },
       coinPile: { x: 32.4, y: 32.5 }, // v77: back behind the tills, left of them (the truck is right)
       coinReach: 9, // the pile comes to you anywhere this close (the stall area)
-      entrance: { x: 36, y: 53 }, // v77: further down, below the U and the lorries' road
+      entrance: { x: 36, y: 57 }, // v78: further down, below the U and the lorries' road
       // Tiles per second for every walk, the walk up included (Tom 2026-09-25:
       // customers moved too fast; the walk up used to take a fixed walkTime).
       customerSpeed: 1.6,
@@ -5934,9 +5937,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (tl.keeper) list.push({ x: z.x + z.w / 2 + (G.stand.serving === ti ? 0.95 : 0), y: z.y + z.h / 2, h: 1, fn: S.drawKeeper, ti: ti, aside: G.stand.serving === ti });
     });
     list.push({ x: pile.x + 0.5, y: pile.y + 0.5, h: 0, fn: S.drawCoinPile });
-    // Advertising props along the bottom of the yard, one per tier reached.
+    // Advertising props, one per tier reached: down the left side of the
+    // yard, beside the stall's left arm (v78: the U fills the yard's bottom).
     var adLv = G.standLv.signboard, ads = adLv >= 1 ? Math.min(5, 1 + Math.floor(adLv / 5)) : 0;
-    for (i = 0; i < ads; i++) list.push({ x: G.cfg.yard.x + 1.5 + i * 2.2, y: G.cfg.yard.y + G.cfg.yard.h - 0.6, h: 1, fn: S.drawAd, ad: i });
+    for (i = 0; i < ads; i++) list.push({ x: G.cfg.yard.x + 1.5, y: G.cfg.stand.u.armStart + 1 + i * 2.2, h: 1, fn: S.drawAd, ad: i });
     // The shop's surroundings at its later stages: lorries at loading bays,
     // the harbour, the spaceport (shopview.js).
     CR.shopView.props(G, list, time);
@@ -7909,7 +7913,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // Where the lorries drive (stage 3 on): a loop below the stall, clear
   // of the till queues (right) and field 4 (left). Up the left side road,
   // along the front to a loading bay, then off down the right side road.
-  var ROAD = { y: 48.8, xl: 25.4, xr: 38.4, bottom: 64, w: 2.6 }, BAYS = [28.6, 32.4], TURN = 1.3;
+  var ROAD = { y: 53, xl: 25.4, xr: 38.4, bottom: 64, w: 2.6 }, BAYS = [28.6, 32.4], TURN = 1.3;
   // The harbour (stage 4 on), right of the yard, below the market truck's
   // road; the launch pad (stage 5) between the tills and the quay.
   var WATER = { x: 54, y: 32.6, w: 14, h: 26 }, PAD = { x: 50, y: 36.5 };
