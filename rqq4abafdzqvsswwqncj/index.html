@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v82)</p>
+    <p class="ver">Crop Rush 1.0 (v83)</p>
   </div>
 </div>
 
@@ -816,12 +816,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Left of the yard, all fields being on the other side (Tom 2026-09-26:
       // "all the plots on one side, and all the factories on the other, with
       // the barn in the middel top"). Two by two: first ones nearest the yard.
-      // Each factory makes one recipe at a time from the crops it needs
-      // (Tom, 2026-09-24: crop-specific factories, upgrade for more recipes,
-      // later factories need more than one ingredient). You start with its
-      // first recipe and learn the rest in order for `learn` coins; pick which
-      // one it makes in the shop. Every recipe costs at least the factory and
-      // more than the last (Tom 2026-09-24: upgrades are never cheaper than
+      // Factories make recipes from the crops they need (Tom, 2026-09-24:
+      // crop-specific factories, upgrade for more recipes, later factories
+      // need more than one ingredient). You start with its first recipe and
+      // learn the rest in order for `learn` coins. Since v83 every learned
+      // recipe runs at once on its own line, so learning one is priced about
+      // 5x what it was (Tom 2026-09-27: "scale the balance around this").
+      // Every recipe costs at least the factory and more than the last (Tom 2026-09-24: upgrades are never cheaper than
       // the thing, prices grow exponentially). A good sells for the price of its
       // ingredients x valueMult. The hopper holds up to hopperSize of each
       // ingredient. makeTime starts slow (Tom 2026-09-24: too fast at first);
@@ -833,28 +834,28 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         makeTime: 4, valueMult: 8, hopperSize: 30, outSize: 200, walls: ['#c9674a', '#b35238', '#9b4430'],
         recipes: [
           { id: 'carrot', name: 'Canned carrots', inputs: { carrot: 1 }, learn: 0 },
-          { id: 'tomato', name: 'Canned tomatoes', inputs: { tomato: 1 }, learn: 600 },
-          { id: 'corn', name: 'Canned corn', inputs: { corn: 1 }, learn: 1600 },
-          { id: 'pumpkin', name: 'Pumpkin soup', inputs: { pumpkin: 1 }, learn: 5900 }
+          { id: 'tomato', name: 'Canned tomatoes', inputs: { tomato: 1 }, learn: 1200 },
+          { id: 'corn', name: 'Canned corn', inputs: { corn: 1 }, learn: 5000 },
+          { id: 'pumpkin', name: 'Pumpkin soup', inputs: { pumpkin: 1 }, learn: 30000 }
         ] },
       { id: 'juicer', name: 'Juice press', product: 'juice', goods: 'juice', x: 18, y: 35, w: 3, h: 3, cost: 2200, // was 25,000 (playtest 12: nothing to buy between 1.5K and 25K)
         hopper: { x: 18, y: 38, w: 3, h: 1 }, pickup: { x: 21.4, y: 36.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 10, hopperSize: 30, outSize: 200, walls: ['#66bb6a', '#43a047', '#2e7d32'],
         recipes: [
           { id: 'veggie', name: 'Veggie juice', inputs: { carrot: 2, tomato: 2 }, learn: 0 },
-          { id: 'harvest', name: 'Harvest juice', inputs: { carrot: 1, tomato: 1, corn: 2 }, learn: 11000 },
-          { id: 'berry', name: 'Berry juice', inputs: { berry: 2, tomato: 1 }, learn: 360000 },
-          { id: 'melon', name: 'Melon cooler', inputs: { melon: 1, berry: 1 }, learn: 370000 },
-          { id: 'grape', name: 'Grape juice', inputs: { grape: 2 }, learn: 390000 }
+          { id: 'harvest', name: 'Harvest juice', inputs: { carrot: 1, tomato: 1, corn: 2 }, learn: 55000 },
+          { id: 'berry', name: 'Berry juice', inputs: { berry: 2, tomato: 1 }, learn: 1800000 },
+          { id: 'melon', name: 'Melon cooler', inputs: { melon: 1, berry: 1 }, learn: 1900000 },
+          { id: 'grape', name: 'Grape juice', inputs: { grape: 2 }, learn: 2000000 }
         ] },
       { id: 'bakery', name: 'Bakery', product: 'pie', goods: 'baked goods', x: 11, y: 29, w: 3, h: 3, cost: 140000,
         hopper: { x: 11, y: 32, w: 3, h: 1 }, pickup: { x: 14.4, y: 30.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 15, hopperSize: 30, outSize: 200, walls: ['#ffcc80', '#f0a860', '#d98c40'],
         recipes: [
           { id: 'cornbread', name: 'Corn bread', inputs: { corn: 2, sunflower: 1 }, learn: 0 },
-          { id: 'pumpkinpie', name: 'Pumpkin pie', inputs: { pumpkin: 2, wheat: 1 }, learn: 280000 },
-          { id: 'carrotcake', name: 'Carrot cake', inputs: { carrot: 4, wheat: 1, sunflower: 1 }, learn: 350000 },
-          { id: 'berrypie', name: 'Berry pie', inputs: { berry: 2, wheat: 1 }, learn: 370000 },
+          { id: 'pumpkinpie', name: 'Pumpkin pie', inputs: { pumpkin: 2, wheat: 1 }, learn: 1400000 },
+          { id: 'carrotcake', name: 'Carrot cake', inputs: { carrot: 4, wheat: 1, sunflower: 1 }, learn: 1800000 },
+          { id: 'berrypie', name: 'Berry pie', inputs: { berry: 2, wheat: 1 }, learn: 1900000 },
           { id: 'applepie', name: 'Apple pie', inputs: { apple: 1, wheat: 2 }, learn: 8.3e7 }
         ] },
       { id: 'candy', name: 'Candy factory', product: 'candy', goods: 'candy', x: 11, y: 35, w: 3, h: 3, cost: 360000,
@@ -862,12 +863,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         makeTime: 4, valueMult: 24, hopperSize: 30, outSize: 200, walls: ['#f48fb1', '#ec6f9c', '#d25584'],
         recipes: [
           { id: 'gummies', name: 'Berry gummies', inputs: { berry: 2, sunflower: 1 }, learn: 0 },
-          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 380000 },
+          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 1900000 },
           { id: 'chocolate', name: 'Chocolate', inputs: { cocoa: 2, sunflower: 1 }, learn: 5.3e7 },
           { id: 'mocha', name: 'Mocha bites', inputs: { cocoa: 1, coffee: 1 }, learn: 7.8e7 },
           { id: 'toffee', name: 'Golden toffee', inputs: { apple: 1, cocoa: 1, wheat: 2 }, learn: 8.3e7 }
         ] }
     ],
+    // Every recipe a factory knows runs at once on its own line (v83, Tom
+    // 2026-09-27), so its speed and batch upgrades cost + lineCost x for
+    // each line after the first (Tom: "scale the balance around this").
+    factoryLines: { lineCost: 1 },
     // Factory speed upgrades, shared numbers: each level multiplies makeTime
     // by speedMult; level L costs the factory's cost x costGrowth^(L+1), so
     // the first is already dearer than the factory.
@@ -1119,6 +1124,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           { look: 'bigForklift', name: 'Big forklift', size: 3000, speed: 1.6 }
         ] }
     },
+    // A belt from the barn to each factory's hopper (Tom 2026-09-27): bought
+    // once per factory for costMult x the factory, after the barn. Carries
+    // at least rate items a second, and spare x what the factory uses at
+    // full speed on its mat, so its hopper never runs dry while the barn
+    // has the crops. With a belt its worker only carries goods.
+    // paths: where each belt runs on the ground, barn first, into the back
+    // of its factory; they share the trunk out of the barn.
+    belt: { costMult: 3, rate: 5, spare: 1.25, speed: 2.2,
+      paths: {
+        cannery: [[19.3, 23.4], [19.3, 29.2]],
+        bakery: [[19.3, 23.4], [19.3, 27.6], [12.6, 27.6], [12.6, 29.2]],
+        juicer: [[19.3, 23.4], [19.3, 27.6], [16.9, 27.6], [16.9, 34.3], [19.5, 34.3], [19.5, 35.2]],
+        candy: [[19.3, 23.4], [19.3, 27.6], [16.9, 27.6], [16.9, 34.3], [12.6, 34.3], [12.6, 35.2]]
+      } },
     // Stand on a factory's mat and it runs mult x faster (Tom 2026-09-26,
     // "B"): only what is in its hopper. When you step off, or popAfter s
     // after its hopper runs dry, a "Batch: N jars!" pop in the Haul's style
@@ -2143,9 +2162,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
 </script>
 <script>
-// Factories: each makes one recipe at a time. Its ingredients go into the
-// hopper and come out as goods worth more, which you pick up and sell at the
-// stall (or cheaply to the truck). You learn more recipes (Tom, 2026-09-24).
+// Factories: crops go into the hopper and come out as goods worth more,
+// which you pick up and sell at the stall (or cheaply to the truck). You
+// learn more recipes (Tom, 2026-09-24), and since v83 every recipe it knows
+// runs at the same time on its own line (Tom 2026-09-27: "it produces both,
+// at the same time"), sharing one hopper.
 // Contract: docs/interface.md. Tests: tests/factory.test.js. Pure: no DOM, no clock.
 (function (CR) {
   'use strict';
@@ -2159,13 +2180,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       factories: config.factories.map(function (f) {
         return {
           id: f.id, cfg: f, cost: f.cost, paid: 0, unlocked: false,
-          known: 1,       // recipes learned, in config order
-          recipe: 0,      // the recipe it makes now
-          auto: true,     // picks its best recipe itself (pick)
+          known: 1,       // recipes learned, in config order: all of them run
+          recipe: 0,      // the newest recipe (its look and name)
           speed: 0,       // speed upgrade level
           batch: 0,       // batch level: goods made per cycle
           hopper: {},     // crop -> how many are waiting
           out: [],        // finished goods, as item ids ('cannery:carrot')
+          timers: [0],    // one per line (learned recipe)
           timer: 0, working: false,
           made: 0         // goods made so far
         };
@@ -2180,13 +2201,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   function recipeOf(f) { return f.cfg.recipes[f.recipe]; }
 
-  // How many more of `crop` the hopper takes: only ingredients of the
-  // recipe it makes now, up to its hopper size each (0 if the factory isn't
-  // built). f.hopperSize (set by its worker) overrides the config's.
+  // Its lines: every recipe it has learned, in config order.
+  function lines(f) { return f.cfg.recipes.slice(0, f.known); }
+
+  // What all its lines need per cycle together: crop -> count.
+  function inputsOf(f) {
+    var all = {};
+    lines(f).forEach(function (r) { for (var c in r.inputs) all[c] = (all[c] || 0) + r.inputs[c]; });
+    return all;
+  }
+
+  // How many more of `crop` the hopper takes: only ingredients of a recipe
+  // it knows, up to its hopper size each (0 if the factory isn't built).
+  // f.hopperSize (set by its worker) overrides the config's.
   function room(state, id, crop) {
     var f = byId(state, id);
-    if (!f || !f.unlocked || !recipeOf(f).inputs[crop]) return 0;
-    return Math.max(0, hopperCap(state, f) - (f.hopper[crop] || 0));
+    if (!f || !f.unlocked || !inputsOf(f)[crop]) return 0;
+    return Math.max(0, hopperCap(state, f, crop) - (f.hopper[crop] || 0));
   }
 
   // Goods per cycle at its batch level.
@@ -2196,15 +2227,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   // Each hopper slot holds the config's size, what its worker brings
-  // (f.hopperSize), or enough for a few batches, whichever is biggest.
-  function hopperCap(state, f) {
-    var b = state.config.factoryBatch, most = 0, inp = recipeOf(f).inputs;
-    for (var c in inp) most = Math.max(most, inp[c]);
+  // (f.hopperSize), or enough for a few batches of every line using it,
+  // whichever is biggest. No crop: the biggest slot.
+  function hopperCap(state, f, crop) {
+    var b = state.config.factoryBatch, most = 0, inp = inputsOf(f);
+    if (crop) most = inp[crop] || 0;
+    else for (var c in inp) most = Math.max(most, inp[c]);
     return Math.max(f.cfg.hopperSize, f.hopperSize || 0, batchSize(state, f) * most * b.hopperBatches);
   }
 
+  // The pallet holds a few batches from every line.
   function outCap(state, f) {
-    return Math.max(f.cfg.outSize, batchSize(state, f) * state.config.factoryBatch.outBatches);
+    return Math.max(f.cfg.outSize, batchSize(state, f) * state.config.factoryBatch.outBatches * f.known);
   }
 
   // The next batch level costs costMult x the factory, then costGrowth x.
@@ -2214,7 +2248,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // A gentler second step (playtest 8: 500 then 4,000 left a dead
     // stretch): x firstStep, then x costGrowth a level.
     var k = L ? (b.firstStep || b.costGrowth) * Math.pow(b.costGrowth, L - 1) : 1;
-    return Math.round(f.cfg.cost * b.costMult * k);
+    return Math.round(f.cfg.cost * b.costMult * k * lineMult(state, f));
+  }
+
+  // Speed and batch upgrades work on every line at once (v83), so they cost
+  // more the more lines it runs: + lineCost for each line after the first.
+  function lineMult(state, f) {
+    return 1 + (state.config.factoryLines ? state.config.factoryLines.lineCost : 0) * Math.max(0, (f.known || 1) - 1);
   }
 
   // Puts crops in the hopper; returns how many went in.
@@ -2222,19 +2262,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // hand, playtest 4).
   function feed(state, id, crops, any) {
     var f = byId(state, id), n = 0;
+    var inp = f ? inputsOf(f) : {};
     crops.forEach(function (c) {
-      if (any ? !(f && f.unlocked && recipeOf(f).inputs[c]) : room(state, id, c) <= 0) return;
+      if (any ? !(f && f.unlocked && inp[c]) : room(state, id, c) <= 0) return;
       f.hopper[c] = (f.hopper[c] || 0) + 1;
       n++;
     });
     return n;
   }
 
-  function hasInputs(f) {
-    var inputs = recipeOf(f).inputs;
-    for (var c in inputs) if ((f.hopper[c] || 0) < inputs[c]) return false;
+  // Can line r make one good from the hopper?
+  function ready(f, r) {
+    for (var c in r.inputs) if ((f.hopper[c] || 0) < r.inputs[c]) return false;
     return true;
   }
+  // Can any line run?
+  function hasInputs(f) { return lines(f).some(function (r) { return ready(f, r); }); }
 
   function makeTime(state, f) {
     return f.cfg.makeTime * Math.pow(state.config.factorySpeed.speedMult, f.speed);
@@ -2253,14 +2296,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (!f.unlocked) return;
       var on = onMat != null && onMat === f.id;
       f.boost = on ? B.mult : 1;
-      var cap = outCap(state, f);
-      f.working = hasInputs(f) && f.out.length < cap;
-      if (!f.working) f.timer = 0;
-      else {
-        f.timer += dt * f.boost;
-        var t = makeTime(state, f), r = recipeOf(f), size = batchSize(state, f);
-        while (f.timer >= t - EPS && hasInputs(f) && f.out.length < cap) {
-          f.timer -= t;
+      var cap = outCap(state, f), t = makeTime(state, f), size = batchSize(state, f), ls = lines(f);
+      if (!f.timers) f.timers = [];
+      // Newest (dearest) line first, so it wins crops two lines share.
+      for (var li = ls.length - 1; li >= 0; li--) {
+        var r = ls[li];
+        f.timers[li] = f.timers[li] || 0;
+        if (!ready(f, r) || f.out.length >= cap) { f.timers[li] = 0; continue; }
+        f.timers[li] += dt * f.boost;
+        while (f.timers[li] >= t - EPS && ready(f, r) && f.out.length < cap) {
+          f.timers[li] -= t;
           var k = Math.min(size, cap - f.out.length), c;
           for (c in r.inputs) k = Math.min(k, Math.floor(f.hopper[c] / r.inputs[c]));
           for (c in r.inputs) f.hopper[c] -= r.inputs[c] * k;
@@ -2270,8 +2315,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           events.push({ type: 'made', id: f.id, item: item, n: k, boost: f.boost });
           if (on && k > 0) { f.run = f.run || { n: 0, idle: 0, item: item }; f.run.n += k; f.run.item = item; }
         }
-        f.working = hasInputs(f) && f.out.length < cap;
+        if (!ready(f, r)) f.timers[li] = 0;
       }
+      f.timer = Math.max.apply(null, f.timers.concat([0]));
+      f.working = hasInputs(f) && f.out.length < cap;
       // The batch you made on the mat: said when you step off, or once it
       // has stood idle popAfter s (a short gap doesn't split it in two).
       var R = f.run;
@@ -2292,81 +2339,30 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return f.out.splice(0, Math.max(0, n));
   }
 
-  // Switches to recipe i (a learned one) and keeps making it: picking one by
-  // hand turns auto off. Crops of other recipes stay in the hopper for when
-  // you switch back. Returns true if it changed.
-  function setRecipe(state, id, i) {
-    var f = byId(state, id);
-    if (!f || i < 0 || i >= f.known) return false;
-    f.auto = false;
-    if (i === f.recipe) return false;
-    f.recipe = i; f.timer = 0;
-    return true;
-  }
-
-  // What recipe i's ingredients are worth, one good's worth.
-  function recipeWorth(state, f, i) {
-    var inp = f.cfg.recipes[i].inputs, v = 0;
-    for (var c in inp) v += inp[c] * state.crops[c].price;
-    return v;
-  }
-
-  // The best learned recipe it can make a good of from its hopper plus
-  // `stock(crop)` more (the barn, what you carry); -1 if none.
-  function bestRecipe(state, f, stock) {
-    var best = -1, bv = -1;
-    for (var i = 0; i < f.known; i++) {
-      var inp = f.cfg.recipes[i].inputs, ok = true;
-      for (var c in inp) if ((f.hopper[c] || 0) + (stock ? stock(c) : 0) < inp[c]) { ok = false; break; }
-      var v = recipeWorth(state, f, i);
-      if (ok && v > bv) { bv = v; best = i; }
-    }
-    return best;
-  }
-
-  // Auto recipe (2026-09-25, simpler factories): a factory on auto switches
-  // to the best recipe it can get the crops for, so a new recipe or a field
-  // changing crop never leaves it standing idle. Returns true if it changed.
-  function pick(state, id, stock) {
-    var f = byId(state, id);
-    if (!f || !f.unlocked || !f.auto) return false;
-    var b = bestRecipe(state, f, stock);
-    if (b < 0 || b === f.recipe) return false;
-    f.recipe = b; f.timer = 0;
-    return true;
-  }
-
-  // Back to auto.
-  function setAuto(state, id) {
-    var f = byId(state, id);
-    if (!f || f.auto) return false;
-    f.auto = true;
-    return true;
-  }
-
   // The next recipe to learn and its price (null when all are known).
   function nextRecipe(f) {
     return f.known < f.cfg.recipes.length ? f.cfg.recipes[f.known] : null;
   }
 
-  // Learns the next recipe and starts making it.
+  // Learns the next recipe: a new line that runs beside the others.
   function learn(state, id) {
     var f = byId(state, id);
     if (!f || !nextRecipe(f)) return false;
     f.known++;
-    f.recipe = f.known - 1; f.timer = 0;
+    f.recipe = f.known - 1;
+    (f.timers = f.timers || [])[f.recipe] = 0;
     return true;
   }
 
   function speedCost(state, f) {
     var s = state.config.factorySpeed;
     if (f.speed >= s.maxLevel) return Infinity;
-    return Math.round(f.cfg.cost * Math.pow(s.costGrowth, f.speed + 1));
+    return Math.round(f.cfg.cost * Math.pow(s.costGrowth, f.speed + 1) * lineMult(state, f));
   }
 
   CR.factory = {
     create: create, byId: byId, room: room, feed: feed, update: update, take: take,
-    recipeOf: recipeOf, setRecipe: setRecipe, pick: pick, setAuto: setAuto, bestRecipe: bestRecipe, nextRecipe: nextRecipe, learn: learn,
+    recipeOf: recipeOf, lines: lines, inputsOf: inputsOf, ready: ready, nextRecipe: nextRecipe, learn: learn,
     makeTime: makeTime, speedCost: speedCost, hasInputs: hasInputs,
     batchSize: batchSize, hopperCap: hopperCap, outCap: outCap, batchCost: batchCost
   };
@@ -3092,7 +3088,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // hopper is shortest of first, up to `size`. { crop: n }.
   // keep(crop): how many to leave in the barn (for the shelves).
   function pickLoad(config, barn, factories, f, size, keep) {
-    var inp = CR.factory.recipeOf(f).inputs, load = {}, total = 0;
+    var inp = CR.factory.inputsOf(f), load = {}, total = 0;
     while (total < size) {
       var best = null, bestK = Infinity;
       Object.keys(inp).forEach(function (c) {
@@ -3119,7 +3115,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (w.kind === 'restocker') return Math.max(size, Math.ceil(stand.capacity * (config.workers.restocker.shelfShare || 0)));
     var f = CR.factory.byId(factories, w.factoryId);
     if (!f || !f.unlocked) return size;
-    var ins = CR.factory.recipeOf(f).inputs, per = 0;
+    var ins = CR.factory.inputsOf(f), per = 0;
     for (var c in ins) per += ins[c];
     return Math.max(size, CR.factory.batchSize(factories, f) * per * (config.workers.factory.batchLoads || 0));
   }
@@ -3132,14 +3128,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // crop and leaves the factories standing (the balance bot, 2026-09-25).
   function wants(ws, config, barn, stand, factories, crop) {
     if (!barn.unlocked) return false;
-    return ws.list.some(function (w) {
-      if (w.kind !== 'factory') return false;
-      var f = CR.factory.byId(factories, w.factoryId);
-      if (!f || !f.unlocked) return false;
-      var ins = CR.factory.recipeOf(f).inputs, need = ins[crop], per = 0;
+    return factories.factories.some(function (f) {
+      var w = workerFor(ws, f.id);
+      if (!f.unlocked || !(w || f.belt)) return false;
+      var ins = CR.factory.inputsOf(f), need = ins[crop], per = 0;
       if (!need || CR.factory.room(factories, f.id, crop) <= 0) return false;
       for (var c in ins) per += ins[c];
-      return (f.hopper[crop] || 0) + CR.barn.has(barn, crop) < tripSize(ws, config, w, stand, factories) * need / per;
+      var trip = w ? tripSize(ws, config, w, stand, factories) : beltRate(config, factories, f) * 10;
+      return (f.hopper[crop] || 0) + CR.barn.has(barn, crop) < trip * need / per;
     });
   }
 
@@ -3250,11 +3246,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function factoryStep(ws, config, barn, stand, factories, spots, dt, w, sp, size, events) {
     var f = CR.factory.byId(factories, w.factoryId);
     if (!f || !f.unlocked) { w.moving = false; return; }
-    var c = f.cfg, home = barn.unlocked ? barnSpot(spots, w) : palletSide(config, c);
+    // With a belt from the barn (v83) the worker only carries goods, as
+    // before the barn was built.
+    var viaBarn = barn.unlocked && !f.belt;
+    var c = f.cfg, home = viaBarn ? barnSpot(spots, w) : palletSide(config, c);
     var goods = function () { return f.out.length && shelfRoom(ws, stand, f.id) > 0; };
     var toPallet = function (leg) { w.phase = 'toPallet'; go(w, spots.pallet(f.id), route(config, c, leg)); };
     // Home by the waypoints that fit where they are.
-    var goHome = function (leg, to) { w.phase = 'home'; go(w, home, barn.unlocked || leg === 'shelfToHome' ? route(config, c, leg, to) : []); };
+    var goHome = function (leg, to) { w.phase = 'home'; go(w, home, viaBarn || leg === 'shelfToHome' ? route(config, c, leg, to) : []); };
     // Its hopper holds hopperLoads of its trips.
     f.hopperSize = Math.max(c.hopperSize, size * config.workers.factory.hopperLoads);
     if (w.phase === 'home') {
@@ -3275,7 +3274,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         if (!helping || !(cr in stand.shelves)) return 0;
         return Math.min(shelfRoom(ws, stand, cr), Math.floor(CR.barn.has(barn, cr) / 2));
       };
-      var load = barn.unlocked ? pickLoad(config, barn, factories, f, size, keep) : {}, n = 0;
+      var load = viaBarn ? pickLoad(config, barn, factories, f, size, keep) : {}, n = 0;
       Object.keys(load).forEach(function (cr) {
         var k = CR.barn.take(barn, cr, load[cr]);
         for (var i = 0; i < k; i++) w.items.push(cr);
@@ -3286,7 +3285,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         w.job = { from: 'barn' };
         w.phase = 'toHopper';
         go(w, spots.hopper(f.id), route(config, c, 'barnToHopper'));
-      } else if (goods()) toPallet(barn.unlocked ? 'barnToPallet' : 'none');
+      } else if (goods()) toPallet(viaBarn ? 'barnToPallet' : 'none');
       return;
     }
     if (w.phase === 'toHopper') {
@@ -3317,7 +3316,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (w.phase === 'toShelf') {
       if (!walkOn(w, sp, dt)) return;
       var at = { x: w.x, y: w.y };
-      if (stockShelf(ws, stand, w, events)) { w.job = null; goHome(barn.unlocked ? 'none' : 'shelfToHome', at); }
+      if (stockShelf(ws, stand, w, events)) { w.job = null; goHome(viaBarn ? 'none' : 'shelfToHome', at); }
       else { w.phase = 'return'; go(w, spots.pallet(f.id), route(config, c, 'shelfToPallet', at)); }
       return;
     }
@@ -3331,7 +3330,56 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
   }
 
+  // ---- belts ---------------------------------------------------------------
+
+  // A belt from the barn to a factory's hopper (Tom 2026-09-27: "conveyer
+  // belts from barn to factories to always supply the factories"). Bought
+  // once per factory for belt.costMult x the factory, once the barn stands.
+  function beltCost(config, factoryCfg) {
+    return Math.round(factoryCfg.cost * config.belt.costMult);
+  }
+
+  // Items a second a belt carries: at least belt.rate, and always more than
+  // every line uses together, even at 3x on its mat, so it keeps up.
+  function beltRate(config, factories, f) {
+    var ins = CR.factory.inputsOf(f), per = 0;
+    for (var c in ins) per += ins[c];
+    var use = CR.factory.batchSize(factories, f) * per / CR.factory.makeTime(factories, f);
+    return Math.max(config.belt.rate, use * (config.factoryBoost ? config.factoryBoost.mult : 1) * config.belt.spare);
+  }
+
+  // Moves crops from the barn along every bought belt into its hopper, the
+  // crop the hopper is shortest of first. Leaves what the barn helpers'
+  // shelves are short of, like a worker. Events: { type: 'belt', factory,
+  // crop, n } per crop moved.
+  function belts(ws, config, barn, stand, factories, dt) {
+    var events = [];
+    if (!barn.unlocked) return events;
+    var helping = restockers(ws) > 0;
+    factories.factories.forEach(function (f) {
+      if (!f.unlocked || !f.belt) return;
+      f.beltAcc = (f.beltAcc || 0) + beltRate(config, factories, f) * dt;
+      var n = Math.floor(f.beltAcc);
+      if (n < 1) return;
+      var ins = CR.factory.inputsOf(f), per = 0, moved = 0;
+      for (var c in ins) per += ins[c];
+      Object.keys(ins).sort(function (a, b) { return (f.hopper[a] || 0) / ins[a] - (f.hopper[b] || 0) / ins[b]; }).forEach(function (cr) {
+        var keep = helping && (cr in stand.shelves) ? Math.min(shelfRoom(ws, stand, cr), Math.floor(CR.barn.has(barn, cr) / 2)) : 0;
+        var k = Math.min(Math.ceil(n * ins[cr] / per), CR.factory.room(factories, f.id, cr), CR.barn.has(barn, cr) - keep);
+        if (k <= 0) return;
+        k = CR.barn.take(barn, cr, k);
+        f.hopper[cr] = (f.hopper[cr] || 0) + k;
+        moved += k;
+        events.push({ type: 'belt', factory: f.id, crop: cr, n: k });
+      });
+      // Nothing to move: don't bank time for a burst later.
+      f.beltAcc = moved ? Math.max(0, f.beltAcc - moved) : Math.min(f.beltAcc, 1);
+    });
+    return events;
+  }
+
   CR.workers = {
+    beltCost: beltCost, beltRate: beltRate, belts: belts,
     create: create, update: update,
     hireRestocker: hireRestocker, hireWorker: hireWorker,
     restockers: restockers, workerFor: workerFor,
@@ -5650,7 +5698,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var barn = { x: m.x + m.w / 2, y: m.y + m.h / 2 }, hop = { x: c.hopper.x + c.hopper.w / 2, y: c.hopper.y + c.hopper.h / 2 };
     var pal = { x: c.pickup.x + c.pickup.w / 2, y: c.pickup.y + c.pickup.h / 2 }, shelf = G.shelfBack(sh);
     var hasBarn = G.barn.unlocked, home = hasBarn ? barn : W.palletSide(G.cfg, c);
-    var ins = Object.keys(CR.factory.recipeOf(f).inputs);
+    var ins = Object.keys(CR.factory.inputsOf(f));
     var R = {
       f: f, col: (c.walls || ['#c9674a'])[0], crop: G.cfg.crops[ins[0]].color,
       crops: hasBarn ? [barn].concat(W.route(G.cfg, c, 'barnToHopper'), [hop]) : null,
@@ -5916,6 +5964,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     f.plots.forEach(function (plot) { if (boxHits(plot, box)) drawPlotGround(ctx, G, plot, box, far); });
     G.factories.factories.forEach(function (fa) { S.drawFactoryGround(ctx, G, fa, time); });
     CR.barnView.drawBarnGround(ctx, G, time);
+    CR.barnView.drawBelts(ctx, G, time);
     S.drawStandDeck(ctx, G, time);
     S.drawTruckZone(ctx, G, time);
     // The truck mat's hold, filling round you (playtest 5: show the ring).
@@ -6950,7 +6999,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // It says what to drop (playtest 6: where to drop was unclear).
     var on = f.unlocked && G.carry.items.length;
     if (f.unlocked) {
-      var need = Object.keys(CR.factory.recipeOf(f).inputs).map(function (cr) { return G.cfg.crops[cr].name.toUpperCase(); }).join(' + ');
+      var needK = Object.keys(CR.factory.inputsOf(f));
+      var need = needK.length > 2 ? 'CROPS' : needK.map(function (cr) { return G.cfg.crops[cr].name.toUpperCase(); }).join(' + ');
       // Lit up steady while you stand on it (playtest 9: unsure if on it),
       // orange and saying so while it runs faster (Tom 2026-09-26, "B").
       var boosted = f.boost > 1;
@@ -7046,7 +7096,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.beginPath(); ctx.moveTo(h0.x - 4 * sq, h0.y); ctx.lineTo(h1.x + 4 * sq, h1.y); ctx.lineTo(h2.x, h2.y); ctx.lineTo(h3.x, h3.y); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = '#e09400'; ctx.lineWidth = 2; ctx.stroke();
     // What the recipe needs, and how many of each are in the hopper.
-    var inp = CR.factory.recipeOf(f).inputs, keys = Object.keys(inp);
+    var inp = CR.factory.inputsOf(f), keys = Object.keys(inp);
     var hf = ws(c.hopper.x + c.hopper.w / 2, c.hopper.y + c.hopper.h, 0);
     var bw = keys.length * 34 + 6, bx = hf.x - bw / 2, by = hf.y + 4;
     ctx.fillStyle = 'rgba(40,24,8,0.72)'; roundRect(ctx, bx, by, bw, 24, 8); ctx.fill();
@@ -7579,6 +7629,60 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     S.drawMat(ctx, b.mat, '#a5d6a7', crops ? 0.55 + 0.35 * Math.sin(time * 6) : 0.3, 'BARN', time);
   }
 
+  // Belts from the barn to the factories (v83, Tom 2026-09-27): a grey
+  // frame with moving slats, and the crops riding on it while it carries.
+  function beltLen(pts) {
+    var L = 0;
+    for (var i = 1; i < pts.length; i++) L += Math.abs(pts[i][0] - pts[i - 1][0]) + Math.abs(pts[i][1] - pts[i - 1][1]);
+    return L;
+  }
+  function beltAt(pts, d) {
+    for (var i = 1; i < pts.length; i++) {
+      var a = pts[i - 1], b = pts[i], L = Math.abs(b[0] - a[0]) + Math.abs(b[1] - a[1]);
+      if (d <= L || i === pts.length - 1) { var u = L ? Math.min(1, d / L) : 0; return { x: a[0] + (b[0] - a[0]) * u, y: a[1] + (b[1] - a[1]) * u }; }
+      d -= L;
+    }
+  }
+  function drawBelts(ctx, G, time) {
+    init();
+    var B = G.cfg.belt, done = {}, W = 0.32;
+    if (!G.barn.unlocked) return;
+    var on = G.factories.factories.filter(function (f) { return f.unlocked && f.belt; });
+    if (!on.length) return;
+    // The frames first, each segment once (the trunk is shared).
+    on.forEach(function (f) {
+      var pts = B.paths[f.id];
+      for (var i = 1; i < pts.length; i++) {
+        var a = pts[i - 1], b = pts[i], key = a.join() + '>' + b.join();
+        if (done[key]) continue;
+        done[key] = true;
+        var x0 = Math.min(a[0], b[0]) - W, y0 = Math.min(a[1], b[1]) - W, w = Math.abs(b[0] - a[0]) + 2 * W, h = Math.abs(b[1] - a[1]) + 2 * W;
+        ctx.fillStyle = 'rgba(0,0,0,0.18)'; quadPath(ctx, x0 + 0.08, y0 + 0.08, w, h, 0); ctx.fill();
+        ctx.fillStyle = '#607d8b'; quadPath(ctx, x0, y0, w, h, 3); ctx.fill();
+        ctx.fillStyle = '#37474f'; quadPath(ctx, x0 + 0.08, y0 + 0.08, w - 0.16, h - 0.16, 3.5); ctx.fill();
+      }
+    });
+    // Slats that move toward the factory, then the crops riding.
+    on.forEach(function (f) {
+      var pts = B.paths[f.id], L = beltLen(pts), ins = Object.keys(CR.factory.inputsOf(f));
+      var busy = G.time - (f.beltT || -9) < 0.8, shift = busy ? (time * B.speed) % 0.5 : 0;
+      ctx.strokeStyle = '#78909c'; ctx.lineWidth = 1.5;
+      for (var d = shift; d < L; d += 0.5) {
+        var p = beltAt(pts, d), q = beltAt(pts, Math.min(L, d + 0.01));
+        var hor = Math.abs(q.x - p.x) > Math.abs(q.y - p.y);
+        var s0 = ws(p.x - (hor ? 0 : W - 0.1), p.y - (hor ? W - 0.1 : 0), 4), s1 = ws(p.x + (hor ? 0 : W - 0.1), p.y + (hor ? W - 0.1 : 0), 4);
+        ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.stroke();
+      }
+      if (!busy || !ins.length) return;
+      var step = 1.1, k = 0;
+      for (var e = (time * B.speed) % step; e < L - 0.3; e += step, k++) {
+        var at = beltAt(pts, e), sp = ws(at.x, at.y, 8);
+        var cr = ins[(Math.floor((time * B.speed) / step) - k + ins.length * 1000) % ins.length];
+        drawItem(ctx, cr, G.cfg.crops[cr], sp.x, sp.y, 0.75, 0);
+      }
+    });
+  }
+
   function crate(ctx, x, y, z, k) {
     box(ctx, x, y, 0.62 * k, 0.62 * k, z, 12 * k, '#d9a066', '#9c6532', '#b77a40');
     var a = ws(x, y + 0.62 * k, z + 6 * k), c = ws(x + 0.62 * k, y + 0.62 * k, z + 6 * k), d = ws(x + 0.62 * k, y, z + 6 * k);
@@ -7913,7 +8017,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return false;
   }
 
-  CR.barnView = { seat: function (ctx, p, person) { init(); return seat(ctx, p, person); }, item: function (ctx, G, id, x, y, k) { init(); item(ctx, G, id, x, y, k); }, isVehicle: isVehicle, drawBarnGround: drawBarnGround, drawBarn: drawBarn, drawWorker: drawWorker, drawCarrier: drawCarrier, bigCrates: function (ctx, G, x, y, z, count, what) { init(); bigCrates(ctx, G, x, y, z, count, what); }, icon: icon };
+  CR.barnView = { seat: function (ctx, p, person) { init(); return seat(ctx, p, person); }, item: function (ctx, G, id, x, y, k) { init(); item(ctx, G, id, x, y, k); }, isVehicle: isVehicle, drawBarnGround: drawBarnGround, drawBelts: drawBelts, drawBarn: drawBarn, drawWorker: drawWorker, drawCarrier: drawCarrier, bigCrates: function (ctx, G, x, y, z, count, what) { init(); bigCrates(ctx, G, x, y, z, count, what); }, icon: icon };
 })(this.CR = this.CR || {});
 
 </script>
@@ -8928,26 +9032,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
               price: f.cost, locked: true, info: true, go: 'fac' + f.id });
             return;
           }
-          var known = f.cfg.recipes.slice(0, f.known);
-          list.push({ key: 'fac' + f.id, icon: ['good', f.id + ':' + r0.id], title: f.cfg.name + ': ' + r0.name,
-            sub: 'Needs ' + needs(r0) + '. Sells for ' + worth(f, r0) + (known.length > 1 ? (f.auto ? '. Auto picks the best recipe you have crops for; tap one to keep it' : '. Tap Auto to let it pick') : ''), noBuy: true,
-            // Auto first (2026-09-25): it switches to the best recipe it can
-            // get the crops for; the recipe it makes now is ringed.
-            chips: known.length > 1 ? [{ word: 'Auto', label: 'Pick the best recipe', on: f.auto, act: function () { actions.autoRecipe(f.id); } }].concat(known.map(function (r, i) {
-              return { icon: ['good', f.id + ':' + r.id], label: r.name, on: !f.auto && i === f.recipe, mark: f.auto && i === f.recipe, act: function () { actions.setRecipe(f.id, i); } };
-            })) : null });
+          // Every recipe it knows runs at once, each on its own line (v83).
+          var known = FA.lines(f);
+          list.push({ key: 'fac' + f.id, icon: ['good', f.id + ':' + r0.id], title: f.cfg.name + (known.length > 1 ? ': ' + known.length + ' lines' : ': ' + r0.name),
+            sub: known.length > 1 ? 'Makes all ' + known.length + ' at once: ' + known.map(function (r) { return r.name.toLowerCase() + ' (' + needs(r) + ', sells for ' + worth(f, r) + ')'; }).join(', ')
+              : 'Needs ' + needs(r0) + '. Sells for ' + worth(f, r0), noBuy: true });
           var nr = FA.nextRecipe(f);
           if (nr) list.push({ key: 'learn' + f.id, icon: ['good', f.id + ':' + nr.id], title: 'Learn ' + nr.name.toLowerCase(),
-            sub: 'Needs ' + needs(nr) + '. Sells for ' + worth(f, nr), price: P.learn(f.id), act: function () { actions.learnRecipe(f.id); } });
+            sub: 'A new line, made beside the others. Needs ' + needs(nr) + '. Sells for ' + worth(f, nr), price: P.learn(f.id), act: function () { actions.learnRecipe(f.id); } });
           var bs = CR.factory.batchSize(G.factories, f), bn = cfg.factoryBatch.sizes[(f.batch || 0) + 1], bp = P.facBatch(f.id);
           list.push({ key: 'batch' + f.id, icon: ['good', f.id + ':' + r0.id], title: 'Bigger batches',
             sub: bn ? 'Makes ' + G.fmt(bs) + ' → ' + G.fmt(bn) + ' at a time' + (bn >= 1000 ? ', by the crate' : '') : 'Makes ' + G.fmt(bs) + ' at a time',
             level: f.batch || 0, max: cfg.factoryBatch.sizes.length - 1, price: bp, done: !(bp < Infinity), act: function () { actions.factoryBatch(f.id); } });
           var sp = P.facSpeed(f.id);
           list.push({ key: 'speed' + f.id, icon: ['factory', f.id], title: 'Faster ' + f.cfg.name.toLowerCase(),
-            sub: 'Makes each one quicker', level: f.speed, max: cfg.factorySpeed.maxLevel, price: sp, done: !(sp < Infinity),
+            sub: f.known > 1 ? 'Every line makes each one quicker' : 'Makes each one quicker', level: f.speed, max: cfg.factorySpeed.maxLevel, price: sp, done: !(sp < Infinity),
             act: function () { actions.factorySpeed(f.id); } });
-          list = list.concat(workerCards(f));
+          list = list.concat(workerCards(f), beltCards(f));
         });
       } else {
         var up = cfg.stand.upgrades;
@@ -9064,11 +9165,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // speed), or its pallet is (someone has to take the goods away).
     ui.factoryHold = function (f) {
       if (!f.unlocked) return null;
-      var FA = CR.factory, cap = FA.hopperCap(G.factories, f), inp = FA.recipeOf(f).inputs, name = f.cfg.name;
+      var FA = CR.factory, inp = FA.inputsOf(f), name = f.cfg.name;
       if (f.out.length >= FA.outCap(G.factories, f)) return [name + ': the pallet is full', CR.workers.workerFor(G.workers, f.id)
         ? 'Take the ' + f.cfg.goods + ' to the stall. A bigger cart lets its worker carry more'
         : 'Take the ' + f.cfg.goods + ' to the stall, or hire its worker'];
-      if (Object.keys(inp).some(function (c) { return (f.hopper[c] || 0) >= cap * 0.9; })) return [name + ' can\'t keep up', 'Its hopper is full. Bigger batches make more ' + f.cfg.goods + ' at once, and Faster ' + name.toLowerCase() + ' makes them sooner'];
+      if (Object.keys(inp).some(function (c) { return (f.hopper[c] || 0) >= FA.hopperCap(G.factories, f, c) * 0.9; })) return [name + ' can\'t keep up', 'Its hopper is full. Bigger batches make more ' + f.cfg.goods + ' at once, and Faster ' + name.toLowerCase() + ' makes them sooner'];
       return null;
     };
 
@@ -9127,6 +9228,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         level: w.carrier, max: S.length - 1, price: price, done: !(price < Infinity), act: function () { actions.workerUp(f.id); } }];
     }
 
+    // A belt from the barn (v83, Tom 2026-09-27): keeps the hopper full by
+    // itself, so its worker only carries goods.
+    function beltCards(f) {
+      var name = f.cfg.name;
+      if (f.belt) return [{ key: 'fbelt' + f.id, icon: ['barn', 'barn'], title: 'Belt from the barn', sub: 'Brings the ' + name + ' its crops from the barn by itself', noBuy: true, done: true }];
+      return [{ key: 'fbelt' + f.id, icon: ['barn', 'barn'], title: 'Belt from the barn',
+        sub: G.barn.unlocked ? 'Keeps it full from the barn by itself. Its worker then only carries ' + f.cfg.goods : 'Build the barn first',
+        price: actions.prices.belt(f.id), locked: !G.barn.unlocked, act: function () { actions.buyBelt(f.id); } }];
+    }
+
     // A step up the carrier ladder for a group of helpers (Tom: baskets,
     // crates, trolleys, then forklifts).
     // One field's farmer upgrades (Tom 2026-09-26: per field). Tools up to
@@ -9183,7 +9294,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (f.kind === 'factory') {
         var fa = CR.factory.byId(G.factories, f.id);
         stats = fa.unlocked
-          ? ['Made ' + n(fa.made) + ' ' + fa.cfg.goods, 'Makes ' + (CR.factory.batchSize(G.factories, fa) > 1 ? n(CR.factory.batchSize(G.factories, fa)) : 'one') + ' every ' + CR.factory.makeTime(G.factories, fa).toFixed(1) + ' s: up to ' + n(Math.round(CR.factory.batchSize(G.factories, fa) / CR.factory.makeTime(G.factories, fa) * 60)) + ' ' + fa.cfg.goods + ' a minute, worth ' + n(Math.round(CR.factory.batchSize(G.factories, fa) / CR.factory.makeTime(G.factories, fa) * 60 * CR.economy.recipeValue(cfg, fa.cfg, CR.factory.recipeOf(fa)))), n(fa.out.length) + ' waiting on the pallet']
+          ? (function () {
+            var FA = CR.factory, bs = FA.batchSize(G.factories, fa), mt = FA.makeTime(G.factories, fa), ls = FA.lines(fa);
+            var worthMin = ls.reduce(function (v, r) { return v + bs / mt * 60 * CR.economy.recipeValue(cfg, fa.cfg, r); }, 0);
+            return ['Made ' + n(fa.made) + ' ' + fa.cfg.goods, (ls.length > 1 ? ls.length + ' lines, each makes ' : 'Makes ') + (bs > 1 ? n(bs) : 'one') + ' every ' + mt.toFixed(1) + ' s: up to ' + n(Math.round(bs / mt * 60 * ls.length)) + ' ' + fa.cfg.goods + ' a minute, worth ' + n(Math.round(worthMin)), n(fa.out.length) + ' waiting on the pallet'];
+          })()
           : ['Not built yet. Stand on its sign to build it'];
         var fh2 = ui.factoryHold(fa);
         // Always a line, so the rows below never move as it changes
@@ -9272,7 +9387,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // One factory's cards; `focus`: for its own menu, without the chips.
     function factoryView(f, focus) {
       var id = f.id, all = cardsFor('factory');
-      var of = function (fid) { return all.filter(function (c) { return ['fac', 'learn', 'batch', 'speed', 'fworker', 'fwup'].some(function (k) { return c.key === k + fid; }); }); };
+      var of = function (fid) { return all.filter(function (c) { return ['fac', 'learn', 'batch', 'speed', 'fworker', 'fwup', 'fbelt'].some(function (k) { return c.key === k + fid; }); }); };
       var mine = of(id), list = [];
       if (!focus) {
         list.push(chips('factory', G.factories.factories.map(function (q) {
@@ -9287,9 +9402,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         list.push({ key: 'fachold', icon: ['factory', id], title: fh[0], sub: fh[1], noBuy: true, stats: true, cls: 'status' });
       }
       // Its worker has a section of their own under Making (v71).
-      var isW = function (c) { return c.key === 'fworker' + id || c.key === 'fwup' + id; }, wk = CR.workers.workerFor(G.workers, id);
+      var isW = function (c) { return c.key === 'fworker' + id || c.key === 'fwup' + id || c.key === 'fbelt' + id; }, wk = CR.workers.workerFor(G.workers, id);
       return list.concat({ section: 'Making' }, mine.filter(function (c) { return c.key === 'fac' + id; }),
-        { section: 'Worker', tag: wk ? CR.workers.stepOf(cfg, wk.carrier).name : 'None yet' }, mine.filter(isW),
+        { section: 'Worker and belt', tag: (wk ? CR.workers.stepOf(cfg, wk.carrier).name : 'No worker') + (f.belt ? ', belt' : '') }, mine.filter(isW),
         { section: 'Upgrades' }, mine.filter(function (c) { return c.key !== 'fac' + id && !isW(c); }));
     }
     var TAB_HEAD = { gear: 'Your tools', barn: 'Barn and helpers', stand: 'Your stand' };
@@ -10655,7 +10770,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // in when you carry what it takes (playtest 9: stood just off it).
     G.factories.factories.forEach(function (f) {
       if (!f.unlocked) return;
-      var z = f.cfg.pickup, h = f.cfg.hopper, ins = CR.factory.recipeOf(f).inputs;
+      var z = f.cfg.pickup, h = f.cfg.hopper, ins = CR.factory.inputsOf(f);
       if (f.out.length) consider(z.x + z.w / 2, z.y + z.h / 2, pc.pallet);
       if (Math.hypot(h.x + h.w / 2 - p.x, h.y + h.h / 2 - p.y) < pc.pallet && G.carry.items.some(function (it) { return ins[it]; })) consider(h.x + h.w / 2, h.y + h.h / 2, pc.pallet);
     });
@@ -10971,6 +11086,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   };
 
   function workerStep(dt) {
+    CR.workers.belts(G.workers, cfg, G.barn, G.stand, G.factories, dt).forEach(function (e) {
+      var f = CR.factory.byId(G.factories, e.factory);
+      f.beltT = G.time;
+    });
     CR.workers.update(G.workers, cfg, G.barn, G.stand, G.factories, workerSpots, dt).forEach(function (e) {
       if (e.type === 'stock') {
         G.shelfBump[e.shelf] = 1;
@@ -11025,7 +11144,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   function pickupStep(f, dt) {
     var p = G.player, z = f.cfg.pickup;
-    var inp = CR.factory.recipeOf(f).inputs;
+    var inp = CR.factory.inputsOf(f);
     // Goods ride on top of your crops, up to a basketful of goods however
     // full the basket is (playtest 8: walking past the fields refilled the
     // basket and the pad refused it, so jars were a fight to collect).
@@ -11055,23 +11174,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     }
   }
 
-  // "2 carrots + 2 tomatoes" for what a factory's recipe needs.
+  // "carrots, tomatoes" for the crops a factory's recipes take.
   function needText(f) {
-    var inp = CR.factory.recipeOf(f).inputs;
-    return Object.keys(inp).map(function (c) { return (inp[c] > 1 ? inp[c] + ' ' : '') + cfg.crops[c].name.toLowerCase(); }).join(' + ');
-  }
-
-  // Factories on auto switch to the best recipe they can get crops for:
-  // in the hopper, the barn or your stack.
-  function pickRecipes(quiet) {
-    var mine = {};
-    G.carry.items.forEach(function (it) { mine[it] = (mine[it] || 0) + 1; });
-    var stock = function (c) { return (G.barn.unlocked ? CR.barn.has(G.barn, c) : 0) + (mine[c] || 0); };
-    G.factories.factories.forEach(function (f) {
-      if (!CR.factory.pick(G.factories, f.id, stock) || quiet) return;
-      var c = f.cfg, s = iso.toScreen(c.x + c.w / 2, c.y + c.h / 2, 60);
-      fx.text(s.x, s.y - 30, 'Now making ' + CR.factory.recipeOf(f).name.toLowerCase(), { color: '#fff3c4', size: 16, max: 1.2 });
-    });
+    return Object.keys(CR.factory.inputsOf(f)).map(function (c) { return cfg.crops[c].name.toLowerCase(); }).join(', ');
   }
 
   function factoryStep(dt) {
@@ -11119,7 +11224,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Close but not on it, with crops it wants: say where (playtest 9).
       if (!there && G.carry.items.length) {
         var hzp = hopZone(f), dx = Math.max(hzp.x - p.x, 0, p.x - hzp.x - hzp.w), dy = Math.max(hzp.y - p.y, 0, p.y - hzp.y - hzp.h);
-        var ins0 = CR.factory.recipeOf(f).inputs;
+        var ins0 = CR.factory.inputsOf(f);
         if (Math.hypot(dx, dy) < 2 && Math.hypot(p.vx || 0, p.vy || 0) < 0.3 && G.carry.items.some(function (it) { return ins0[it]; })) {
           f.nearT = (f.nearT || 0) + dt;
           if (f.nearT > 0.8 && G.time - (f.nearSaid || -9) > 4) {
@@ -11132,8 +11237,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // A full hopper still takes what you bring, but say it's full and what
       // helps (playtest 11: only the menu said "hopper full").
       if (there && G.time - (f.hopSaid || -9) > 6) {
-        var hins = CR.factory.recipeOf(f).inputs, hcap = CR.factory.hopperCap(G.factories, f);
-        if (Object.keys(hins).some(function (c) { return (f.hopper[c] || 0) >= hcap; })) {
+        var hins = CR.factory.inputsOf(f), hcap = function (c) { return CR.factory.hopperCap(G.factories, f, c); };
+        if (Object.keys(hins).some(function (c) { return (f.hopper[c] || 0) >= hcap(c); })) {
           f.hopSaid = G.time;
           var hs1 = iso.toScreen(mid.x, mid.y - 1.2, 50);
           fx.text(hs1.x, hs1.y - 44, 'Hopper full: Bigger batches use more', { color: '#fff59d', size: 14, max: 2.2, rise: 8 });
@@ -11149,7 +11254,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // the hopper (playtest 5: a full basket and a full hopper left you
         // stuck; its size only limits its worker).
         f.flying = f.flying || {};
-        var ci = -1, wanted = wantedAny, inputs = CR.factory.recipeOf(f).inputs;
+        var ci = -1, wanted = wantedAny, inputs = CR.factory.inputsOf(f);
         for (var q = Math.min(hi, G.carry.items.length - 1); q >= 0 && ci < 0; q--) {
           var it = G.carry.items[q];
           if (it.indexOf(':') >= 0 || !inputs[it]) continue;
@@ -11187,7 +11292,6 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     });
 
     G.pickT = (G.pickT || 0) - dt;
-    if (G.pickT <= 0) { G.pickT = 1; pickRecipes(false); }
     CR.factory.update(G.factories, dt, onMat).forEach(function (e) {
       var f = CR.factory.byId(G.factories, e.id || '');
       if (e.type === 'made') {
@@ -11840,7 +11944,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var t = null;
     G.factories.factories.forEach(function (f) {
       if (t || !f.unlocked) return;
-      var inp = CR.factory.recipeOf(f).inputs;
+      var inp = CR.factory.inputsOf(f);
       if (Object.keys(mine).some(function (c) { return inp[c]; })) {
         var h = f.cfg.hopper; t = { x: h.x + h.w / 2, y: h.y + h.h / 2, name: 'the ' + f.cfg.name, key: f.id };
       }
@@ -11896,7 +12000,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     Object.keys(G.stand.lots).forEach(function (k) { S.lots[k] = St.countItems(G.stand.lots[k]); });
     ['coinPile', 'fame', 'served', 'sold', 'earned'].forEach(function (k) { S[k] = G.stand[k]; });
     G.factories.factories.forEach(function (f) {
-      S.factories[f.id] = { unlocked: f.unlocked, paid: f.paid, known: f.known, recipe: f.recipe, auto: f.auto, speed: f.speed,
+      S.factories[f.id] = { unlocked: f.unlocked, paid: f.paid, known: f.known, recipe: f.recipe, speed: f.speed, belt: !!f.belt,
         batch: f.batch || 0, hopper: JSON.parse(JSON.stringify(f.hopper)), out: St.countItems(f.out), made: f.made };
     });
     var b = G.barn;
@@ -11961,7 +12065,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var q = S.factories[f.id];
       if (!q) return;
       f.paid = Math.max(0, Number(q.paid) || 0); f.unlocked = !!q.unlocked;
-      f.known = num(q.known, 1, f.cfg.recipes.length); f.recipe = num(q.recipe, 0, f.known - 1); f.auto = q.auto !== false;
+      f.known = num(q.known, 1, f.cfg.recipes.length); f.recipe = f.known - 1; f.timers = []; f.belt = !!q.belt;
       f.speed = num(q.speed, 0, cfg.factorySpeed.maxLevel); f.batch = num(q.batch, 0, cfg.factoryBatch.sizes.length - 1);
       f.made = Number(q.made) || 0;
       if (!f.unlocked) return;
@@ -12264,6 +12368,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     prices: {
       learn: function (fid) { var f = CR.factory.byId(G.factories, fid), r = CR.factory.nextRecipe(f); return r ? r.learn : Infinity; },
       facSpeed: function (fid) { return CR.factory.speedCost(G.factories, CR.factory.byId(G.factories, fid)); },
+      belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg); },
       facBatch: function (fid) { return CR.factory.batchCost(G.factories, CR.factory.byId(G.factories, fid)); },
       tool: function () { return ECON.toolUpgradeCost(cfg, G.tier, G.toolLevel); },
       next: function () { var n = cfg.tools[G.tier + 1]; return n ? n.cost : Infinity; },
@@ -12289,7 +12394,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       restockCarrier: function () { return CR.workers.restockCarrierCost(cfg, G.workers.restockCarrier); },
       // A factory's own worker (v71), then their next step.
       worker: function (fid) { return CR.workers.workerFor(G.workers, fid) ? Infinity : CR.workers.workerCost(cfg, CR.factory.byId(G.factories, fid).cfg); },
-      workerUp: function (fid) { var w = CR.workers.workerFor(G.workers, fid); return w ? CR.workers.workerStepCost(cfg, CR.factory.byId(G.factories, fid).cfg, w.carrier) : Infinity; }
+    workerUp: function (fid) { var w = CR.workers.workerFor(G.workers, fid); return w ? CR.workers.workerStepCost(cfg, CR.factory.byId(G.factories, fid).cfg, w.carrier) : Infinity; }
     },
     hireFarmer: function (plotId) {
       var plot = field.plotById[plotId];
@@ -12345,6 +12450,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       CR.workers.hireWorker(G.workers, cfg, fid, G.barn.unlocked ? barnSpot : CR.workers.palletSide(cfg, f.cfg)); bought();
       factoryCheer(f, f.cfg.name + ' worker hired!', true);
     },
+    // A belt from the barn to its hopper (v83, Tom 2026-09-27).
+    buyBelt: function (fid) {
+      var f = CR.factory.byId(G.factories, fid);
+      if (!f || !f.unlocked || f.belt || !G.barn.unlocked || !pay(actions.prices.belt(fid))) return;
+      f.belt = true; bought();
+      factoryCheer(f, 'Belt from the barn!', true);
+    },
     workerUp: function (fid) {
       var w = CR.workers.workerFor(G.workers, fid), f = CR.factory.byId(G.factories, fid);
       if (!w || !(actions.prices.workerUp(fid) < Infinity) || !pay(actions.prices.workerUp(fid))) return;
@@ -12388,25 +12500,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       showOff(t.x + 0.5, t.y + 0.5);
       fx.sound.done();
     },
-    // Factories: learn the next recipe, pick which one it makes, speed it up.
+    // Factories: learn the next recipe (a new line beside the others), speed it up.
     learnRecipe: function (fid) {
       var f = CR.factory.byId(G.factories, fid);
       if (!f || !f.unlocked || !CR.factory.nextRecipe(f) || !pay(actions.prices.learn(fid))) return;
       CR.factory.learn(G.factories, fid); bought();
-      factoryCheer(f, CR.factory.recipeOf(f).name + '!', true);
-    },
-    setRecipe: function (fid, i) {
-      var f = CR.factory.byId(G.factories, fid);
-      if (!f) return;
-      var auto = f.auto;
-      if (!CR.factory.setRecipe(G.factories, fid, i) && !auto) return;
-      factoryCheer(f, 'Now making ' + CR.factory.recipeOf(f).name.toLowerCase(), false);
-    },
-    autoRecipe: function (fid) {
-      var f = CR.factory.byId(G.factories, fid);
-      if (!f || !CR.factory.setAuto(G.factories, fid)) return;
-      pickRecipes(true);
-      factoryCheer(f, 'Picks its best recipe', false);
+      factoryCheer(f, CR.factory.recipeOf(f).name + ' too!', true);
     },
     factorySpeed: function (fid) {
       var f = CR.factory.byId(G.factories, fid);
