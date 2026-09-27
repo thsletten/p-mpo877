@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v70.1)</p>
+    <p class="ver">Crop Rush 1.0 (v71)</p>
   </div>
 </div>
 
@@ -1044,29 +1044,52 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       { id: 'forklift', name: 'Forklift', size: 1000, crates: 1, speed: 1.5 },
       { id: 'bigForklift', name: 'Big forklift', size: 3000, crates: 3, speed: 1.6 },
       { id: 'palletTruck', name: 'Pallet truck', size: 10000, crates: 10, speed: 1.8 },
-      // Two more for the late game, so loaders can keep big factories fed
-      // (Tom 2026-09-25: surplus should go into the factories).
+      // Two more for the late game, for the barn helpers (farmers stop at
+      // the pallet truck).
       { id: 'lorry', name: 'Lorry', size: 30000, crates: 30, speed: 2.0 },
       { id: 'roadTrain', name: 'Road train', size: 100000, crates: 100, speed: 2.2 }
     ],
 
-    // Workers who carry from the barn (workers.js). Restockers fill the
-    // shelves (at most max, each growth x the last; a trip brings at least
-    // shelfShare of a shelf, so big shelves don't stand empty); a Loader fills one
-    // factory's hopper and costs costMult x that factory. Restockers climb
-    // the carrier ladder together from carrierBase; each loader climbs its
-    // own from its price (Tom: per factory); x carrierGrowth a step (steep,
-    // Tom 06:17). A loader's factory hopper holds hopperLoads trips' worth.
-    // They keep up with the rest (Tom 2026-09-26): a restocker trip is at
-    // least shelfShare of a shelf, a loader trip at least batchLoads of its
-    // factory's batches, and every barn level makes them barnSpeed faster.
+    // Workers who carry (workers.js). v71 (Tom 2026-09-26 20:53, "Yes,
+    // go"): two kinds.
+    // - Barn helpers (kind 'restocker', the old restockers) only move raw
+    //   crops from the barn to the stall, emptiest shelf first: at most max,
+    //   each growth x the last. They climb the carrier ladder together from
+    //   carrierBase, x carrierGrowth a step, and a trip brings at least
+    //   shelfShare of a shelf, so big shelves don't stand empty.
+    // - Each factory has one worker (kind 'factory') who does both of its
+    //   jobs: fetches its crops from the barn, fills the hopper, then takes
+    //   its goods to the stall (before the barn is built, only the goods).
+    //   Hired in the factory's own menu for costMult x the factory. `steps`
+    //   are what they carry, the hire being the first: each step up costs
+    //   stepGrowth x the one before (the first at least the worker), and
+    //   `look` is the carrier drawn: a basket, a hand cart from step 3, a
+    //   forklift with a pallet from step 5. A trip is at least batchLoads
+    //   of its factory's batches, so a big factory never starves, and its
+    //   hopper holds hopperLoads trips. The dotted route shows for `route` s
+    //   the first time a factory's worker is hired.
+    //   The old per-factory loaders are gone: a save's loader becomes that
+    //   factory's worker (state.convertWorkers).
+    // Every barn level makes them all barnSpeed faster (Tom 2026-09-26).
     workers: {
       speed: 2.6, barnSpeed: 0.12,
-      // v70: carrier steps dearer (restockers' from 2,590 x6.85, was 1,100 x6;
-      // loaders' x6.85, was x6) and a loader at least 1,810 (was 770).
+      // v70: carrier steps dearer (restockers' from 2,590 x6.85, was 1,100 x6).
       restocker: { max: 8, cost: 600, growth: 5, carrierBase: 2590, carrierGrowth: 6.85, shelfShare: 0.25 },
-      loader: { cost: 1810, costMult: 2, carrierGrowth: 6.85, hopperLoads: 2, batchLoads: 2 }
+      factory: { costMult: 1, stepGrowth: 12, hopperLoads: 2, batchLoads: 2, route: 40,
+        steps: [
+          { look: 'basket', name: 'Basket', size: 10, speed: 1 },
+          { look: 'bigBasket', name: 'Big basket', size: 30, speed: 1 },
+          { look: 'trolley', name: 'Hand cart', size: 100, speed: 1.1 },
+          { look: 'bigTrolley', name: 'Big hand cart', size: 300, speed: 1.15 },
+          { look: 'forklift', name: 'Forklift', size: 1000, speed: 1.5 },
+          { look: 'bigForklift', name: 'Big forklift', size: 3000, speed: 1.6 }
+        ] }
     },
+    // Stand on a factory's mat and it runs mult x faster (Tom 2026-09-26,
+    // "B"): only what is in its hopper. When you step off, or popAfter s
+    // after its hopper runs dry, a "Batch: N jars!" pop in the Haul's style
+    // (factory.update's 'batch' event).
+    factoryBoost: { mult: 3, popAfter: 1.2 },
 
     helpers: {
       picker: { baseCost: 200, costGrowth: 1.15, share: 0.15, cap: 0.5 },
@@ -2109,7 +2132,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // How many more of `crop` the hopper takes: only ingredients of the
   // recipe it makes now, up to its hopper size each (0 if the factory isn't
-  // built). f.hopperSize (set by its loader) overrides the config's.
+  // built). f.hopperSize (set by its worker) overrides the config's.
   function room(state, id, crop) {
     var f = byId(state, id);
     if (!f || !f.unlocked || !recipeOf(f).inputs[crop]) return 0;
@@ -2122,7 +2145,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return s[Math.min(f.batch || 0, s.length - 1)];
   }
 
-  // Each hopper slot holds the config's size, what its loader brings
+  // Each hopper slot holds the config's size, what its worker brings
   // (f.hopperSize), or enough for a few batches, whichever is biggest.
   function hopperCap(state, f) {
     var b = state.config.factoryBatch, most = 0, inp = recipeOf(f).inputs;
@@ -2168,26 +2191,45 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   // Moves time on. Each cycle makes up to a batch of goods from what the
-  // hopper holds. Events: { type: 'made', id, item, n } per cycle.
-  function update(state, dt) {
-    var events = [];
+  // hopper holds. onMat: the id of the factory whose mat you stand on (or
+  // null): it runs factoryBoost.mult x faster, on what is in its hopper
+  // (Tom 2026-09-26, "B"); f.boost says how fast it runs now. Events:
+  //   { type: 'made', id, item, n, boost } per cycle,
+  //   { type: 'batch', id, item, n } what it made while you stood on its
+  //     mat, once you step off or popAfter s after its hopper runs dry.
+  function update(state, dt, onMat) {
+    var events = [], B = state.config.factoryBoost || { mult: 1, popAfter: 0 };
     state.factories.forEach(function (f) {
       if (!f.unlocked) return;
+      var on = onMat != null && onMat === f.id;
+      f.boost = on ? B.mult : 1;
       var cap = outCap(state, f);
       f.working = hasInputs(f) && f.out.length < cap;
-      if (!f.working) { f.timer = 0; return; }
-      f.timer += dt;
-      var t = makeTime(state, f), r = recipeOf(f), size = batchSize(state, f);
-      while (f.timer >= t - EPS && hasInputs(f) && f.out.length < cap) {
-        f.timer -= t;
-        var k = Math.min(size, cap - f.out.length), c;
-        for (c in r.inputs) k = Math.min(k, Math.floor(f.hopper[c] / r.inputs[c]));
-        for (c in r.inputs) f.hopper[c] -= r.inputs[c] * k;
-        var item = f.id + ':' + r.id;
-        for (var i = 0; i < k; i++) f.out.push(item);
-        f.made += k;
-        events.push({ type: 'made', id: f.id, item: item, n: k });
+      if (!f.working) f.timer = 0;
+      else {
+        f.timer += dt * f.boost;
+        var t = makeTime(state, f), r = recipeOf(f), size = batchSize(state, f);
+        while (f.timer >= t - EPS && hasInputs(f) && f.out.length < cap) {
+          f.timer -= t;
+          var k = Math.min(size, cap - f.out.length), c;
+          for (c in r.inputs) k = Math.min(k, Math.floor(f.hopper[c] / r.inputs[c]));
+          for (c in r.inputs) f.hopper[c] -= r.inputs[c] * k;
+          var item = f.id + ':' + r.id;
+          for (var i = 0; i < k; i++) f.out.push(item);
+          f.made += k;
+          events.push({ type: 'made', id: f.id, item: item, n: k, boost: f.boost });
+          if (on && k > 0) { f.run = f.run || { n: 0, idle: 0, item: item }; f.run.n += k; f.run.item = item; }
+        }
+        f.working = hasInputs(f) && f.out.length < cap;
       }
+      // The batch you made on the mat: said when you step off, or once it
+      // has stood idle popAfter s (a short gap doesn't split it in two).
+      var R = f.run;
+      if (!R) return;
+      R.idle = f.working ? 0 : R.idle + dt;
+      if (on && R.idle < B.popAfter) return;
+      f.run = null;
+      if (R.n >= 1) events.push({ type: 'batch', id: f.id, item: R.item, n: R.n });
     });
     return events;
   }
@@ -2285,8 +2327,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 // The barn (Tom, 2026-09-24: "then we would need storage?"): a store for
 // crops in the yard, for sale once the Cannery is built. Farmers put what
 // does not fit on their shelf here instead of selling it cheap to the truck,
-// and you can drop your stack here too. Restockers and Loaders (workers.js)
-// carry from it to the shelves and the factory hoppers. Each level holds
+// and you can drop your stack here too. Barn helpers carry its crops to the
+// shelves and each factory's worker to its hopper (workers.js, v71). Each level holds
 // more and looks bigger: crates, a shed, a barn, then silos.
 //
 // Also the carrier ladder every helper climbs (Tom: "first people with
@@ -2626,28 +2668,25 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     });
 
     // Delivery, shared by farmers and trucks: their shelf, then the barn,
-    // then a factory that uses the crop and has room (playtest 6: the
-    // cannery only worked if you hauled for it; spots.factory(crop) ->
-    // {x, y, id} or null, spots.feed(id, crop, n) -> how many went in),
-    // then the market truck. True while still on the way.
+    // then the market truck. True while still on the way. Farmers never
+    // fill factory hoppers (Tom 2026-09-26, v71): what the shelf can't take
+    // goes to the barn, where each factory's worker fetches it.
     function toSurplus(fm) {
-      var f = spots.factory && fm.carry.items.length ? spots.factory(fm.carry.items[0]) : null;
-      if (f) { fm.phase = 'toFactory'; fm.target = { x: f.x, y: f.y }; fm.factory = f.id; }
-      else { fm.phase = 'toTruck'; fm.target = spots.truck; }
+      fm.phase = 'toTruck'; fm.target = spots.truck;
       fm.fromShelf = false;
     }
-    // A full load: first to a factory running short of this crop (the
-    // balance bot, 2026-09-25: late factories stood empty because the stall
-    // took every crop; spots.hungry(crop) -> {x, y, id} or null), else
-    // the barn, else the crop's shelf.
+    // A full load: to the barn first while a factory's worker is running
+    // short of this crop (the balance bot, 2026-09-25: late factories stood
+    // empty because the stall took every crop; spots.hungry(crop) -> true
+    // or false, see workers.wants), else the stall while its shelf has
+    // room, the rest to the barn (playtest 12: buying the barn left the
+    // shelves empty for a minute).
     function dispatch(fm, spot) {
-      var c = fm.carry.items[0], h = spots.hungry ? spots.hungry(c) : null;
+      var c = fm.carry.items[0];
       fm.wait = 0; fm.fromShelf = false;
-      // The stall first while its shelf has room, the rest to the barn
-      // (playtest 12: buying the barn left the shelves empty for a minute).
       var shelfRoom = (c in stand.shelves) && stand.capacity - (stand.shelves[c] || 0) > 0;
-      if (h) { fm.phase = 'toFactory'; fm.target = { x: h.x, y: h.y }; fm.factory = h.id; fm.hungry = true; }
-      else if (barn && !shelfRoom && CR.barn.room(barn, config, c) > 0) { fm.phase = 'toBarn'; fm.target = spots.barn; }
+      var toBarn = barn && CR.barn.room(barn, config, c) > 0 && (!shelfRoom || (spots.hungry && spots.hungry(c) === true));
+      if (toBarn) { fm.phase = 'toBarn'; fm.target = spots.barn; }
       else { fm.phase = 'toStand'; fm.target = spot || spots.stand(c); }
     }
     function deliver(fm, v) {
@@ -2662,18 +2701,6 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         if (!fm.carry.items.length) { fm.phase = 'field'; fm.target = null; fm.fromShelf = false; }
         else if (barn && !fm.fromShelf && CR.barn.room(barn, config, fm.carry.items[0]) > 0) { fm.phase = 'toBarn'; fm.target = spots.barn; }
         else toSurplus(fm);
-      } else if (fm.phase === 'toFactory') {
-        if (!walk(fm, v, dt)) return true;
-        var fed = {}, fid = fm.factory;
-        fm.carry.items.forEach(function (it) { fed[it] = (fed[it] || 0) + 1; });
-        Object.keys(fed).forEach(function (c) {
-          var n = spots.feed ? spots.feed(fid, c, fed[c]) : 0;
-          for (var k = 0; k < n; k++) fm.carry.items.splice(fm.carry.items.indexOf(c), 1);
-          if (n > 0) events.push({ type: 'feed', id: fm.id, factory: fid, crop: c, n: n });
-        });
-        if (fm.carry.items.length && fm.hungry) { fm.hungry = false; if (barn && CR.barn.room(barn, config, fm.carry.items[0]) > 0) { fm.phase = 'toBarn'; fm.target = spots.barn; } else { fm.phase = 'toStand'; fm.target = spots.stand(fm.carry.items[0]); } }
-        else if (fm.carry.items.length) { fm.phase = 'toTruck'; fm.target = spots.truck; }
-        else { fm.phase = 'field'; fm.target = null; fm.hungry = false; }
       } else if (fm.phase === 'toBarn') {
         if (!walk(fm, v, dt)) return true;
         var stored = {};
@@ -2809,12 +2836,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 <script>
 // Workers who do the carrying (Tom, 2026-09-24: "make it easier and less
 // manual work"). Harvesting stays yours and the farmers'; these only move
-// things around the yard:
-//   - Restockers take crops from the barn and goods from the factory pallets
-//     to the stall shelves, emptiest shelf first.
-//   - A Loader works one factory: it takes what the recipe needs from the
-//     barn and fills the hopper, leaving what the shelves are short of.
-// Each group climbs the carrier ladder (barn.js) with its own upgrade.
+// things around the yard. Two kinds since v71 (Tom 2026-09-26 20:53):
+//   - Barn helpers (kind 'restocker') take crops from the barn to the stall
+//     shelves, emptiest shelf first. Only raw crops: never factory goods.
+//     They climb the carrier ladder (barn.js) together.
+//   - Each factory has one worker (kind 'factory') who does both of its
+//     jobs: fetches the crops its recipe needs from the barn, fills the
+//     hopper, then carries the finished goods from its pallet to its stall
+//     shelf. Before the barn is built they only carry the goods. They walk
+//     round the factory's pallet side (route), never through the building,
+//     and step up from a basket to a hand cart to a forklift (config
+//     workers.factory.steps).
+// The old per-factory loaders are gone; state.convertWorkers turns a save's
+// loader into that factory's worker.
 // Contract: docs/interface.md. Tests: tests/workers.test.js.
 // Pure: no DOM, no clock, no Math.random.
 (function (CR) {
@@ -2825,43 +2859,64 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   function restockers(ws) { return ws.list.filter(function (w) { return w.kind === 'restocker'; }).length; }
-  function loaderFor(ws, fid) {
-    for (var i = 0; i < ws.list.length; i++) if (ws.list[i].kind === 'loader' && ws.list[i].factoryId === fid) return ws.list[i];
+  // A factory's own worker, or null.
+  function workerFor(ws, fid) {
+    for (var i = 0; i < ws.list.length; i++) if (ws.list[i].kind === 'factory' && ws.list[i].factoryId === fid) return ws.list[i];
     return null;
   }
 
-  // Restockers: the first costs more than the barn, each one after growth x.
+  // Barn helpers: the first costs more than the barn, each one after growth x.
   function restockerCost(config, owned) {
     var r = config.workers.restocker;
     return owned >= r.max ? Infinity : Math.round(r.cost * Math.pow(r.growth, owned));
   }
-
-  // A loader costs costMult x its factory (and never less than loader.cost).
-  function loaderCost(config, factoryCfg) {
-    var l = config.workers.loader;
-    return Math.max(l.cost, factoryCfg.cost * l.costMult);
-  }
-
   function restockCarrierCost(config, level) {
     var r = config.workers.restocker;
     return CR.barn.carrierCost(config, r.carrierBase, r.carrierGrowth, level);
   }
-  // Each factory's loader has its own carrier (Tom 2026-09-24: "loader
-  // should be per factory"); its steps start at the loader's own price.
-  function loadCarrierCost(config, factoryCfg, level) {
-    return CR.barn.carrierCost(config, loaderCost(config, factoryCfg), config.workers.loader.carrierGrowth, level);
+
+  // A factory's worker costs costMult x the factory.
+  function workerCost(config, factoryCfg) {
+    return Math.round(factoryCfg.cost * config.workers.factory.costMult);
+  }
+  // The step after `level` (0: the basket they are hired with): stepGrowth
+  // x the one before, so never less than the worker. Infinity at the top.
+  function workerStepCost(config, factoryCfg, level) {
+    var F = config.workers.factory;
+    if (level + 1 >= F.steps.length) return Infinity;
+    return Math.round(workerCost(config, factoryCfg) * Math.pow(F.stepGrowth, level + 1));
+  }
+  function stepOf(config, level) {
+    var st = config.workers.factory.steps;
+    return st[Math.max(0, Math.min(Math.floor(level) || 0, st.length - 1))];
+  }
+  // The worker step that matches a rung of the old carrier ladder (a
+  // loader's): the step drawn as that carrier, else the first that carries
+  // at least as much, else the top.
+  function stepForRung(config, rung) {
+    var c = CR.barn.carrier(config, Math.max(0, Math.floor(Number(rung) || 0))), st = config.workers.factory.steps;
+    for (var i = 0; i < st.length; i++) if (st[i].look === c.id) return i;
+    for (i = 0; i < st.length; i++) if (st[i].size >= c.size) return i;
+    return st.length - 1;
   }
 
-  function levelOf(ws, w) { return w.kind === 'loader' ? w.carrier : ws.restockCarrier; }
-  function carrierOf(ws, config, w) { return CR.barn.carrier(config, levelOf(ws, w)); }
+  // What a worker carries: { id, name, size, speed } (id: the carrier drawn).
+  function carrierOf(ws, config, w) {
+    if (w.kind === 'factory') {
+      var s = stepOf(config, w.carrier);
+      return { id: s.look, name: s.name, size: s.size, speed: s.speed };
+    }
+    return CR.barn.carrier(config, ws.restockCarrier);
+  }
   function speedOf(ws, config, w) { return config.workers.speed * carrierOf(ws, config, w).speed; }
 
   function add(ws, kind, at, fid) {
     var w = {
       id: ws.nextId++, kind: kind, factoryId: fid || null,
       x: at.x, y: at.y, fx: 0.6, fy: 0.8, moving: false, walkT: 0,
-      phase: 'idle', target: null, job: null, items: [], wait: 0, moved: 0,
-      carrier: 0 // a loader's own rung on the carrier ladder
+      phase: 'idle', target: null, path: [], job: null, items: [], wait: 0, moved: 0,
+      carrier: 0, // a factory worker's step
+      route: 0    // seconds left to show a new worker's route
     };
     ws.list.push(w);
     return w;
@@ -2869,9 +2924,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function hireRestocker(ws, config, at) {
     return restockers(ws) < config.workers.restocker.max ? add(ws, 'restocker', at) : null;
   }
-  function hireLoader(ws, config, fid, at) {
-    return loaderFor(ws, fid) ? null : add(ws, 'loader', at, fid);
+  // One per factory; their route shows for a while the first time.
+  function hireWorker(ws, config, fid, at) {
+    if (workerFor(ws, fid)) return null;
+    var w = add(ws, 'factory', at, fid);
+    w.route = config.workers.factory.route || 0;
+    return w;
   }
+
+  // ---- walking -----------------------------------------------------------------
 
   function walk(w, sp, dt) {
     var dx = w.target.x - w.x, dy = w.target.y - w.y, d = Math.sqrt(dx * dx + dy * dy);
@@ -2883,6 +2944,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     w.walkT += dt * 2.4;
     return false;
   }
+  // Sets off for `to` by way of the points `via`.
+  function go(w, to, via) { w.target = to; w.path = (via || []).slice(); }
+  // Walks the waypoints, then to the target: true when there.
+  function walkOn(w, sp, dt) {
+    if (w.path && w.path.length) {
+      var goal = w.target;
+      w.target = w.path[0];
+      var at = walk(w, sp, dt);
+      w.target = goal;
+      if (at) w.path.shift();
+      return false;
+    }
+    return walk(w, sp, dt);
+  }
 
   // Where this worker waits at the barn: side by side, not on one spot.
   function barnSpot(spots, w) {
@@ -2890,31 +2965,59 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return { x: b.x + k * 0.5, y: b.y };
   }
 
-  // The emptiest open shelf that has something to fill it with, counting
-  // what other restockers are already bringing. Null if none.
-  function pickShelfJob(ws, config, barn, stand, factories) {
+  // A factory worker's waypoints, round the pallet side of the building
+  // (Tom 2026-09-26: not through it). The lane runs down past the pallet,
+  // clear of every building: x just past the factory and its pallet, from
+  // `top` (above every factory) to the hopper's front. Legs:
+  //   barnToHopper, hopperToBarn, hopperToPallet, barnToPallet, palletToBarn,
+  //   palletToShelf and shelfToPallet (to: the shelf spot), shelfToHome
+  //   (before the barn).
+  // Returns the points between, not the ends. factoryCfg: config's entry.
+  function lane(config, c) {
+    var pk = c.pickup, hz = c.hopper, top = Infinity;
+    config.factories.forEach(function (q) { top = Math.min(top, q.y, q.pickup.y); });
+    return { x: Math.max(c.x + c.w, pk.x + pk.w) + 0.5, top: top - 0.6, hop: hz.y + hz.h / 2, pal: pk.y + pk.h / 2 };
+  }
+  function route(config, c, leg, to) {
+    var L = lane(config, c), P = function (y) { return { x: L.x, y: y }; };
+    var shelfY = to ? to.y - 0.6 : L.pal;
+    switch (leg) {
+      case 'barnToHopper': return [P(L.top), P(L.hop)];
+      case 'hopperToBarn': return [P(L.hop), P(L.top)];
+      case 'hopperToPallet': return [P(L.hop)];
+      case 'barnToPallet': return [P(L.top), P(L.pal)];
+      case 'palletToBarn': return [P(L.pal), P(L.top)];
+      case 'palletToShelf': return [P(L.pal), P(shelfY)];
+      case 'shelfToPallet': return [P(shelfY), P(L.pal)];
+      case 'shelfToHome': return [P(shelfY)];
+      default: return [];
+    }
+  }
+  // Where a factory worker waits before the barn: beside the pallet.
+  function palletSide(config, c) { var L = lane(config, c); return { x: L.x, y: L.pal }; }
+
+  // ---- choosing work -------------------------------------------------------------
+
+  // The emptiest crop shelf the barn can fill, counting what other barn
+  // helpers are already bringing. Null if none. Factory goods are their
+  // factory worker's job.
+  function pickShelfJob(ws, config, barn, stand) {
     var best = null, bestFill = Infinity;
     Object.keys(stand.shelves).forEach(function (sid) {
+      if (!config.crops[sid]) return;
       var have = stand.shelves[sid] + (ws.reserved[sid] || 0);
       var room = stand.capacity - have;
       if (room <= 0) return;
-      var avail, from;
-      if (config.crops[sid]) { avail = CR.barn.has(barn, sid); from = 'barn'; }
-      else {
-        var f = CR.factory.byId(factories, sid);
-        if (!f || !f.unlocked) return;
-        avail = f.out.length; from = 'pallet';
-      }
-      avail -= ws.claimed[sid] || 0;
+      var avail = CR.barn.has(barn, sid) - (ws.claimed[sid] || 0);
       if (avail <= 0) return;
       var fill = have / stand.capacity;
-      if (fill < bestFill) { bestFill = fill; best = { shelf: sid, from: from, n: Math.min(room, avail) }; }
+      if (fill < bestFill) { bestFill = fill; best = { shelf: sid, from: 'barn', n: Math.min(room, avail) }; }
     });
     return best;
   }
 
-  // What a loader should bring for its factory's recipe: the ingredient the
-  // hopper is shortest of first, up to its carrier size. { crop: n }.
+  // What a factory worker should bring for its recipe: the ingredient the
+  // hopper is shortest of first, up to `size`. { crop: n }.
   // keep(crop): how many to leave in the barn (for the shelves).
   function pickLoad(config, barn, factories, f, size, keep) {
     var inp = CR.factory.recipeOf(f).inputs, load = {}, total = 0;
@@ -2935,11 +3038,52 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return load;
   }
 
+  // Items a worker takes a trip. Barn helpers: at least shelfShare of a
+  // shelf (review, Tom 2026-09-24 18:58: late game the shelves stood
+  // empty). Factory workers: at least batchLoads of its batches, so bigger
+  // batches never starve (Tom 2026-09-26: "does not scale with the rest").
+  function tripSize(ws, config, w, stand, factories) {
+    var size = carrierOf(ws, config, w).size;
+    if (w.kind === 'restocker') return Math.max(size, Math.ceil(stand.capacity * (config.workers.restocker.shelfShare || 0)));
+    var f = CR.factory.byId(factories, w.factoryId);
+    if (!f || !f.unlocked) return size;
+    var ins = CR.factory.recipeOf(f).inputs, per = 0;
+    for (var c in ins) per += ins[c];
+    return Math.max(size, CR.factory.batchSize(factories, f) * per * (config.workers.factory.batchLoads || 0));
+  }
+
+  // Is a factory's worker running short of this crop? True when a built
+  // factory with a worker makes something from it, its hopper has room,
+  // and its hopper and the barn together hold less than one of the
+  // worker's trips of it. Farmers then take a full load to the barn before
+  // the stall (farmers.js spots.hungry), so the stall never takes every
+  // crop and leaves the factories standing (the balance bot, 2026-09-25).
+  function wants(ws, config, barn, stand, factories, crop) {
+    if (!barn.unlocked) return false;
+    return ws.list.some(function (w) {
+      if (w.kind !== 'factory') return false;
+      var f = CR.factory.byId(factories, w.factoryId);
+      if (!f || !f.unlocked) return false;
+      var ins = CR.factory.recipeOf(f).inputs, need = ins[crop], per = 0;
+      if (!need || CR.factory.room(factories, f.id, crop) <= 0) return false;
+      for (var c in ins) per += ins[c];
+      return (f.hopper[crop] || 0) + CR.barn.has(barn, crop) < tripSize(ws, config, w, stand, factories) * need / per;
+    });
+  }
+
   function count(items) {
     var by = {};
     items.forEach(function (it) { by[it] = (by[it] || 0) + 1; });
     return by;
   }
+
+  // Room on the stall for a factory's goods, counting what's on the way.
+  function shelfRoom(ws, stand, sid) {
+    if (!(sid in stand.shelves)) return 0;
+    return Math.max(0, stand.capacity - stand.shelves[sid] - (ws.reserved[sid] || 0));
+  }
+
+  // ---- moving on -----------------------------------------------------------------
 
   // Moves every worker on. spots = { barn: {x, y}, shelf: fn(shelfId) ->
   // {x, y}, pallet: fn(factoryId), hopper: fn(factoryId) }. Returns events:
@@ -2951,125 +3095,178 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function update(ws, config, barn, stand, factories, spots, dt) {
     var events = [];
     ws.list.forEach(function (w) {
-      var sp = speedOf(ws, config, w) * (1 + (config.workers.barnSpeed || 0) * (barn.level || 0)), size = carrierOf(ws, config, w).size;
-      // Restockers bring at least a share of a shelf a trip, so the stall
-      // keeps up when shelves grow faster than the carrier ladder (review,
-      // Tom 2026-09-24 18:58: late game the shelves stood empty).
-      if (w.kind === 'restocker') size = Math.max(size, Math.ceil(stand.capacity * (config.workers.restocker.shelfShare || 0)));
-      // Loaders bring at least batchLoads batches a trip, so bigger batches
-      // never starve (Tom 2026-09-26: "the loaders and restocker does not
-      // scale with the rest").
-      if (w.kind === 'loader') {
-        var lf = CR.factory.byId(factories, w.factoryId);
-        if (lf && lf.unlocked) {
-          var ins = CR.factory.recipeOf(lf).inputs, per = 0;
-          for (var ic in ins) per += ins[ic];
-          size = Math.max(size, CR.factory.batchSize(factories, lf) * per * (config.workers.loader.batchLoads || 0));
-        }
-      }
-      if (w.phase === 'idle') {
-        var home = barnSpot(spots, w);
-        if (!w.target || w.target.x !== home.x || w.target.y !== home.y) w.target = home;
-        if (!walk(w, sp, dt)) return;
-        w.wait -= dt;
-        // Restockers also work before the barn: goods from the pallets
-        // (the first comes with the first factory, playtest 6).
-        if (w.wait > 0 || (!barn.unlocked && w.kind !== 'restocker')) return;
-        w.wait = 0.3;
-        if (w.kind === 'restocker') {
-          var job = pickShelfJob(ws, config, barn, stand, factories);
-          if (!job) return;
-          job.n = Math.min(job.n, size);
-          ws.reserved[job.shelf] = (ws.reserved[job.shelf] || 0) + job.n;
-          ws.claimed[job.shelf] = (ws.claimed[job.shelf] || 0) + job.n;
-          w.job = job;
-          w.phase = 'toSource';
-          w.target = job.from === 'barn' ? home : spots.pallet(job.shelf);
-        } else {
-          var f = CR.factory.byId(factories, w.factoryId);
-          if (!f || !f.unlocked) return;
-          // A loaded factory's hopper grows with its loader's carrier.
-          f.hopperSize = Math.max(f.cfg.hopperSize, size * config.workers.loader.hopperLoads);
-          // The shelves share: while restockers are hired, a loader leaves
-          // what the shelves are short of, but never more than half of what
-          // the barn holds (big shelves used to make loaders wait for ever,
-          // Tom 2026-09-24: "loaders seem to be stuck").
-          var restocking = restockers(ws) > 0;
-          var keep = function (c) {
-            if (!restocking || !(c in stand.shelves)) return 0;
-            var short = Math.max(0, stand.capacity - stand.shelves[c] - (ws.reserved[c] || 0));
-            return Math.min(short, Math.floor(CR.barn.has(barn, c) / 2));
-          };
-          var load = pickLoad(config, barn, factories, f, size, keep), n = 0;
-          Object.keys(load).forEach(function (c) {
-            var k = CR.barn.take(barn, c, load[c]);
-            for (var i = 0; i < k; i++) w.items.push(c);
-            n += k;
-          });
-          if (!n) return;
-          events.push({ type: 'take', id: w.id, from: 'barn', factory: w.factoryId, n: n });
-          w.phase = 'toHopper';
-          w.target = spots.hopper(w.factoryId);
-        }
-      } else if (w.phase === 'toSource') {
-        if (!walk(w, sp, dt)) return;
-        var j = w.job, got = [];
-        if (j.from === 'barn') {
-          var k = CR.barn.take(barn, j.shelf, j.n);
-          for (var i = 0; i < k; i++) got.push(j.shelf);
-        } else got = CR.factory.take(factories, j.shelf, j.n);
-        ws.claimed[j.shelf] -= j.n;
-        ws.reserved[j.shelf] -= j.n - got.length;
-        if (!got.length) { w.phase = 'idle'; w.job = null; return; }
-        w.items = got;
-        events.push({ type: 'take', id: w.id, from: j.from, shelf: j.shelf, n: got.length });
-        w.phase = 'toShelf';
-        w.target = spots.shelf(j.shelf);
-      } else if (w.phase === 'toShelf') {
-        if (!walk(w, sp, dt)) return;
-        var sid = w.job.shelf, carried = w.items.length;
-        w.items = w.items.filter(function (it) { return CR.stand.stock(stand, sid, 1, it) !== 1; });
-        ws.reserved[sid] -= carried;
-        var put = carried - w.items.length;
-        w.moved += put;
-        if (put) events.push({ type: 'stock', id: w.id, shelf: sid, n: put });
-        if (w.items.length) { w.phase = 'return'; w.target = w.job.from === 'barn' ? barnSpot(spots, w) : spots.pallet(sid); }
-        else { w.phase = 'idle'; w.job = null; }
-      } else if (w.phase === 'toHopper') {
-        if (!walk(w, sp, dt)) return;
-        var before = w.items.length;
-        w.items = w.items.filter(function (c) { return CR.factory.feed(factories, w.factoryId, [c]) !== 1; });
-        var fed = before - w.items.length;
-        w.moved += fed;
-        if (fed) events.push({ type: 'feed', id: w.id, factory: w.factoryId, n: fed });
-        if (w.items.length) { w.phase = 'return'; w.target = barnSpot(spots, w); }
-        else w.phase = 'idle';
-      } else if (w.phase === 'return') {
-        if (!walk(w, sp, dt)) return;
-        var fromPallet = w.job && w.job.from === 'pallet';
-        if (fromPallet) {
-          var fp = CR.factory.byId(factories, w.job.shelf);
-          Array.prototype.push.apply(fp.out, w.items);
-        } else {
-          var left = [];
-          w.items.forEach(function (c) { if (CR.barn.put(barn, config, c, 1) !== 1) left.push(c); });
-          var sold = count(left);
-          Object.keys(sold).forEach(function (c) {
-            events.push({ type: 'bulk', id: w.id, crop: c, n: sold[c], amount: CR.economy.bulkValue(config, c, sold[c]) });
-          });
-        }
-        w.items = [];
-        w.phase = 'idle'; w.job = null;
-      }
+      var sp = speedOf(ws, config, w) * (1 + (config.workers.barnSpeed || 0) * (barn.level || 0));
+      var size = tripSize(ws, config, w, stand, factories);
+      if (w.route > 0) w.route = Math.max(0, w.route - dt);
+      if (w.kind === 'factory') factoryStep(ws, config, barn, stand, factories, spots, dt, w, sp, size, events);
+      else helperStep(ws, config, barn, stand, spots, dt, w, sp, size, events);
     });
     return events;
   }
 
+  // Puts leftovers back where they came from: goods on their pallet,
+  // crops in the barn (what it has no room for goes to the truck).
+  function putBack(ws, config, barn, factories, w, events) {
+    if (w.job && w.job.from === 'pallet') {
+      var fp = CR.factory.byId(factories, w.job.shelf);
+      Array.prototype.push.apply(fp.out, w.items);
+    } else {
+      var left = [];
+      w.items.forEach(function (c) { if (CR.barn.put(barn, config, c, 1) !== 1) left.push(c); });
+      var sold = count(left);
+      Object.keys(sold).forEach(function (c) {
+        events.push({ type: 'bulk', id: w.id, crop: c, n: sold[c], amount: CR.economy.bulkValue(config, c, sold[c]) });
+      });
+    }
+    w.items = [];
+  }
+
+  // Puts what a worker carries on its shelf; true if all of it went.
+  function stockShelf(ws, stand, w, events) {
+    var sid = w.job.shelf, carried = w.items.length;
+    w.items = w.items.filter(function (it) { return CR.stand.stock(stand, sid, 1, it) !== 1; });
+    ws.reserved[sid] -= carried;
+    var put = carried - w.items.length;
+    w.moved += put;
+    if (put) events.push({ type: 'stock', id: w.id, shelf: sid, n: put });
+    return !w.items.length;
+  }
+
+  // A barn helper: barn -> the emptiest crop shelf -> barn.
+  function helperStep(ws, config, barn, stand, spots, dt, w, sp, size, events) {
+    if (w.phase === 'idle') {
+      var home = barnSpot(spots, w);
+      if (!w.target || w.target.x !== home.x || w.target.y !== home.y) go(w, home);
+      if (!walkOn(w, sp, dt)) return;
+      w.wait -= dt;
+      if (w.wait > 0 || !barn.unlocked) return;
+      w.wait = 0.3;
+      var job = pickShelfJob(ws, config, barn, stand);
+      if (!job) return;
+      job.n = Math.min(job.n, size);
+      ws.reserved[job.shelf] = (ws.reserved[job.shelf] || 0) + job.n;
+      ws.claimed[job.shelf] = (ws.claimed[job.shelf] || 0) + job.n;
+      w.job = job;
+      w.phase = 'toSource';
+      go(w, home);
+    } else if (w.phase === 'toSource') {
+      if (!walkOn(w, sp, dt)) return;
+      var j = w.job, got = [];
+      var k = CR.barn.take(barn, j.shelf, j.n);
+      for (var i = 0; i < k; i++) got.push(j.shelf);
+      ws.claimed[j.shelf] -= j.n;
+      ws.reserved[j.shelf] -= j.n - got.length;
+      if (!got.length) { w.phase = 'idle'; w.job = null; return; }
+      w.items = got;
+      events.push({ type: 'take', id: w.id, from: 'barn', shelf: j.shelf, n: got.length });
+      w.phase = 'toShelf';
+      go(w, spots.shelf(j.shelf));
+    } else if (w.phase === 'toShelf') {
+      if (!walkOn(w, sp, dt)) return;
+      if (stockShelf(ws, stand, w, events)) { w.phase = 'idle'; w.job = null; }
+      else { w.phase = 'return'; go(w, barnSpot(spots, w)); }
+    } else if (w.phase === 'return') {
+      if (!walkOn(w, sp, dt)) return;
+      putBack(ws, config, barn, null, w, events);
+      w.phase = 'idle'; w.job = null;
+    }
+  }
+
+  // A factory worker's round (Tom 2026-09-26): barn -> hopper -> its pallet
+  // -> its stall shelf -> barn. Before the barn is built they only carry
+  // the goods, and wait beside the pallet.
+  function factoryStep(ws, config, barn, stand, factories, spots, dt, w, sp, size, events) {
+    var f = CR.factory.byId(factories, w.factoryId);
+    if (!f || !f.unlocked) { w.moving = false; return; }
+    var c = f.cfg, home = barn.unlocked ? barnSpot(spots, w) : palletSide(config, c);
+    var goods = function () { return f.out.length && shelfRoom(ws, stand, f.id) > 0; };
+    var toPallet = function (leg) { w.phase = 'toPallet'; go(w, spots.pallet(f.id), route(config, c, leg)); };
+    // Home by the waypoints that fit where they are.
+    var goHome = function (leg, to) { w.phase = 'home'; go(w, home, barn.unlocked || leg === 'shelfToHome' ? route(config, c, leg, to) : []); };
+    // Its hopper holds hopperLoads of its trips.
+    f.hopperSize = Math.max(c.hopperSize, size * config.workers.factory.hopperLoads);
+    if (w.phase === 'home') {
+      if (w.target.x !== home.x || w.target.y !== home.y) go(w, home); // the barn was built on the way
+      if (walkOn(w, sp, dt)) w.phase = 'idle';
+      return;
+    }
+    if (w.phase === 'idle') {
+      if (!w.target || w.target.x !== home.x || w.target.y !== home.y) go(w, home);
+      if (!walkOn(w, sp, dt)) return;
+      w.wait -= dt;
+      if (w.wait > 0) return;
+      w.wait = 0.3;
+      // Leave what the barn helpers' shelves are short of (never more than
+      // half the barn, Tom 2026-09-24: "stuck" otherwise).
+      var helping = restockers(ws) > 0;
+      var keep = function (cr) {
+        if (!helping || !(cr in stand.shelves)) return 0;
+        return Math.min(shelfRoom(ws, stand, cr), Math.floor(CR.barn.has(barn, cr) / 2));
+      };
+      var load = barn.unlocked ? pickLoad(config, barn, factories, f, size, keep) : {}, n = 0;
+      Object.keys(load).forEach(function (cr) {
+        var k = CR.barn.take(barn, cr, load[cr]);
+        for (var i = 0; i < k; i++) w.items.push(cr);
+        n += k;
+      });
+      if (n) {
+        events.push({ type: 'take', id: w.id, from: 'barn', factory: f.id, n: n });
+        w.job = { from: 'barn' };
+        w.phase = 'toHopper';
+        go(w, spots.hopper(f.id), route(config, c, 'barnToHopper'));
+      } else if (goods()) toPallet(barn.unlocked ? 'barnToPallet' : 'none');
+      return;
+    }
+    if (w.phase === 'toHopper') {
+      if (!walkOn(w, sp, dt)) return;
+      var before = w.items.length;
+      w.items = w.items.filter(function (cr) { return CR.factory.feed(factories, f.id, [cr]) !== 1; });
+      var fed = before - w.items.length;
+      w.moved += fed;
+      if (fed) events.push({ type: 'feed', id: w.id, factory: f.id, n: fed });
+      if (w.items.length) { w.phase = 'return'; go(w, barnSpot(spots, w), route(config, c, 'hopperToBarn')); }
+      else if (goods()) toPallet('hopperToPallet');
+      else goHome('hopperToBarn');
+      return;
+    }
+    if (w.phase === 'toPallet') {
+      if (!walkOn(w, sp, dt)) return;
+      var got = CR.factory.take(factories, f.id, Math.min(size, shelfRoom(ws, stand, f.id)));
+      if (!got.length) { goHome('palletToBarn'); return; }
+      w.items = got;
+      ws.reserved[f.id] = (ws.reserved[f.id] || 0) + got.length;
+      events.push({ type: 'take', id: w.id, from: 'pallet', shelf: f.id, n: got.length });
+      w.job = { shelf: f.id, from: 'pallet', n: got.length };
+      w.phase = 'toShelf';
+      var sh = spots.shelf(f.id);
+      go(w, sh, route(config, c, 'palletToShelf', sh));
+      return;
+    }
+    if (w.phase === 'toShelf') {
+      if (!walkOn(w, sp, dt)) return;
+      var at = { x: w.x, y: w.y };
+      if (stockShelf(ws, stand, w, events)) { w.job = null; goHome(barn.unlocked ? 'none' : 'shelfToHome', at); }
+      else { w.phase = 'return'; go(w, spots.pallet(f.id), route(config, c, 'shelfToPallet', at)); }
+      return;
+    }
+    if (w.phase === 'return') {
+      if (!walkOn(w, sp, dt)) return;
+      var fromPallet = w.job && w.job.from === 'pallet';
+      putBack(ws, config, barn, factories, w, events);
+      w.job = null;
+      if (fromPallet) goHome('palletToBarn');
+      else w.phase = 'idle';
+    }
+  }
+
   CR.workers = {
-    create: create, hireRestocker: hireRestocker, hireLoader: hireLoader, update: update,
-    restockers: restockers, loaderFor: loaderFor, restockerCost: restockerCost, loaderCost: loaderCost,
-    restockCarrierCost: restockCarrierCost, loadCarrierCost: loadCarrierCost,
-    carrierOf: carrierOf, speedOf: speedOf, pickShelfJob: pickShelfJob, pickLoad: pickLoad
+    create: create, update: update,
+    hireRestocker: hireRestocker, hireWorker: hireWorker,
+    restockers: restockers, workerFor: workerFor,
+    restockerCost: restockerCost, restockCarrierCost: restockCarrierCost,
+    workerCost: workerCost, workerStepCost: workerStepCost, stepOf: stepOf, stepForRung: stepForRung,
+    carrierOf: carrierOf, speedOf: speedOf, tripSize: tripSize, route: route, palletSide: palletSide,
+    pickShelfJob: pickShelfJob, pickLoad: pickLoad, wants: wants
   };
 })(this.CR = this.CR || {});
 
@@ -3487,7 +3684,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // 3: v70, v68's levels back (Tom 2026-09-27: "more like we did"); a
   // version 2 save has its levels unfolded by unfoldLevels when it loads,
   // a version 1 save loads as it is.
-  var VERSION = 3;
+  // 4: v71, factory workers (Tom 2026-09-26 20:53): a save from before has
+  // each loader turned into that factory's worker by convertWorkers.
+  var VERSION = 4;
 
   // A new game's save: no money, bare hands, only the free field open.
   function create(config) {
@@ -3514,7 +3713,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       factories: factories,
       barn: { unlocked: false, paid: 0, level: 0, items: {}, stored: 0, sent: 0 },
       farmers: { tool: 0, carrier: 0, boots: 0, list: [] },   // list: { plotId, harvested }
-      workers: { restockCarrier: 0, list: [] },               // list: { kind, factoryId, carrier, moved }
+      workers: { restockCarrier: 0, list: [] },               // list: { kind: 'restocker'|'factory', factoryId, carrier, moved }
       stats: { cut: 0, truckItems: 0, truckEarned: 0, harvested: 0, served: 0 },
       cut: {},                      // crop -> harvested so far, for milestones
       milestonesTaken: [],          // milestone ids reached
@@ -3625,7 +3824,33 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       Object.keys(S.farmers.up || {}).forEach(function (id) { farmerUp(S.farmers.up[id]); });
       if (!S.farmers.up) farmerUp(S.farmers);
     }
-    S.v = VERSION;
+    S.v = 3;
+    return S;
+  }
+
+  // v71 (Tom 2026-09-26 20:53, "Yes, go"): one worker per factory, who
+  // fills its hopper and takes its goods to the stall; the loaders are
+  // gone. A version 3 or older save's loader becomes that factory's worker
+  // on the step that matches its carrier (workers.stepForRung: the same
+  // look, else the first step carrying as much). Restockers stay, as barn
+  // helpers. Anything else in the list is dropped, and a factory keeps one
+  // worker. migrate calls this once, while the save's version is below 4.
+  function convertWorkers(S, config) {
+    var W = S.workers && Array.isArray(S.workers.list) ? S.workers.list : [], out = [], has = {};
+    W.forEach(function (q) {
+      if (!q || typeof q !== 'object') return;
+      var moved = Math.max(0, Number(q.moved) || 0);
+      if (q.kind === 'restocker') out.push({ kind: 'restocker', factoryId: null, carrier: 0, moved: moved });
+      else if (q.kind === 'loader' || q.kind === 'factory') {
+        if (typeof q.factoryId !== 'string' || has[q.factoryId]) return;
+        has[q.factoryId] = true;
+        var step = q.kind === 'loader' ? CR.workers.stepForRung(config, q.carrier)
+          : Math.min(config.workers.factory.steps.length - 1, Math.max(0, Math.floor(Number(q.carrier) || 0)));
+        out.push({ kind: 'factory', factoryId: q.factoryId, carrier: step, moved: moved });
+      }
+    });
+    if (S.workers) S.workers.list = out;
+    S.v = 4;
     return S;
   }
 
@@ -3633,10 +3858,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // version 1 (v68) already has these levels and keeps them. Only its fame
   // (a count of buys) is rescaled, so it brings the same customers at
   // v70's fameBonus as it did at v68's.
+  // Then (v71) a version 3 or older save has its loaders turned into
+  // factory workers.
   var V1_FAME = 0.03;
   function migrate(S, config) {
     if (S.v === 2) unfoldLevels(S, config);
     else if (!(S.v >= 3)) S.fame = Math.round(Math.max(0, Number(S.fame) || 0) * V1_FAME / config.stand.fameBonus);
+    if (!(S.v >= 4)) convertWorkers(S, config);
     S.v = VERSION;
     return S;
   }
@@ -3680,6 +3908,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     serialize: serialize,
     deserialize: deserialize,
     unfoldLevels: unfoldLevels,
+    convertWorkers: convertWorkers,
     migrate: migrate,
     offlineSeconds: offlineSeconds,
     offlineEarnings: offlineEarnings,
@@ -5236,6 +5465,94 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.globalAlpha = 1;
   }
 
+  // A new factory worker's round, the first time (Tom 2026-09-26): dots on
+  // the ground along the waypoints they really walk (CR.workers.route), from
+  // the barn to the hopper, the pallet and the stall, flowing the way they
+  // go, in the crop's colour while they carry crops and white with goods.
+  // Fades out over its last 3 s. tags: the numbered stops, drawn on top.
+  function workerRoute(G, w) {
+    var f = CR.factory.byId(G.factories, w.factoryId);
+    if (!f || !f.unlocked) return null;
+    var c = f.cfg, m = G.cfg.barn.mat, area = G.cfg.stand.area, W = CR.workers;
+    var sh = G.shelves.filter(function (q) { return q.crop === f.id; })[0];
+    if (!sh) return null;
+    var barn = { x: m.x + m.w / 2, y: m.y + m.h / 2 }, hop = { x: c.hopper.x + c.hopper.w / 2, y: c.hopper.y + c.hopper.h / 2 };
+    var pal = { x: c.pickup.x + c.pickup.w / 2, y: c.pickup.y + c.pickup.h / 2 }, shelf = { x: sh.x + 0.5, y: area.y + 0.6 };
+    var hasBarn = G.barn.unlocked, home = hasBarn ? barn : W.palletSide(G.cfg, c);
+    var ins = Object.keys(CR.factory.recipeOf(f).inputs);
+    var R = {
+      f: f, col: (c.walls || ['#c9674a'])[0], crop: G.cfg.crops[ins[0]].color,
+      crops: hasBarn ? [barn].concat(W.route(G.cfg, c, 'barnToHopper'), [hop]) : null,
+      toPallet: hasBarn ? [hop].concat(W.route(G.cfg, c, 'hopperToPallet'), [pal]) : null,
+      goods: [pal].concat(W.route(G.cfg, c, 'palletToShelf', shelf), [shelf]),
+      back: [shelf].concat(hasBarn ? [] : W.route(G.cfg, c, 'shelfToHome', shelf), [home]),
+      stops: []
+    };
+    if (hasBarn) {
+      R.stops.push({ x: barn.x, y: barn.y, t: 'Get ' + ins.map(function (k) { return G.cfg.crops[k].name.toLowerCase(); }).join(' + ') });
+      R.stops.push({ x: hop.x, y: hop.y, t: 'Fill it', dx: 1.7, dy: 0.7 });
+    }
+    R.stops.push({ x: pal.x, y: pal.y, t: 'Take ' + c.goods, dx: 1.5, dy: -0.6 });
+    R.stops.push({ x: shelf.x, y: shelf.y, t: 'To the stall', dx: -2.6, dy: -0.8 });
+    return R;
+  }
+  function drawWorkerRoute(ctx, G, w, time) {
+    var R = workerRoute(G, w);
+    if (!R) return;
+    var fade = Math.min(1, w.route / 3);
+    function dots(pts, step, r, alpha, arrow, fill) {
+      var total = 0, i;
+      for (i = 1; i < pts.length; i++) total += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+      var at = function (d) {
+        for (var j = 1; j < pts.length; j++) {
+          var L = Math.hypot(pts[j].x - pts[j - 1].x, pts[j].y - pts[j - 1].y);
+          if (d <= L || j === pts.length - 1) { var u = L ? Math.min(1, d / L) : 0; return { x: pts[j - 1].x + (pts[j].x - pts[j - 1].x) * u, y: pts[j - 1].y + (pts[j].y - pts[j - 1].y) * u }; }
+          d -= L;
+        }
+      };
+      for (var t = 0.45 + (time * 1.6) % step; t < total - 0.45; t += step) {
+        var p = at(t), q = ws(p.x, p.y, 1);
+        ctx.globalAlpha = fade * alpha;
+        ellipse(ctx, q.x, q.y + 1.5, r + 0.5, (r + 0.5) / 2, 'rgba(60,25,10,0.45)');
+        ellipse(ctx, q.x, q.y, r, r / 2, fill || '#fffaf0');
+      }
+      if (!arrow) return;
+      var m0 = at(total * 0.5), m1 = at(total * 0.5 + 0.3), s0 = ws(m0.x, m0.y, 1), s1 = ws(m1.x, m1.y, 1);
+      ctx.globalAlpha = fade;
+      ctx.save(); ctx.translate(s0.x, s0.y); ctx.rotate(Math.atan2(s1.y - s0.y, s1.x - s0.x));
+      ctx.fillStyle = fill || R.col; ctx.strokeStyle = fill ? '#fffaf0' : R.col; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+      ctx.beginPath(); ctx.moveTo(12, 0); ctx.lineTo(-7, -9); ctx.lineTo(-2, 0); ctx.lineTo(-7, 9); ctx.closePath(); ctx.stroke(); ctx.fill();
+      ctx.restore();
+    }
+    ctx.save();
+    dots(R.back, 1.1, 3, 0.4, false);
+    if (R.toPallet) dots(R.toPallet, 0.55, 3, 0.6, false);
+    if (R.crops) dots(R.crops, 0.62, 5.5, 1, true, R.crop);
+    dots(R.goods, 0.62, 5.5, 1, true, null);
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+  // Numbered tags over each stop, readable at any zoom.
+  function drawWorkerRouteTags(ctx, G, w, z) {
+    var R = workerRoute(G, w);
+    if (!R) return;
+    var fade = Math.min(1, w.route / 3), k = 1 / Math.max(0.55, z);
+    R.stops.forEach(function (st, i) {
+      var p = ws(st.x + (st.dx || 0), st.y + (st.dy || 0), 0);
+      ctx.globalAlpha = fade;
+      ctx.save(); ctx.translate(p.x, p.y - 12 * k); ctx.scale(k, k);
+      ctx.font = '700 12px Fredoka, system-ui, sans-serif';
+      var W = ctx.measureText(st.t).width + 32;
+      ctx.fillStyle = 'rgba(0,0,0,0.25)'; roundRect(ctx, -W / 2, -10, W, 24, 12); ctx.fill();
+      ctx.fillStyle = '#fffaf0'; roundRect(ctx, -W / 2, -12, W, 24, 12); ctx.fill();
+      ctx.fillStyle = R.col; ctx.beginPath(); ctx.arc(-W / 2 + 12, 0, 9, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i + 1), -W / 2 + 12, 0.5);
+      ctx.fillStyle = '#5a3500'; ctx.textAlign = 'left'; ctx.fillText(st.t, -W / 2 + 25, 0.5);
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1;
+  }
+
   // Show the way (Tom 2026-09-26): a trail of yellow dots on the ground from
   // you to the sign, flowing toward it.
   function drawGuideTrail(ctx, G, time) {
@@ -5438,6 +5755,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.strokeStyle = '#ffd54f'; ctx.beginPath(); ctx.ellipse(hs.x, hs.y, 26, 13, 0, -Math.PI / 2, -Math.PI / 2 + TAU * hk); ctx.stroke();
       ctx.lineCap = 'butt';
     }
+    G.workers.list.forEach(function (w) { if (w.kind === 'factory' && w.route > 0) drawWorkerRoute(ctx, G, w, time); });
     drawReach(ctx, G);
     // "Show the way" wins until you get there or buy it (playtest 8: with a
     // full basket the arrows went to the stall instead of the sign asked
@@ -5592,6 +5910,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.lineCap = 'butt';
     }
     drawGolden(ctx, G, time);
+    G.workers.list.forEach(function (w) { if (w.kind === 'factory' && w.route > 0) drawWorkerRouteTags(ctx, G, w, z); });
     if (G.guide) drawGuideBeacon(ctx, G, time, asked);
     drawFx(ctx, G);
     if (G.full) drawBubble(ctx, G, time);
@@ -6426,8 +6745,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var on = f.unlocked && G.carry.items.length;
     if (f.unlocked) {
       var need = Object.keys(CR.factory.recipeOf(f).inputs).map(function (cr) { return G.cfg.crops[cr].name.toUpperCase(); }).join(' + ');
-      // Lit up steady while you stand on it (playtest 9: unsure if on it).
-      drawMat(ctx, hz, f.onPad ? '#fff176' : '#ffc629', f.onPad ? 0.95 : on ? 0.55 + 0.35 * Math.sin(time * 6) : 0.4, 'DROP ' + need, time);
+      // Lit up steady while you stand on it (playtest 9: unsure if on it),
+      // orange and saying so while it runs faster (Tom 2026-09-26, "B").
+      var boosted = f.boost > 1;
+      drawMat(ctx, hz, boosted ? '#ff9800' : f.onPad ? '#fff176' : '#ffc629', f.onPad ? 0.95 : on ? 0.55 + 0.35 * Math.sin(time * 6) : 0.4,
+        boosted ? f.boost + 'x SPEED' : 'DROP ' + need, boosted ? time * 3 : time, boosted ? '#4e2600' : null);
     } else {
       ctx.globalAlpha = 0.35; ctx.fillStyle = '#90a4ae';
       quadPath(ctx, hz.x + 0.15, hz.y + 0.12, hz.w - 0.3, hz.h - 0.24, 1); ctx.fill();
@@ -6467,6 +6789,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // chimney at level 4, a conveyor to the pallet at 7, a gold roof at max.
     var sl = f.speed || 0, maxed = sl >= G.cfg.factorySpeed.maxLevel;
     var wall = 46 + sl * 3, bump = f.bump || 0;
+    // You on its mat: it runs boost x faster, and so does everything that
+    // moves on it (gears, smoke, windows).
+    var boost = f.boost > 1 ? f.boost : 1;
+    f.spinT = (f.spinT || 0) + (f.working ? Math.max(0, Math.min(0.1, time - (f.spinAt || time))) * boost : 0);
+    f.spinAt = time;
+    var ft = f.spinT;
     var cs = ws(c.x + c.w / 2, c.y + c.h / 2);
     shadow(ctx, cs.x + 10, cs.y + 10, 70, 30, 0.2);
     var wc = c.walls || ['#c9674a', '#b35238', '#9b4430'];
@@ -6478,7 +6806,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(d.x, d.y); ctx.stroke();
     }
     // Windows (glow while working) on the right face.
-    var lit = f.working ? 0.6 + 0.3 * Math.sin(time * 8) : 0;
+    var lit = f.working ? 0.6 + 0.3 * Math.sin(ft * 8) : 0;
     for (var wi = 0; wi < 2; wi++) {
       var w0 = ws(c.x + c.w, c.y + 0.5 + wi * 1.3, 18), w1 = ws(c.x + c.w, c.y + 1.3 + wi * 1.3, 18), w2 = ws(c.x + c.w, c.y + 1.3 + wi * 1.3, 34), w3 = ws(c.x + c.w, c.y + 0.5 + wi * 1.3, 34);
       ctx.fillStyle = lit ? 'rgba(255,224,130,' + (0.6 + lit * 0.4) + ')' : '#90caf9';
@@ -6492,9 +6820,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       box(ctx, c.x + cp[0], c.y + cp[1], 0.6, 0.6, wall + 7, 30 + ci * 6, '#8d6e63', '#6d4c41', '#5d4037');
       if (!f.working) return;
       var ch = ws(c.x + cp[0] + 0.3, c.y + cp[1] + 0.3, wall + 40 + ci * 6);
-      for (var k = 0; k < 4; k++) {
-        var ph = (time * (0.7 + sl * 0.06) + k / 4 + ci * 0.37) % 1;
-        ellipse(ctx, ch.x + ph * 18 + Math.sin(ph * 6 + k) * 3, ch.y - ph * 40, 5 + ph * 10, 5 + ph * 9, 'rgba(240,240,240,' + (0.7 * (1 - ph)).toFixed(3) + ')');
+      var puffs = boost > 1 ? 7 : 4;
+      for (var k = 0; k < puffs; k++) {
+        var ph = (ft * (0.7 + sl * 0.06) + k / puffs + ci * 0.37) % 1;
+        ellipse(ctx, ch.x + ph * 18 + Math.sin(ph * 6 + k) * 3, ch.y - ph * (boost > 1 ? 52 : 40), 5 + ph * 10, 5 + ph * 9, 'rgba(240,240,240,' + (0.7 * (1 - ph)).toFixed(3) + ')');
       }
     });
     if (maxed) {
@@ -6523,6 +6852,24 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // Just how many are in (playtest 5: "11/1" read as a broken limit).
       ctx.fillText(G.fmt ? G.fmt(have) : String(have), ix + 8, by + 12.5);
     });
+    // Gears on its front wall turn while it works, boost x as fast on the
+    // mat, so the speed-up shows against them.
+    var gp = ws(c.x + 0.55, c.y + c.h, 24);
+    gear(ctx, gp.x, gp.y, 9, ft * 4, boost > 1 ? '#ffd54f' : '#b0bec5', boost > 1 ? '#c77f00' : '#607d8b');
+    gear(ctx, gp.x + 13, gp.y - 9, 6, -ft * 6, boost > 1 ? '#ffe082' : '#cfd8dc', boost > 1 ? '#c77f00' : '#78909c');
+    if (boost > 1) {
+      // A spinning 3x badge over the roof.
+      var bg = ws(c.x + c.w / 2 - 0.6, c.y + c.h / 2 + 0.6, wall + 44 + Math.sin(time * 6) * 2), pr = 1 + 0.06 * Math.sin(time * 12);
+      ctx.save(); ctx.translate(bg.x, bg.y); ctx.scale(pr, pr);
+      ctx.fillStyle = '#ffeb3b'; ctx.beginPath();
+      for (var sb = 0; sb < 24; sb++) { var rr = sb % 2 ? 19 : 24, aa = sb * Math.PI / 12 + time * 1.6; ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr); }
+      ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#c77f00'; ctx.lineWidth = 2.5; ctx.stroke();
+      ctx.fillStyle = '#e65100'; ctx.beginPath(); ctx.arc(0, 0, 16, 0, TAU); ctx.fill();
+      ctx.font = '700 17px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.lineWidth = 3; ctx.strokeStyle = '#7a2c00'; ctx.strokeText(boost + 'x', 0, 1); ctx.fillStyle = '#fff'; ctx.fillText(boost + 'x', 0, 1);
+      ctx.restore();
+    }
     // Name plate.
     var np = ws(c.x + c.w / 2, c.y + c.h, wall - 6);
     ctx.font = '700 11px Fredoka, system-ui, sans-serif';
@@ -6531,6 +6878,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.fillStyle = wc[2]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(c.name.toUpperCase(), np.x, np.y);
     f.bump = Math.max(0, bump - 0.08);
+  }
+
+  function gear(ctx, x, y, r, a, col, dark) {
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, 0.9); ctx.rotate(a);
+    ctx.fillStyle = dark; ctx.beginPath();
+    for (var i = 0; i < 16; i++) { var rr = i % 2 ? r : r * 1.28, a0 = (i - 0.5) * Math.PI / 8, a1 = (i + 0.5) * Math.PI / 8; ctx.lineTo(Math.cos(a0) * rr, Math.sin(a0) * rr); ctx.lineTo(Math.cos(a1) * rr, Math.sin(a1) * rr); }
+    ctx.closePath(); ctx.fill();
+    ellipse(ctx, 0, 0, r * 0.95, r * 0.95, col);
+    ellipse(ctx, 0, 0, r * 0.35, r * 0.35, dark);
+    ctx.restore();
   }
 
   // Jars waiting for the truck, stacked on a pallet beside the factory.
@@ -6914,7 +7271,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         ctx.beginPath(); ctx.moveTo(q[0], q[1] - q[2] * 2); ctx.lineTo(q[0] + q[2] * 0.6, q[1]); ctx.lineTo(q[0], q[1] + q[2] * 2); ctx.lineTo(q[0] - q[2] * 0.6, q[1]); ctx.fill();
       });
     } else if (CR.barnView) {
-      CR.barnView.icon(ctx, G, kind, arg); // barn, restocker, loader, carrier
+      CR.barnView.icon(ctx, G, kind, arg); // barn, restocker (barn helper), fworker, carrier
     }
     ctx.restore();
   }
@@ -7245,10 +7602,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // ---- workers -----------------------------------------------------------------
 
-  var LOOK = { restocker: { shirt: '#fb8c00', cap: '#ef6c00' }, loader: { shirt: '#8e24aa', cap: '#6a1b9a' } };
+  // Barn helpers in orange; a factory's worker wears their factory's
+  // colours and a white apron (Tom 2026-09-26: each belongs to a building).
+  var LOOK = { restocker: { shirt: '#fb8c00', cap: '#ef6c00' } };
+  function lookOf(G, w) {
+    if (w.kind !== 'factory') return LOOK[w.kind] || LOOK.restocker;
+    var f = CR.factory.byId(G.factories, w.factoryId), wc = (f && f.cfg.walls) || ['#c9674a', '#b35238', '#9b4430'];
+    return { shirt: wc[0], cap: wc[2], apron: true };
+  }
   function drawWorker(ctx, G, it, time) {
     init();
-    var w = it.w, lk = LOOK[w.kind], id = CR.workers.carrierOf(G.workers, G.cfg, w).id;
+    var w = it.w, lk = lookOf(G, w), id = CR.workers.carrierOf(G.workers, G.cfg, w).id;
     var rides = isVehicle(id);
     function person() {
       S.drawCustomer(ctx, G, { c: { x: w.x, y: w.y, fx: w.fx, fy: w.fy, moving: w.moving && !rides, walkT: w.walkT,
@@ -7256,6 +7620,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var s = ws(w.x, w.y), bob = w.moving && !rides ? Math.abs(Math.sin(w.walkT * TAU)) * 1.5 : 0;
       ellipse(ctx, s.x, s.y - 37 - bob, 7.5, 4, lk.cap);
       ctx.fillStyle = lk.cap; ctx.beginPath(); ctx.ellipse(s.x + 5, s.y - 36 - bob, 5, 2, 0, 0, TAU); ctx.fill();
+      if (lk.apron) { ctx.fillStyle = '#fffaf0'; roundRect(ctx, s.x - 5, s.y - 24 - bob, 10, 11, 3); ctx.fill(); }
     }
     if (drawCarrier(ctx, G, w, id, w.items, 'back', rides ? seat(ctx, w, person) : null)) return;
     person();
@@ -7276,18 +7641,42 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function icon(ctx, G, kind, arg) {
     init();
     if (kind === 'barn') { barnIcon(ctx, 0, 4, 0.72, arg); return true; }
-    if (kind === 'restocker' || kind === 'loader') {
-      var lk = LOOK[kind];
+    if (kind === 'restocker') {
+      var lk = LOOK.restocker;
       ellipse(ctx, -4, 4, 11, 12, lk.shirt);
       ellipse(ctx, -4, -10, 8, 8, '#f5c9a0');
       ellipse(ctx, -4, -15, 9, 4.5, lk.cap);
-      if (kind === 'restocker') {
-        ctx.fillStyle = '#c68b52'; ctx.fillRect(4, 6, 20, 12); ctx.fillStyle = '#a86a34'; ctx.fillRect(4, 4, 20, 3);
-        item(ctx, G, 'tomato', 9, 0, 1.1); item(ctx, G, 'carrot', 18, 0, 1.1);
-      } else {
-        ctx.fillStyle = '#ffc629'; ctx.beginPath(); ctx.moveTo(4, -2); ctx.lineTo(26, -2); ctx.lineTo(20, 14); ctx.lineTo(10, 14); ctx.closePath(); ctx.fill();
-        item(ctx, G, arg && G.cfg.crops[arg] ? arg : 'carrot', 15, -6, 1.2);
+      ctx.fillStyle = '#c68b52'; ctx.fillRect(4, 6, 20, 12); ctx.fillStyle = '#a86a34'; ctx.fillRect(4, 4, 20, 3);
+      item(ctx, G, 'tomato', 9, 0, 1.1); item(ctx, G, 'carrot', 18, 0, 1.1);
+      return true;
+    }
+    if (kind === 'fworker') {
+      // arg 'cannery:1': that factory's worker at a step, in its colours,
+      // with its goods in a basket, on a hand cart or on a forklift.
+      var fid = String(arg).split(':')[0], lv = +String(arg).split(':')[1] || 0, fa = CR.factory.byId(G.factories, fid);
+      if (!fa) return false;
+      var wc = fa.cfg.walls || ['#c9674a', '#b35238', '#9b4430'], good = fid + ':' + CR.factory.recipeOf(fa).id;
+      var look = CR.workers.stepOf(G.cfg, lv).look, jars = [];
+      for (var ji = 0; ji < 8; ji++) jars.push(good);
+      if (look === 'basket' || look === 'bigBasket') {
+        ellipse(ctx, -6, 6, 11, 12, wc[0]);
+        ctx.fillStyle = '#fffaf0'; roundRect(ctx, -11, 0, 10, 12, 3); ctx.fill();
+        ellipse(ctx, -6, -9, 8, 8, '#f5c9a0');
+        ellipse(ctx, -6, -14, 9, 4.5, wc[2]);
+        drawItem(ctx, good, null, 14, -1, 1.1, 0);
+        if (look === 'bigBasket') drawItem(ctx, good, null, 19, -4, 1, 0);
+        ctx.fillStyle = '#d9953f'; ctx.beginPath(); ctx.moveTo(4, 2); ctx.lineTo(24, 2); ctx.lineTo(21, 16); ctx.lineTo(7, 16); ctx.closePath(); ctx.fill();
+        stroke(ctx, '#a8692c', 1.5, 6, 9, 22, 9);
+        return true;
       }
+      var veh = isVehicle(look), fk = veh ? { x: 0, y: 0, fx: 1, fy: -0.35, moving: false, walkT: 0 } : { x: 0, y: 0, fx: 0.7, fy: 0.7, moving: false, walkT: 0 };
+      var o2 = ws(0, 0);
+      ctx.save();
+      if (veh) { ctx.translate(-2, 12); ctx.scale(0.7, 0.7); ctx.translate(-o2.x, -o2.y); }
+      else { ctx.translate(-2, 10); ctx.scale(0.82, 0.82); ctx.translate(-o2.x - 6, -o2.y - 14); }
+      drawCarrier(ctx, G, fk, look, jars, 'back');
+      drawCarrier(ctx, G, fk, look, jars, 'front');
+      ctx.restore();
       return true;
     }
     if (kind === 'cart') {
@@ -8125,7 +8514,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     });
     // Opens the shop on a tab. The Farmers tab is part of Fields now (Tom
     // 2026-09-26, menu A): a field's farmers open on that field's chip, a
-    // factory's loader on that factory's.
+    // factory's worker on that factory's.
     function showTab(tab, nu) {
       if (tab === 'farmers') {
         tab = 'fields';
@@ -8257,11 +8646,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           sub: 'Holds ' + G.fmt(BN.capacity(barn, cfg)) + (nextCap ? ' → ' + G.fmt(nextCap) : '') + ' of each crop',
           level: barn.level, max: cfg.barn.capacity.length - 1, price: bp, done: !(bp < Infinity), act: actions.barnUp });
         var nr = WK.restockers(wk), rmax = cfg.workers.restocker.max, rp = P.restocker();
-        list.push({ key: 'restocker', icon: ['restocker', 0], title: 'Hire a restocker',
-          sub: nr >= rmax ? 'Every restocker is hired' : 'Carries crops from the barn and goods from the factories to the shelves',
+        // Barn helpers only move raw crops, barn to stall (Tom 2026-09-26);
+        // factory workers are hired in each factory's own menu (v71).
+        list.push({ key: 'restocker', icon: ['restocker', 0], title: 'Hire a barn helper',
+          sub: nr >= rmax ? 'Every barn helper is hired' : 'Carries crops from the barn to the stall shelves',
           level: nr, max: rmax, price: rp, done: nr >= rmax, act: actions.hireRestocker });
-        list.push(carrierCard('rcarrier', 'Restocker', wk.restockCarrier, P.restockCarrier(), actions.restockCarrier, !nr));
-        G.factories.factories.forEach(function (f) { if (f.unlocked) list = list.concat(loaderCards(f)); });
+        list.push(carrierCard('rcarrier', 'Barn helper', wk.restockCarrier, P.restockCarrier(), actions.restockCarrier, !nr));
+        list.push({ key: 'fwinfo', icon: ['fworker', 'cannery:0'], title: 'Factory workers',
+          sub: 'Hire them in each factory\'s own menu. They fetch its crops from the barn', noBuy: true, cls: 'info' });
       } else if (tab === 'factory') {
         var FA = CR.factory, EC = CR.economy;
         // What holds the factories back, like the Stand tab's card
@@ -8304,7 +8696,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           list.push({ key: 'speed' + f.id, icon: ['factory', f.id], title: 'Faster ' + f.cfg.name.toLowerCase(),
             sub: 'Makes each one quicker', level: f.speed, max: cfg.factorySpeed.maxLevel, price: sp, done: !(sp < Infinity),
             act: function () { actions.factorySpeed(f.id); } });
-          list = list.concat(loaderCards(f));
+          list = list.concat(workerCards(f));
         });
       } else {
         var up = cfg.stand.upgrades;
@@ -8425,7 +8817,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ui.factoryHold = function (f) {
       if (!f.unlocked) return null;
       var FA = CR.factory, cap = FA.hopperCap(G.factories, f), inp = FA.recipeOf(f).inputs, name = f.cfg.name;
-      if (f.out.length >= FA.outCap(G.factories, f)) return [name + ': the pallet is full', 'Take the ' + f.cfg.goods + ' to the stall, or hire its loader and restockers'];
+      if (f.out.length >= FA.outCap(G.factories, f)) return [name + ': the pallet is full', CR.workers.workerFor(G.workers, f.id)
+        ? 'Take the ' + f.cfg.goods + ' to the stall. A bigger cart lets its worker carry more'
+        : 'Take the ' + f.cfg.goods + ' to the stall, or hire its worker'];
       if (Object.keys(inp).some(function (c) { return (f.hopper[c] || 0) >= cap * 0.9; })) return [name + ' can\'t keep up', 'Its hopper is full. Bigger batches make more ' + f.cfg.goods + ' at once, and Faster ' + name.toLowerCase() + ' makes them sooner'];
       return null;
     };
@@ -8472,21 +8866,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         noBuy: true, stats: true, rows: rows };
     }
 
-    // A factory's own loader, then its own carrier (Tom: per factory).
-    function loaderCards(f) {
-      var P = actions.prices, w = CR.workers.loaderFor(G.workers, f.id), out = [];
-      var r = CR.factory.recipeOf(f), first = Object.keys(r.inputs)[0];
-      if (!G.barn.unlocked) return out;
-      if (!w) {
-        out.push({ key: 'loader' + f.id, icon: ['loader', first], title: 'Hire a ' + f.cfg.name.toLowerCase() + ' loader',
-          sub: 'Fills the hopper from the barn', price: P.loader(f.id), act: function () { actions.hireLoader(f.id); } });
-      } else {
-        var c = carrierCard('lcarrier' + f.id, f.cfg.name + ' loader', w.carrier, P.loadCarrier(f.id), function () { actions.loadCarrier(f.id); });
-        c.icon = ['loader', first];
-        c.title = c.title.replace(f.cfg.name + ' loaders get', f.cfg.name + ' loader: a').replace(/s$/, '');
-        out.push(c);
-      }
-      return out;
+    // A factory's own worker (Tom 2026-09-26, v71): hire them, then step
+    // them up from a basket to a hand cart to a forklift.
+    function workerCards(f) {
+      var P = actions.prices, WK = CR.workers, w = WK.workerFor(G.workers, f.id), name = f.cfg.name, S = cfg.workers.factory.steps;
+      if (!w) return [{ key: 'fworker' + f.id, icon: ['fworker', f.id + ':0'], title: name + ' worker',
+        sub: 'Fills the ' + name + ' and takes ' + f.cfg.goods + ' to the stall', price: P.worker(f.id), act: function () { actions.hireWorker(f.id); } }];
+      var now = S[Math.min(w.carrier, S.length - 1)], next = S[w.carrier + 1], price = P.workerUp(f.id);
+      return [{ key: 'fwup' + f.id, icon: ['fworker', f.id + ':' + (next ? w.carrier + 1 : w.carrier)],
+        title: next ? 'Worker gets a ' + next.name.toLowerCase() : 'Worker has a ' + now.name.toLowerCase(),
+        sub: next ? 'Carries ' + G.fmt(now.size) + ' → ' + G.fmt(next.size) + ' a trip' + (next.speed > now.speed ? ', and goes faster' : '') : 'Carries ' + G.fmt(now.size) + ' a trip',
+        level: w.carrier, max: S.length - 1, price: price, done: !(price < Infinity), act: function () { actions.workerUp(f.id); } }];
     }
 
     // A step up the carrier ladder for a group of helpers (Tom: baskets,
@@ -8551,6 +8941,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // Always a line, so the rows below never move as it changes
         // (playtest 11: taps landed on a row that had just moved).
         if (fa.unlocked) stats.unshift(fh2 ? '<b>' + fh2[0] + '.</b>' : '<b>Keeping up with its crops.</b>');
+        var fw = CR.workers.workerFor(G.workers, fa.id);
+        if (fa.unlocked) stats.push(fw ? 'Its worker moved ' + n(fw.moved) + ' crops and ' + fa.cfg.goods : 'No worker yet');
         list = factoryView(fa, true);
         stats = { icon: ['factory', f.id], lines: stats };
       } else if (f.kind === 'field') {
@@ -8576,7 +8968,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var bb = G.barn;
         stats = { icon: ['barn', CR.barn.look(cfg, bb.level)], lines: bb.unlocked
           ? ['Stored ' + n(bb.stored) + ' crops, sent out ' + n(bb.sent), 'Holding ' + n(bb.count) + ', up to ' + n(CR.barn.capacity(bb, cfg)) + ' of each crop',
-            CR.workers.restockers(G.workers) + ' restockers, ' + G.workers.list.filter(function (w) { return w.kind === 'loader'; }).length + ' loaders. Moved ' + n(G.workers.list.reduce(function (a, w) { return a + w.moved; }, 0)) + ' items']
+            (function (nh) { return nh + ' barn helper' + (nh === 1 ? '' : 's') + '. Moved ' + n(G.workers.list.filter(function (w) { return w.kind === 'restocker'; }).reduce(function (a, w) { return a + w.moved; }, 0)) + ' crops to the stall'; })(CR.workers.restockers(G.workers))]
           : ['Not built yet. Stand on its sign to build it'] };
         // How many of each crop it holds (Tom: tap the barn to see them).
         var held = Object.keys(cfg.crops).filter(function (c) { return bb.items[c]; });
@@ -8632,7 +9024,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // One factory's cards; `focus`: for its own menu, without the chips.
     function factoryView(f, focus) {
       var id = f.id, all = cardsFor('factory');
-      var of = function (fid) { return all.filter(function (c) { return ['fac', 'learn', 'batch', 'speed', 'loader', 'lcarrier'].some(function (k) { return c.key === k + fid; }); }); };
+      var of = function (fid) { return all.filter(function (c) { return ['fac', 'learn', 'batch', 'speed', 'fworker', 'fwup'].some(function (k) { return c.key === k + fid; }); }); };
       var mine = of(id), list = [];
       if (!focus) {
         list.push(chips('factory', G.factories.factories.map(function (q) {
@@ -8646,8 +9038,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var fh = ui.factoryHold(f) || [f.cfg.name + ' keeps up', 'It makes ' + f.cfg.goods + ' as fast as its crops come in'];
         list.push({ key: 'fachold', icon: ['factory', id], title: fh[0], sub: fh[1], noBuy: true, stats: true, cls: 'status' });
       }
+      // Its worker has a section of their own under Making (v71).
+      var isW = function (c) { return c.key === 'fworker' + id || c.key === 'fwup' + id; }, wk = CR.workers.workerFor(G.workers, id);
       return list.concat({ section: 'Making' }, mine.filter(function (c) { return c.key === 'fac' + id; }),
-        { section: 'Upgrades' }, mine.filter(function (c) { return c.key !== 'fac' + id; }));
+        { section: 'Worker', tag: wk ? CR.workers.stepOf(cfg, wk.carrier).name : 'None yet' }, mine.filter(isW),
+        { section: 'Upgrades' }, mine.filter(function (c) { return c.key !== 'fac' + id && !isW(c); }));
     }
     var TAB_HEAD = { gear: 'Your tools', barn: 'Barn and helpers', stand: 'Your stand' };
     function tabCards(tab) {
@@ -10054,31 +10449,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     },
     truck: { x: cfg.truck.zone.x + cfg.truck.zone.w / 2, y: cfg.truck.zone.y + cfg.truck.zone.h / 2 },
     barn: barnSpot,
-    // A built factory whose recipe takes this crop and has room for it.
-    factory: function (crop) {
-      var best = null;
-      G.factories.factories.forEach(function (f) {
-        if (best || !f.unlocked || !CR.factory.recipeOf(f).inputs[crop] || CR.factory.room(G.factories, f.id, crop) <= 0) return;
-        var h = f.cfg.hopper; best = { x: h.x + h.w / 2, y: h.y + h.h / 2, id: f.id };
-      });
-      return best;
-    },
-    // A factory with under two batches of this crop in its hopper.
-    hungry: function (crop) {
-      var best = null, bk = Infinity;
-      G.factories.factories.forEach(function (f) {
-        var need = f.unlocked && CR.factory.recipeOf(f).inputs[crop];
-        if (!need || CR.factory.room(G.factories, f.id, crop) <= 0) return;
-        var k = (f.hopper[crop] || 0) / (need * CR.factory.batchSize(G.factories, f) * 2);
-        if (k < 1 && k < bk) { bk = k; var h = f.cfg.hopper; best = { x: h.x + h.w / 2, y: h.y + h.h / 2, id: f.id }; }
-      });
-      return best;
-    },
-    feed: function (id, crop, n) {
-      var k = Math.min(n, Math.max(0, Math.floor(CR.factory.room(G.factories, id, crop)))), list = [];
-      for (var i = 0; i < k; i++) list.push(crop);
-      return CR.factory.feed(G.factories, id, list);
-    }
+    // A factory's worker running short of this crop: a full load goes to
+    // the barn first, for them to fetch (farmers never fill hoppers, v71).
+    hungry: function (crop) { return CR.workers.wants(G.workers, cfg, G.barn, G.stand, G.factories, crop); }
   };
 
   // What each field's farmers harvest a minute, measured over 20 s windows
@@ -10127,11 +10500,6 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       } else if (e.type === 'store') {
         G.barn.bump = 1;
         fx.sound.tick(G.item.pitch(e.crop) - 4, 0, 0.3);
-      } else if (e.type === 'feed') {
-        var ff = CR.factory.byId(G.factories, e.factory), fh = ff.cfg.hopper;
-        ff.bump = 1; G.harvested += e.n;
-        var fs2 = iso.toScreen(fh.x + fh.w / 2, fh.y, 50);
-        fx.text(fs2.x, fs2.y - 10, '+' + e.n, { color: '#e1bee7', size: 14, max: 0.8, rise: 24 });
       } else if (e.type === 'bulk') {
         G.money += e.amount; G.incomeNow += e.amount;
         G.stats.truckItems += e.n; G.stats.truckEarned += e.amount;
@@ -10214,8 +10582,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         barnCheer('Barn built!', true);
         grandOpening(cfg.barn.x + cfg.barn.w / 2, cfg.barn.y + cfg.barn.h / 2, ['#e53935', '#ffeb3b']);
         fx.vibrate(cfg.feel.vibrateUnlock, 0);
-        // No free restocker any more (Tom 2026-09-26 20:39): you hire them.
-        ui.showHint('Farmers now fill your barn.<br>Hire a restocker in the barn to fill the stall from it.');
+        // No free helper (Tom 2026-09-26 20:39): you hire them.
+        ui.showHint('Farmers now fill your barn.<br>Factory workers fetch crops from it, and a barn helper fills the stall.');
         G.hintShown = true;
         setTimeout(function () { ui.hideHint(); }, 4500);
       }
@@ -10377,12 +10745,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   function factoryStep(dt) {
-    var p = G.player;
+    var p = G.player, onMat = null;
     G.factories.factories.forEach(function (f) {
       var hz = f.cfg.hopper;
       var mid = { x: hz.x + hz.w / 2, y: hz.y + hz.h / 2 };
       var onPad = f.unlocked && inZone(hopZone(f), p.x, p.y);
       f.onPad = onPad; // the pad lights up under you (scenery.js)
+      // You on its mat: it runs factoryBoost.mult x faster (Tom 2026-09-26).
+      if (onPad) onMat = f.id;
       var there = onPad || (!f.unlocked && Math.hypot(p.x - mid.x, p.y - mid.y) < cfg.economy.signReach);
       if (!f.unlocked) {
         if (!there) return;
@@ -10402,13 +10772,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           grandOpening(f.cfg.x + f.cfg.w / 2, f.cfg.y + f.cfg.h / 2, f.cfg.walls.slice(0, 2));
           fx.shake(8); fx.sound.done(); fx.vibrate(cfg.feel.vibrateUnlock, 0);
           refreshShelves();
-          // Farmers bring it crops the stall has no room for. It no longer
-          // comes with a free helper (Tom 2026-09-26 20:39): carry the goods
-          // yourself or hire a restocker once you have a barn.
-          if (!CR.workers.restockers(G.workers)) {
-            ui.showHint('Carry ' + f.cfg.goods + ' from the ' + f.cfg.name + ' to the stall.<br>' + cap(f.cfg.goods) + ' sell for ' + f.cfg.valueMult + 'x their crop.');
-            setTimeout(function () { ui.hideHint(); }, 6000);
-          }
+          // No free helper (Tom 2026-09-26 20:39): its own worker is hired
+          // in its menu (v71), and its mat makes it 3x faster.
+          ui.showHint(cap(f.cfg.goods) + ' sell for ' + f.cfg.valueMult + 'x their crop!<br>Stand on its mat and it works ' + cfg.factoryBoost.mult + 'x faster. Tap it to hire a worker.');
+          setTimeout(function () { ui.hideHint(); }, 6000);
         }
         return;
       }
@@ -10450,7 +10817,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         // Only crops this factory's recipe needs; everything else stays on
         // your stack. What you bring by hand always goes in, however full
         // the hopper (playtest 5: a full basket and a full hopper left you
-        // stuck; its size only limits loaders).
+        // stuck; its size only limits its worker).
         f.flying = f.flying || {};
         var ci = -1, wanted = wantedAny, inputs = CR.factory.recipeOf(f).inputs;
         for (var q = Math.min(hi, G.carry.items.length - 1); q >= 0 && ci < 0; q--) {
@@ -10491,14 +10858,34 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     G.pickT = (G.pickT || 0) - dt;
     if (G.pickT <= 0) { G.pickT = 1; pickRecipes(false); }
-    CR.factory.update(G.factories, dt).forEach(function (e) {
+    CR.factory.update(G.factories, dt, onMat).forEach(function (e) {
       var f = CR.factory.byId(G.factories, e.id || '');
       if (e.type === 'made') {
         f.puff = 1;
         var s = iso.toScreen(f.cfg.x + f.cfg.w + 0.2, f.cfg.y + f.cfg.h - 0.4, 12);
         fx.burst(s.x, s.y, ['#ffffff', '#cfd8dc'], 3, 0.4);
-      }
+        if (e.boost > 1 && e.n > 0) jarsPop(f, e);
+      } else if (e.type === 'batch') batchPop(f, e.n);
     });
+  }
+
+  // On the mat (Tom 2026-09-26, "B"): jars pop out of the roof and land
+  // on the pallet, with a soft pop at one pitch (a few a second at most).
+  function jarsPop(f, e) {
+    var c = f.cfg, top = iso.toScreen(c.x + c.w * 0.7, c.y + c.h * 0.6, 70), pal = iso.toScreen(c.x + c.w + 0.6, c.y + 1, 14);
+    for (var k = 0; k < Math.min(3, e.n); k++) {
+      fx.fly(e.item, top.x + (Math.random() - 0.5) * 20, top.y, function () { return pal; }, { dur: 0.55, arc: 60, kind: 'jar', delay: k * 0.08 });
+    }
+    if (G.time - (f.popSound || -9) > 0.22) { f.popSound = G.time; fx.sound.cutPop(0, 0.3); }
+  }
+  // "Batch: N jars!" when you step off the mat, or its hopper has run dry
+  // for a moment, in the Haul's style: what it made while you stood there.
+  function batchPop(f, n) {
+    var c = f.cfg, s = iso.toScreen(c.x + c.w / 2, c.y + c.h / 2, 90);
+    fx.text(s.x, s.y - 20, 'Batch: ' + E.fmt(n) + ' ' + (n === 1 ? c.product : c.goods) + '!', { color: '#ffeb3b', size: 24 + Math.min(12, Math.log(Math.max(1, n)) * 1.6), max: 1.6, rise: 30 });
+    for (var k = 0; k < 3; k++) fx.burst(s.x, s.y + 20, ['#ffd54f', '#ffecb3', '#ffb300'], 10, 1.5);
+    fx.sound.cutPop(0, 0.5);
+    fx.vibrate([20, 30, 20], 0);
   }
 
   // ---- selling: customers, the till and the coin pile ---------------------
@@ -11067,9 +11454,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!G.stand.tills.some(function (t) { return t.keeper; })) offer({ name: 'Seller', price: actions.prices.keeper(), paid: 0, tab: 'stand', icon: ['seller', 0], buy: function () { actions.hireKeeper(); } });
     G.factories.factories.forEach(function (f) {
       if (!f.unlocked) { offer({ name: f.cfg.name, price: f.cost, paid: f.paid, sign: 'fac' + f.id, icon: ['factory', f.id] }); return; }
-      // Its loader puts it in the loop: farmers' crops go in by themselves.
-      if (G.barn.unlocked && !CR.workers.loaderFor(G.workers, f.id)) {
-        offer({ name: f.cfg.name + ' loader', price: actions.prices.loader(f.id), paid: 0, tab: 'factory', icon: ['loader', Object.keys(CR.factory.recipeOf(f).inputs)[0]], buy: function () { actions.hireLoader(f.id); } });
+      // Its worker puts it in the loop (v71, no free one): the goods go to
+      // the stall by themselves, and with the barn its crops come in too.
+      if (!CR.workers.workerFor(G.workers, f.id)) {
+        offer({ name: f.cfg.name + ' worker', price: actions.prices.worker(f.id), paid: 0, tab: 'factory', icon: ['fworker', f.id + ':0'], buy: function () { actions.hireWorker(f.id); } });
       }
     });
     if (!G.barn.unlocked && CR.barn.forSale(cfg, G.factories)) offer({ name: 'Barn', price: G.barn.cost, paid: G.barn.paid, sign: 'barn', icon: ['barn', 'crates'] });
@@ -11290,16 +11678,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       CR.farmers.hire(G.farmers, cfg, pl, home).harvested = Number(q.harvested) || 0;
     });
     G.workers.restockCarrier = num(S.workers.restockCarrier, 0, cfg.carriers.length - 1);
+    // Barn helpers need the barn; a factory's worker only its factory (v71:
+    // CR.state.migrate has turned old loaders into workers already).
     S.workers.list.forEach(function (q) {
-      if (!q || !b.unlocked) return;
+      if (!q) return;
       var w = null;
-      if (q.kind === 'restocker') w = CR.workers.hireRestocker(G.workers, cfg, barnSpot);
-      else if (q.kind === 'loader') {
+      if (q.kind === 'restocker' && b.unlocked) w = CR.workers.hireRestocker(G.workers, cfg, barnSpot);
+      else if (q.kind === 'factory') {
         var f = CR.factory.byId(G.factories, q.factoryId);
-        if (f && f.unlocked) w = CR.workers.hireLoader(G.workers, cfg, f.id, barnSpot);
+        if (f && f.unlocked) w = CR.workers.hireWorker(G.workers, cfg, f.id, b.unlocked ? barnSpot : CR.workers.palletSide(cfg, f.cfg));
+        if (w) { w.route = 0; w.carrier = num(q.carrier, 0, cfg.workers.factory.steps.length - 1); }
       }
-      if (!w) return;
-      w.carrier = num(q.carrier, 0, cfg.carriers.length - 1); w.moved = Number(q.moved) || 0;
+      if (w) w.moved = Number(q.moved) || 0;
     });
     ['cut', 'truckItems', 'truckEarned'].forEach(function (k) { G.stats[k] = Number(S.stats[k]) || 0; });
     G.harvested = Number(S.stats.harvested) || 0; G.served = Number(S.stats.served) || 0;
@@ -11425,12 +11815,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // never said a tomato farmer would fix it).
   G.shortFix = function (sid) {
     var f = CR.factory.byId(G.factories, sid);
-    // With its loader and the barn's restockers it runs by itself: say what
-    // makes more instead of "fetch them" (playtest 11).
-    if (f && G.shortQuiet(sid)) return f.out.length ? 'Restockers bring them' : 'Bigger batches make more';
-    // A helper carries them, but you can too (playtest 13: "comes with a
-    // helper", then "fetch them", and 10 min to learn you may carry jars).
-    if (f && f.out.length && CR.workers.restockers(G.workers)) return 'A helper is on the way. Carry some yourself to sell more';
+    // With its worker it runs by itself: say what makes more instead of
+    // "fetch them" (playtest 11).
+    if (f && G.shortQuiet(sid)) return f.out.length ? 'Its worker brings them. Carry some yourself to sell more' : 'Stand on its mat to make them 3x faster';
     // Waiting on its pallet: fetch them (playtest 9: "No jars! Feed the
     // cannery" with 80 jars waiting).
     if (f && f.out.length) {
@@ -11467,14 +11854,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return CR.goals.reroll(G.board, cfg, G.rand, orderItems(), itemDemand, worth, G.rates.money) > 0;
   };
 
-  // A factory good whose loop runs by itself (a loader and restockers): no
-  // "No jars!" over the stall (playtest 11: it kept repeating with a loader).
+  // A factory good whose loop runs by itself (it has its worker): no "No
+  // jars!" over the stall (playtest 11: it kept repeating with a loader).
   G.shortQuiet = function (sid) {
     // Not while you are putting that very item out (playtest 14: "No
     // tomatoes!" as tomatoes flew onto the shelf).
     if (G.unloadRun && (fx.countFlying('shelf') || G.carry.items.indexOf(sid) >= 0)) return true;
     var f = CR.factory.byId(G.factories, sid);
-    return !!(f && CR.workers.loaderFor(G.workers, f.id) && CR.workers.restockers(G.workers));
+    return !!(f && CR.workers.workerFor(G.workers, f.id));
   };
 
   // Every upgrade you buy makes the farm better known: more customers.
@@ -11570,9 +11957,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       farmerTruck: function (id) { return CR.farmers.truckCost(cfg, fup(id).truck, field.plotById[id].cost); },
       barn: function () { return CR.barn.upgradeCost(cfg, G.barn.level); },
       restocker: function () { return CR.workers.restockerCost(cfg, CR.workers.restockers(G.workers)); },
-      loader: function (fid) { return CR.workers.loaderFor(G.workers, fid) ? Infinity : CR.workers.loaderCost(cfg, CR.factory.byId(G.factories, fid).cfg); },
       restockCarrier: function () { return CR.workers.restockCarrierCost(cfg, G.workers.restockCarrier); },
-      loadCarrier: function (fid) { var w = CR.workers.loaderFor(G.workers, fid); return w ? CR.workers.loadCarrierCost(cfg, CR.factory.byId(G.factories, fid).cfg, w.carrier) : Infinity; }
+      // A factory's own worker (v71), then their next step.
+      worker: function (fid) { return CR.workers.workerFor(G.workers, fid) ? Infinity : CR.workers.workerCost(cfg, CR.factory.byId(G.factories, fid).cfg); },
+      workerUp: function (fid) { var w = CR.workers.workerFor(G.workers, fid); return w ? CR.workers.workerStepCost(cfg, CR.factory.byId(G.factories, fid).cfg, w.carrier) : Infinity; }
     },
     hireFarmer: function (plotId) {
       var plot = field.plotById[plotId];
@@ -11614,24 +12002,29 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     hireRestocker: function () {
       if (!G.barn.unlocked || !pay(actions.prices.restocker())) return;
       if (!CR.workers.hireRestocker(G.workers, cfg, barnSpot)) return;
-      bought(); barnCheer('Restocker hired!', false);
-    },
-    hireLoader: function (fid) {
-      var f = CR.factory.byId(G.factories, fid);
-      if (!G.barn.unlocked || !f || !f.unlocked || !pay(actions.prices.loader(fid))) return;
-      CR.workers.hireLoader(G.workers, cfg, fid, barnSpot); bought();
-      barnCheer(f.cfg.name + ' loader hired!', false);
+      bought(); barnCheer('Barn helper hired!', false);
     },
     restockCarrier: function () {
       if (!(actions.prices.restockCarrier() < Infinity) || !pay(actions.prices.restockCarrier())) return;
       G.workers.restockCarrier++; bought();
-      barnCheer('Restockers get ' + carrierName(CR.barn.carrier(cfg, G.workers.restockCarrier)) + '!', false);
+      barnCheer('Barn helpers get ' + carrierName(CR.barn.carrier(cfg, G.workers.restockCarrier)) + '!', false);
     },
-    loadCarrier: function (fid) {
-      var w = CR.workers.loaderFor(G.workers, fid), f = CR.factory.byId(G.factories, fid);
-      if (!w || !(actions.prices.loadCarrier(fid) < Infinity) || !pay(actions.prices.loadCarrier(fid))) return;
+    // One worker per factory (Tom 2026-09-26): barn, hopper, pallet, stall.
+    hireWorker: function (fid) {
+      var f = CR.factory.byId(G.factories, fid);
+      if (!f || !f.unlocked || !pay(actions.prices.worker(fid))) return;
+      CR.workers.hireWorker(G.workers, cfg, fid, G.barn.unlocked ? barnSpot : CR.workers.palletSide(cfg, f.cfg)); bought();
+      factoryCheer(f, f.cfg.name + ' worker hired!', true);
+    },
+    workerUp: function (fid) {
+      var w = CR.workers.workerFor(G.workers, fid), f = CR.factory.byId(G.factories, fid);
+      if (!w || !(actions.prices.workerUp(fid) < Infinity) || !pay(actions.prices.workerUp(fid))) return;
+      // A big cheer when the look changes: basket, hand cart, forklift.
+      var kind = function (l) { return /rolley/.test(l) ? 'cart' : /orklift/.test(l) ? 'forklift' : 'basket'; };
+      var was = kind(CR.workers.stepOf(cfg, w.carrier).look);
       w.carrier++; bought();
-      factoryCheer(f, f.cfg.name + ' loader gets ' + carrierName(CR.barn.carrier(cfg, w.carrier)) + '!', w.carrier % 2 === 0);
+      var st = CR.workers.stepOf(cfg, w.carrier);
+      factoryCheer(f, f.cfg.name + ' worker gets a ' + st.name.toLowerCase() + '!', kind(st.look) !== was);
     },
     farmerBoots: function (id) {
       var u = fup(id);
@@ -11804,7 +12197,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var sx = G.cam.x + CR.fx.shakeX + (px - view.W / 2) / z, sy = G.cam.y + CR.fx.shakeY + (py - view.H / 2) / z;
     function near(x, y) { var q = iso.toScreen(x, y, 22); return Math.abs(sx - q.x) < 16 && Math.abs(sy - q.y) < 28; }
     for (var i = 0; i < G.farmers.list.length; i++) if (near(G.farmers.list[i].x, G.farmers.list[i].y)) return { kind: 'farmer', id: G.farmers.list[i].id };
-    for (var wi = 0; wi < G.workers.list.length; wi++) if (near(G.workers.list[wi].x, G.workers.list[wi].y)) return { kind: 'barn' };
+    // A factory's worker opens its factory's menu, a barn helper the barn's.
+    for (var wi = 0; wi < G.workers.list.length; wi++) {
+      var wk = G.workers.list[wi];
+      if (near(wk.x, wk.y)) return wk.kind === 'factory' ? { kind: 'factory', id: wk.factoryId } : { kind: 'barn' };
+    }
     if (near(G.player.x, G.player.y)) return { kind: 'player' };
     // Buildings stand up, so try points on the ground and higher up.
     for (var h = 0; h <= 50; h += 10) {
