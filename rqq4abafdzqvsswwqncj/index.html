@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v81)</p>
+    <p class="ver">Crop Rush 1.0 (v82)</p>
   </div>
 </div>
 
@@ -11431,19 +11431,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // field tiles by the counter's end cut as usual (balance bot v52: stood
     // there for 10 min beside ripe tomatoes).
     var dropSpot = G.carry.items.length > 0 && (atStall(p) || (G.barn.unlocked && inZone(barnZone(), p.x, p.y)));
-    // Nor while you carry factory goods: they're on their way to the stall
-    // (playtest 8: the walk back through the fields filled you up again).
-    var ci0 = G.carry.items, goodsOn = ci0.length > 0 && ci0[ci0.length - 1].indexOf(':') >= 0;
-    var cuts = onFactoryLot(p) || dropSpot || goodsOn ? [] : CR.field.cut(field, p, G.tool, G.carry);
-    if (goodsOn && G.time - (G.goodsSaid || -9) > 5 && CR.field.plotAt(field, p.x, p.y)) {
-      G.goodsSaid = G.time;
-      var gs0 = iso.toScreen(p.x, p.y, 30);
-      var gf0 = CR.factory.byId(G.factories, G.item.shelf(ci0[ci0.length - 1]));
-      fx.text(gs0.x, gs0.y - 96, cap(gf0 ? gf0.cfg.goods : 'goods') + ' first: take them to the stall', { color: '#fff59d', size: 15, max: 1.4, rise: 12 });
-    }
+    // Carrying factory goods no longer stops harvesting (Tom 2026-09-27
+    // 19:58: "you can't harvest when having canned food. Fix"); the crops
+    // go on top of the goods and both unload at the stall.
+    var cuts = onFactoryLot(p) || dropSpot ? [] : CR.field.cut(field, p, G.tool, G.carry);
     // Standing in a bare patch: say the crops come back (playtest 9: new
     // players wandered for a minute before seeing that they regrow).
-    var bare = !cuts.length && !goodsOn && !dropSpot && !CR.field.isFull(G.carry) && G.stats.cut < 3000;
+    var bare = !cuts.length && !dropSpot && !CR.field.isFull(G.carry) && G.stats.cut < 3000;
     var bpl = bare && CR.field.plotAt(field, p.x, p.y);
     if (bpl && bpl.unlocked) for (var bx = -1; bx <= 1 && bpl; bx++) for (var by = -1; by <= 1 && bpl; by++) {
       if (CR.field.plotAt(field, p.x + bx, p.y + by) === bpl && CR.field.growthIn(field, bpl, Math.floor(p.x + bx), Math.floor(p.y + by)) >= 1) bpl = null;
