@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v74)</p>
+    <p class="ver">Crop Rush 1.0 (v75)</p>
   </div>
 </div>
 
@@ -6368,6 +6368,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (lot) goodItem(ctx, what, top.x - 12 + col * 6 + (row % 2) * 3, top.y + 3 - row * 7, 0.75);
       else drawItem(ctx, shelf.crop, c, top.x - 12 + col * 6 + (row % 2) * 3, top.y + 2 - row * 5, 0.9, ((i * 53) % 9 - 4) * 0.08);
     }
+    shelfSign(ctx, G, shelf);
     // Tag: the count, short ("1.2K") so neighbours never overlap, with a
     // bar for how full it is (capacity is in the shelf's menu). Red when
     // empty, green when full.
@@ -6389,6 +6390,36 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ellipse(ctx, top.x, top.y, 18, 8, 'rgba(255,255,255,0.6)');
       ctx.globalAlpha = 1;
     }
+  }
+
+  // A small name board stuck in front of each shelf's goods, lying along
+  // the counter's front so neighbours never cover each other (Tom
+  // 2026-09-27: "small signs at the stalls for each crop/product").
+  var SIGN_NAMES = { sunflower: 'Sunflowers', wheat: 'Wheat', berry: 'Berries', melon: 'Melons', apple: 'Apples' };
+  function signName(G, sid) {
+    if (G.cfg.crops[sid]) return SIGN_NAMES[sid] || G.cfg.crops[sid].name;
+    var f = CR.factory.byId(G.factories, sid), g = f ? f.cfg.goods : sid;
+    return g === 'baked goods' ? 'Bakes' : g.charAt(0).toUpperCase() + g.slice(1);
+  }
+  function shelfSign(ctx, G, shelf) {
+    var x = shelf.x, y = shelf.y, x0 = x + 0.06, x1 = x + 0.94, yb = y + 1.0, z0 = 15, z1 = 27;
+    var sid = shelf.crop, crop = G.cfg.crops[sid] || G.cfg.crops[G.item.crop(G.item.show(sid))];
+    var p0 = ws(x0, yb, z0), p1 = ws(x1, yb, z0), q1 = ws(x1, yb, z1), q0 = ws(x0, yb, z1);
+    ctx.fillStyle = '#fff3d6'; ctx.strokeStyle = '#7d4a1f'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.lineTo(q1.x, q1.y); ctx.lineTo(q0.x, q0.y); ctx.closePath(); ctx.fill(); ctx.stroke();
+    // A stripe in the crop's colour down the left end.
+    var s1 = ws(x0 + 0.1, yb, z0), s2 = ws(x0 + 0.1, yb, z1);
+    ctx.fillStyle = crop ? crop.color : '#8d6e63';
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.lineTo(q0.x, q0.y); ctx.closePath(); ctx.fill();
+    // The name, sheared to lie on the board, squeezed to fit.
+    var name = signName(G, sid), room = (x1 - x0 - 0.2) * 32 * 0.9;
+    ctx.font = '700 9px Fredoka, system-ui, sans-serif';
+    var k = Math.min(1, room / Math.max(1, ctx.measureText(name).width));
+    var m = ws((x0 + 0.1 + x1) / 2, yb, (z0 + z1) / 2);
+    ctx.save(); ctx.translate(m.x, m.y); ctx.transform(1, 0.5, 0, 1, 0, 0); ctx.scale(k, 1);
+    ctx.fillStyle = '#4e342e'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(name, 0, 0.5);
+    ctx.restore();
   }
 
   // The front of the shop, one tile column at a time so it sorts right
