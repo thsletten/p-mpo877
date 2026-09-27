@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v79)</p>
+    <p class="ver">Crop Rush 1.0 (v80)</p>
   </div>
 </div>
 
@@ -10489,9 +10489,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return v;
   }
 
-  // The SERVE mat is right beside the shelves, so standing there unloads
-  // too (playtest 4: on SERVE with a full basket nothing dropped).
-  function atStall(p) { return inZone(G.unloadZone, p.x, p.y) || serveTill(p) != null; }
+  // Only the drop mats along the outside of the stalls unload. (Playtest 4
+  // had SERVE unload too; Tom 2026-09-27 15:34: "You should not be able to
+  // fill stalls from the till.")
+  function atStall(p) { return inZone(G.unloadZone, p.x, p.y); }
 
   function unloadStep(dt) {
     var p = G.player;
