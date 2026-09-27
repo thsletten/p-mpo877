@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v80)</p>
+    <p class="ver">Crop Rush 1.0 (v81)</p>
   </div>
 </div>
 
@@ -997,7 +997,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         signboard: { baseCost: 55,  costGrowth: 1.42, mult: 0.9, steepAfter: 10, steepGrowth: 2.3,
           tiers: ['Signboard', 'Flyers', 'Newspaper ad', 'Radio ad', 'TV ad'], perTier: 5 },
         till:      { baseCost: 200, costGrowth: 1.93, mult: 0.88, steepAfter: 10, steepGrowth: 3.2 }, // Quick hands: steeper from 10 (playtest 14: always paid back in seconds)
-        prices:    { baseCost: 110, costGrowth: 1.38, add: 0.1, steepAfter: 10, steepGrowth: 2.2 }
+        // Better prices (+10% at the stall a level) is gone: Tom 2026-09-27
+        // 15:57 "remove the +10% price. Too OP". removed: never for sale;
+        // add 0 so old saves' levels do nothing.
+        prices:    { baseCost: 110, costGrowth: 1.38, add: 0, removed: true, steepAfter: 10, steepGrowth: 2.2 }
       }
     },
 
@@ -1143,7 +1146,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // A milestone brings `demand` x the customers for its crop or product;
     // it no longer doubles the price (Tom 2026-09-25 13:05: "Milestones are
     // too OP. They should only add more carrot customers").
-    milestones: { cut: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10], made: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9], demand: 1.5, tierGrowth: 3 },
+    // v81 (Tom 2026-09-27 15:55: "demand outgrows supply fast ... 1.1 first
+    // milestone, 1.2 next, and so on"): each milestone adds demandStep, so
+    // 1.1x, 1.2x, 1.3x ... (was 1.5x per milestone, compounding).
+    // `fame`: what the town says at each milestone ({x}: the crop or goods,
+    // {be}: is or are).
+    milestones: { cut: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10], made: [100, 1000, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9], demandStep: 0.1, tierGrowth: 3,
+      fame: [
+        'Your {x} {be} now the town\'s favourite!',
+        'People come from the next town for your {x}!',
+        'Your {x} {be} famous all over the county!',
+        'The whole country talks about your {x}!',
+        'Your {x} won first prize at the national fair!',
+        'Shops abroad order your {x}!',
+        'Your {x} {be} world famous!',
+        'Astronauts take your {x} to space!',
+        'Your {x} {be} a legend across the galaxy!'
+      ] },
     // Picking pay (main.js): crops you cut yourself pay share x their price
     // at once, at most cap x your income a second (floor coins a second
     // early on). The steady edge of harvesting (playtest 11). Raised
@@ -2079,7 +2098,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   // Stall upgrade k: its top level and the price of the next level.
-  function maxLevel(config, k) { return config.stand.upgrades[k].maxLevel || 25; }
+  function maxLevel(config, k) { var u = config.stand.upgrades[k]; return u.removed ? 0 : (u.maxLevel || 25); }
 
   // For an upgrade shown in named kinds (tiers, perTier levels each, the
   // last kind taking whatever levels are left): the kind `level` is in and
@@ -3400,14 +3419,24 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // Customer multipliers the taken milestones give, by stall shelf:
   // { carrot: 4, cannery: 2 }. The game puts them in stand.demand.
+  // v81: each milestone adds demandStep (1.1x, 1.2x, 1.3x ...).
   function boosts(config, taken) {
-    var b = {}, mult = config.milestones.demand;
+    var b = {}, n = {};
     taken.forEach(function (id) {
       var parts = String(id).split(':');
       if (parts.length !== 3) return;
-      b[parts[1]] = (b[parts[1]] || 1) * mult;
+      n[parts[1]] = (n[parts[1]] || 0) + 1;
     });
+    Object.keys(n).forEach(function (k) { b[k] = boostAfter(config, n[k]); });
     return b;
+  }
+  function boostAfter(config, n) { return Math.round((1 + n * config.milestones.demandStep) * 100) / 100; }
+
+  // What the town says when a milestone is reached: 'Your carrots are now
+  // the town's favourite!'. name: the crop or goods, as players read it.
+  function fame(config, ms, name) {
+    var lines = config.milestones.fame, i = Math.min(lines.length - 1, +String(ms.id).split(':')[2] || 0), x = name.toLowerCase();
+    return lines[i].replace('{x}', x).replace('{be}', /s$/.test(x) ? 'are' : 'is');
   }
 
   // ---- orders ---------------------------------------------------------------
@@ -3613,7 +3642,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   CR.goals = {
     bigGoalValue: bigGoalValue, bigGoalsReached: bigGoalsReached,
-    milestones: milestones, reached: reached, next: next, boosts: boosts, progressOf: progressOf,
+    milestones: milestones, reached: reached, next: next, boosts: boosts, boostAfter: boostAfter, fame: fame, progressOf: progressOf,
     nice: nice, makeOrder: makeOrder, liftRewards: liftRewards, reroll: reroll, createBoard: createBoard, refill: refill, accept: accept, sell: sell, tick: tick,
     createGolden: createGolden, goldenTick: goldenTick, goldenReward: goldenReward
   };
@@ -8953,14 +8982,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           signboard: [ad.tiers[Math.min(ad.tiers.length - 1, Math.floor(adLv / ad.perTier))],
             perMin2 > perMin ? 'Customers a minute: ' + perMin + ' → ' + perMin2 : 'About ' + perMin + ' customers a minute, the most the stall gets'],
           till: ['Quick hands', 'Serve each customer faster'] };
-        // Better prices first (playtest 7: missed below the fold for 12 min).
-        // What it is worth now (playtest 9, third round asking for payback).
-        var pm0 = G.stand.priceMultiplier || 1, gainP = G.rates.money * 60 * up.prices.add / pm0;
-        names = Object.assign({ prices: ['Better prices', '+' + Math.round(up.prices.add * 100) + '% at the stall' + (gainP >= 1 ? ': about +' + G.fmt(Math.round(gainP)) + ' a minute' : '')] }, names);
+        // v81: Better prices removed (Tom 2026-09-27: too OP).
         // Payback where the gain is clear (playtest 12: asked for on every
         // tab): prices always; Quick hands while the till holds you up;
         // Signboard while your shelves stay full.
-        var hold = ui.bottleneck(), inc = G.rates.money * 60, standGain = { prices: gainP };
+        var hold = ui.bottleneck(), inc = G.rates.money * 60, standGain = {};
         if (hold && /till/.test(hold[0])) standGain.till = inc * (1 / up.till.mult - 1);
         if (hold && /full/.test(hold[0]) && perMin2 > perMin) standGain.signboard = inc * (perMin2 / perMin - 1);
         Object.keys(names).forEach(function (k) {
@@ -9704,7 +9730,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var ms = CR.goals.next(cfg, r.kind, r.key, G.milestonesTaken);
         // Milestones bring customers now, not prices (playtest 6: "NaNx").
         var name = G.goalName({ kind: r.kind, key: r.key }), boost = Math.round(((G.stand.demand || {})[r.key] || 1) * 100) / 100;
-        var nextBoost = Math.round(boost * cfg.milestones.demand * 100) / 100;
+        var nextBoost = Math.round((boost + cfg.milestones.demandStep) * 100) / 100;
         var icon = G.item.icon(r.key);
         if (!ms) { list.push({ key: 'ms' + r.key, icon: icon, title: name + ': all done', sub: boost + 'x as many customers', noBuy: true }); return; }
         var have = CR.goals.progressOf({ cut: G.cut, made: (function () { var m = {}; m[r.key] = (CR.factory.byId(G.factories, r.key) || {}).made; return m; })() }, ms);
@@ -10143,9 +10169,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     unloadMat: { x: 0, y: 0, w: 0, h: 0 },
     // Forgiving: a little past the mat counts too.
     unloadZone: { x: 0, y: 0, w: 0, h: 0 },
-    // The U itself and the customers' side below it down to the gate are
-    // theirs (playtest 7: walking round the till put you in the queue).
-    blocked: { x: U.left, y: U.top, w: U.right + 1 - U.left, h: cfg.stand.entrance.y - U.top },
+    // v81 (Tom 2026-09-27 15:55: "the stalls collision is too big, hard to
+    // move around"): only each stall itself is solid, one box per spot
+    // (unbuilt spots sit far away). Before, the whole U down to the gate was.
+    stallSolids: [],
     unloadTimer: 0, unloadRun: 0,
     harvested: 0,
     stats: { cut: 0, truckItems: 0, truckEarned: 0 }, // totals so far, for the info panels
@@ -10194,8 +10221,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   G.workers = CR.workers.create(cfg);
   G.rand = CR.rng.create((Date.now() % 1e9) >>> 0);
   // The till is solid too.
-  G.solids = [G.blocked, { x: cfg.stand.tills[0].x, y: cfg.stand.tills[0].y, w: 1, h: 1 },
-    { x: G.truck.x - 1.05, y: G.truck.y - 0.5, w: 2.6, h: 1 }];
+  for (var bi = 0; bi < cfg.stand.u.spots; bi++) G.stallSolids.push({ x: -999, y: -999, w: 0, h: 0 });
+  G.solids = G.stallSolids.concat([{ x: cfg.stand.tills[0].x, y: cfg.stand.tills[0].y, w: 1, h: 1 },
+    { x: G.truck.x - 1.05, y: G.truck.y - 0.5, w: 2.6, h: 1 }]);
   cfg.factories.forEach(function (f) { G.solids.push({ x: f.x, y: f.y, w: f.w, h: f.h }); });
   // Lays the U out for `n` stall spots (at least 2): spot 0 at the top of
   // the right arm, spot 1 the left, and on down, a gap between each. Moves
@@ -10208,11 +10236,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var T = cfg.stand.tills, x0 = Infinity, x1 = -Infinity;
     for (var ti = 0; ti < Math.max(1, G.stand.tills.length); ti++) { x0 = Math.min(x0, T[ti].x); x1 = Math.max(x1, T[ti].x + 1); }
     U.left = x0 - U.tillPad - 1; U.right = x1 + U.tillPad;
-    area.x = G.blocked.x = U.left; area.w = G.blocked.w = U.right + 1 - U.left;
+    area.x = U.left; area.w = U.right + 1 - U.left;
     G.shelves.forEach(function (sh, k) {
       sh.side = k % 2 ? 'left' : 'right';
       sh.x = k % 2 ? U.left : U.right;
       sh.y = U.armStart + Math.floor(k / 2) * U.pitch;
+    });
+    G.stallSolids.forEach(function (b, k) {
+      var sh = G.shelves[k], on = k < n;
+      b.x = on ? sh.x + 0.1 : -999; b.y = on ? sh.y + 0.1 : -999; b.w = b.h = on ? 0.8 : 0;
     });
     var R = Math.ceil(n / 2), L = Math.floor(n / 2), bottom = U.armStart + (R - 1) * U.pitch + 1;
     area.h = bottom - U.top;
@@ -11576,12 +11608,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!got.length) return;
     got.forEach(function (ms) { G.milestonesTaken.push(ms.id); });
     G.stand.demand = CR.goals.boosts(cfg, G.milestonesTaken);
+    // v81 (Tom 2026-09-27): a line from the town for each milestone.
     got.forEach(function (ms) {
       var name = G.goalName(ms);
-      ui.toast('Milestone!', E.fmt(ms.need) + ' ' + name.toLowerCase() + (ms.kind === 'cut' ? ' harvested' : ' made') + '. ' + G.stand.demand[ms.key] + 'x as many customers want ' + name.toLowerCase() + '!',
+      ui.toast(CR.goals.fame(cfg, ms, name), E.fmt(ms.need) + ' ' + name.toLowerCase() + (ms.kind === 'cut' ? ' harvested' : ' made') + '. ' + G.stand.demand[ms.key] + 'x ' + name.toLowerCase() + ' customers.',
         G.item.icon(ms.key));
     });
-    celebrate('Milestone! ' + G.stand.demand[got[0].key] + 'x ' + G.goalName(got[0]).toLowerCase() + ' customers', true);
+    celebrate('Milestone!', true);
     ui.goalsNews();
     ui.refreshPanel();
   }
