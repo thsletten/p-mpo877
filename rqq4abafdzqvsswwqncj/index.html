@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v70)</p>
+    <p class="ver">Crop Rush 1.0 (v70.1)</p>
   </div>
 </div>
 
@@ -727,7 +727,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // v70 (Tom 2026-09-27: "more like we did. But just more expensive
     // upgrades"): v68's levels and steps, dearer. Was: carry 10, x1.6;
     // boots 20, x1.5; engine 4,100, x1.6.
-    carry: { limits: [5, 10, 16, 25, 40, 60, 90, 130], baseCost: 23, costGrowth: 1.67, vehicleHopperMult: 4 },
+    // v70.1 (Tom 2026-09-27 08:34: basket upgrades too cheap, "2x the first
+    // basket upgrade and scale accordingly"): every step costs twice v70's.
+    carry: { limits: [5, 10, 16, 25, 40, 60, 90, 130], baseCost: 46, costGrowth: 1.67, vehicleHopperMult: 4 },
     boots: { speedBonus: 0.1, maxLevel: 10, baseCost: 90, costGrowth: 2.5 },
     // Engine: speed upgrades for the tractor and combine (Tom, 2026-09-23).
     // One level counts for every vehicle.
