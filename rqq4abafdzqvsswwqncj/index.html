@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v72)</p>
+    <p class="ver">Crop Rush 1.0 (v73)</p>
   </div>
 </div>
 
@@ -5891,8 +5891,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       });
       S.decorate(G, box, list);
     }
-    G.shelves.forEach(function (sh) { list.push({ x: sh.x + 0.5, y: sh.y + 0.5, h: 0, fn: S.drawShelf, sh: sh }); });
-    var sa = G.cfg.stand.area;
+    G.stallShelves().forEach(function (sh) { list.push({ x: sh.x + 0.5, y: sh.y + 0.5, h: 0, fn: S.drawShelf, sh: sh }); });
+    var sa = G.standArea;
     for (i = 0; i < sa.w; i++) list.push({ x: sa.x + i + 0.5, y: sa.y + sa.h - 0.05, h: 2, fn: S.drawAwning, col: i });
     var pile = G.cfg.stand.coinPile;
     G.stand.tills.forEach(function (tl, ti) {
@@ -5991,7 +5991,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
     // Behind the stall's roof and sign you'd lose yourself (playtest 1):
     // a marker over your head there, drawn on top of everything.
-    var pa = G.cfg.stand.area, pp = G.player;
+    var pa = G.standArea, pp = G.player;
     if (!G.full && pp.y > pa.y - 3 && pp.y < pa.y + pa.h && pp.x > pa.x - 1 && pp.x < pa.x + pa.w + 6) {
       var gp = stackTop(G), gy = gp.y - 14 + Math.sin(time * 5) * 2;
       ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(40,20,0,0.8)'; ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
@@ -6383,7 +6383,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // later stages' fronts in shopview.js.
   function drawAwning(ctx, G, it) { CR.shopView.front(ctx, G, it, drawStallAwning); }
   function drawStallAwning(ctx, G, it) {
-    var a = G.cfg.stand.area, yF = a.y + a.h - 0.1, z0 = 44, col = it.col;
+    var a = G.standArea, yF = a.y + a.h - 0.1, z0 = 44, col = it.col;
     // The shop's stage (farm stall .. spaceport) sets its colours and name.
     var stg = CR.stand.stage(G.cfg, G.standLv.shelves), stageCol = G.cfg.stand.stages[stg].color;
     if (col === 0 || col === a.w - 1) {
@@ -7823,8 +7823,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 // shelving under a lit canopy, a distribution hub with pallet racking and
 // lorries at loading bays, a harbour with a gantry, a container ship and
 // container lorries, and a spaceport with hover pods, hover lorries and a
-// rocket. The shop's footprint never moves, so nothing
-// about playing it changes.
+// rocket. The shop grows west from the till, one spot per crop or
+// product unlocked (G.standArea, main.js sizeStall).
 (function (CR) {
   'use strict';
 
@@ -7929,7 +7929,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   ];
   function deck(ctx, G, time) {
     init();
-    var a = G.cfg.stand.area, s = stage(G), c = FLOOR[s], i;
+    var a = G.standArea, s = stage(G), c = FLOOR[s], i;
     box(ctx, a.x, a.y, a.w, a.h, -2, 6, c[0], c[1], c[2]);
     ctx.strokeStyle = c[3]; ctx.lineWidth = s === 5 ? 1.5 : 1;
     if (s <= 1) {
@@ -8014,7 +8014,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     init();
     var s = stage(G);
     if (s === 0) { drawAwning(ctx, G, it); return; }
-    var a = G.cfg.stand.area, yF = a.y + a.h - 0.1, col = it.col, x0 = a.x + col, x1 = x0 + 1;
+    var a = G.standArea, yF = a.y + a.h - 0.1, col = it.col, x0 = a.x + col, x1 = x0 + 1;
     var color = G.cfg.stand.stages[s].color, sh = CR.vehicles.shade, post = col % 4 === 0, last = col === a.w - 1;
     function pillar(px, c, w, top) {
       box(ctx, px - w / 2, yF - w / 2, w, w, 0, top, sh(c, 1.1), sh(c, 0.9), sh(c, 0.75));
@@ -8092,7 +8092,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       box(ctx, x0, yF - 0.12, 1, 0.22, 90, 8, '#ffa726', '#ef6c00', '#e65100');
       for (var h = 0; h < 2; h++) { ctx.fillStyle = h ? '#212121' : '#ffca28'; quadPath(ctx, x0 + h / 2, yF + 0.1, 0.5, 0.02, 94); ctx.fill(); }
       // The trolley runs along the gantry, lowering its spreader.
-      var tr = a.x + 2 + (Math.sin(G.time * 0.35) * 0.5 + 0.5) * (a.w - 4);
+      var tr = a.x + Math.min(2, a.w / 2) + (Math.sin(G.time * 0.35) * 0.5 + 0.5) * Math.max(0, a.w - 4);
       if (tr >= x0 && tr < x1) {
         box(ctx, tr - 0.4, a.y - 0.3, 0.8, a.h + 0.1, 98, 8, '#fafafa', '#b0bec5', '#cfd8dc');
         var drop = 60 + Math.sin(G.time * 0.7) * 16, hy = a.y + a.h / 2;
@@ -8241,8 +8241,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return { list: {}, order: [] };
   }
 
-  function spot(cfg, rand) {
-    var a = cfg.stand.area;
+  function spot(G, rand) {
+    var a = G.standArea || G.cfg.stand.area;
     return { x: a.x + 0.6 + rand() * (a.w - 1.2), y: a.y + a.h + 0.55 + rand() * 0.25 };
   }
 
@@ -8269,7 +8269,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var from = { x: st.entrance.x - 0.8 + (rand() - 0.5) * 4, y: st.entrance.y };
         // Walk up to the shelf with the crop they came for.
         var ws0 = e.want && shelfFor(e.want);
-        var to = ws0 ? { x: ws0.x + 0.2 + rand() * 0.6, y: ws0.y + 1.55 + rand() * 0.25 } : spot(cfg, rand);
+        var to = ws0 ? { x: ws0.x + 0.2 + rand() * 0.6, y: ws0.y + 1.55 + rand() * 0.25 } : spot(G, rand);
         var d = Math.hypot(to.x - from.x, to.y - from.y);
         c = C.list[e.id] = {
           id: e.id, x: from.x, y: from.y, tx: to.x, ty: to.y,
@@ -9994,7 +9994,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   };
 
   var field = CR.field.create(cfg);
-  var area = cfg.stand.area;
+  // The stall's full footprint (16 spots) and the part built so far: it
+  // starts 2 spots wide at the till end and grows one spot with every crop
+  // and product you unlock, so there is always one spot ready for the next
+  // (Tom 2026-09-27). `area` is the live one; sizeStall() moves its west end.
+  var fullArea = cfg.stand.area;
+  var area = { x: fullArea.x + fullArea.w - 2, y: fullArea.y, w: 2, h: fullArea.h };
 
   var G = {
     cfg: cfg,
@@ -10013,6 +10018,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     wob: 0, wobV: 0, stackSquash: 0, bob: 0, stackVisible: 0,
     full: false,
     combo: { n: 0, last: -9, shown: 0 },
+    standArea: area,
     shelves: [],
     shelfStock: {},
     shelfBump: {},
@@ -10074,12 +10080,26 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   cfg.factories.forEach(function (f) { G.solids.push({ x: f.x, y: f.y, w: f.w, h: f.h }); });
   // The customers' side of the stall is theirs (playtest 7: walking round
   // the till's end put you in the queue, where drops do nothing).
-  var sa0 = cfg.stand.area, tl0 = cfg.stand.tills[cfg.stand.tills.length - 1];
-  G.solids.push({ x: sa0.x - 0.6, y: sa0.y + sa0.h, w: tl0.x + 1.6 - (sa0.x - 0.6), h: cfg.stand.entrance.y - (sa0.y + sa0.h) });
-  G.solids.push({ x: sa0.x + sa0.w, y: sa0.y + sa0.h - 1, w: tl0.x + 1.6 - (sa0.x + sa0.w), h: 1 });
+  var sa0 = area, tl0 = cfg.stand.tills[cfg.stand.tills.length - 1];
+  var custSide = { x: 0, y: sa0.y + sa0.h, w: 0, h: cfg.stand.entrance.y - (sa0.y + sa0.h) };
+  G.solids.push(custSide);
+  G.solids.push({ x: fullArea.x + fullArea.w, y: sa0.y + sa0.h - 1, w: tl0.x + 1.6 - (fullArea.x + fullArea.w), h: 1 });
   // Fills the notch where the shelves' end met the customers' side, so the
   // stall's west end is one straight wall (playtest 14: stuck 4 s there).
-  G.solids.push({ x: sa0.x - 0.6, y: sa0.y + sa0.h - 1, w: 0.6, h: 1 });
+  var notch = { x: 0, y: sa0.y + sa0.h - 1, w: 0.6, h: 1 };
+  G.solids.push(notch);
+  // Moves the stall's west end so it is `n` spots wide, with its mats,
+  // walls and the customers' side.
+  function sizeStall(n) {
+    n = Math.max(2, Math.min(fullArea.w, n));
+    area.x = fullArea.x + fullArea.w - n; area.w = n;
+    G.unloadMat.x = area.x; G.unloadMat.w = area.w;
+    G.unloadZone.x = area.x - 0.3; G.unloadZone.w = area.w + 0.3;
+    G.blocked.x = area.x; G.blocked.w = area.w;
+    custSide.x = area.x - 0.6; custSide.w = tl0.x + 1.6 - custSide.x;
+    notch.x = area.x - 0.6;
+  }
+  sizeStall(2);
 
   // Items are crops ('carrot') or factory goods ('<factory>:<recipe>',
   // e.g. 'cannery:carrot').
@@ -10105,7 +10125,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // Shelves stand on the front row of the stand. Each crop you open and
   // each factory you build gets the next free one, starting at the till.
-  for (var si = 0; si < area.w; si++) G.shelves.push({ x: area.x + area.w - 1 - si, y: area.y + area.h - 1, crop: null });
+  for (var si = 0; si < fullArea.w; si++) G.shelves.push({ x: fullArea.x + fullArea.w - 1 - si, y: fullArea.y + fullArea.h - 1, crop: null });
   function giveShelf(id, mixed) {
     if (shelfFor(id)) return;
     for (var i = 0; i < G.shelves.length; i++) {
@@ -10119,7 +10139,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function refreshShelves() {
     Object.keys(cfg.crops).forEach(function (c) { if (G.seeds[c]) giveShelf(c); });
     G.factories.factories.forEach(function (f) { if (f.unlocked) giveShelf(f.id, true); });
+    var open = G.shelves.filter(function (q) { return q.crop; }).length, was = area.w;
+    sizeStall(open + 1);
+    // The new spot gets a little show once the game is running.
+    if (area.w > was && G.started) {
+      var ns = iso.toScreen(area.x + 0.5, area.y + area.h / 2, 30);
+      fx.burst(ns.x, ns.y, ['#ffeb3b', '#fff', '#7ed957'], 26, 1.1);
+      fx.text(ns.x, ns.y - 50, 'Stall grows!', { color: '#ffeb3b', size: 22, max: 1.3 });
+    }
   }
+  // Only the built part of the stall has shelves.
+  G.stallShelves = function () { return G.shelves.filter(function (q) { return q.x >= area.x; }); };
   function shelfFor(id) {
     for (var i = 0; i < G.shelves.length; i++) if (G.shelves[i].crop === id) return G.shelves[i];
     return null;
@@ -12217,7 +12247,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (!(actions.prices.stand(k) < Infinity) || !pay(actions.prices.stand(k))) return;
       G.standLv[k]++; bought();
       CR.stand.applyUpgrades(G.stand, G.standLv, cfg);
-      var a = cfg.stand.area, s = iso.toScreen(a.x + a.w / 2, a.y + a.h / 2, 30);
+      var a = area, s = iso.toScreen(a.x + a.w / 2, a.y + a.h / 2, 30);
       fx.burst(s.x, s.y, ['#ffeb3b', '#fff', '#ff7043'], 30, 1.2);
       showOff(a.x + a.w * 0.7, a.y + a.h / 2);
       // A new look (Advertising kinds, bigger kinds of shelves) gets its name.
@@ -12288,8 +12318,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       fx.shake(4);
       fx.sound.done();
     },
-    openPlots: function () {
-      field.plots.forEach(function (pl) { if (!pl.unlocked) { pl.paid = pl.cost; CR.field.unlockPlot(field, pl.id); } openCrop(pl); });
+    openPlots: function (upTo) { // testing tool; upTo: only fields up to this id
+      field.plots.forEach(function (pl) { if (upTo && pl.id > upTo) return; if (!pl.unlocked) { pl.paid = pl.cost; CR.field.unlockPlot(field, pl.id); } openCrop(pl); });
       fx.shake(8);
       fx.sound.done();
     }
@@ -12397,6 +12427,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (fps < 40 && sharp > 0.6) { view.sharp = Math.max(0.6, sharp - 0.2); resize(); perf.wait = 1; }
   }
 
+  G.started = true; // saves are loaded: from here a growing stall gets its show
   var last = performance.now();
   function frame(now) {
     var real = Math.max(0, (now - last) / 1000), dt = Math.min(0.05, real);
