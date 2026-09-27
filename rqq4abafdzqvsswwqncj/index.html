@@ -627,7 +627,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v73)</p>
+    <p class="ver">Crop Rush 1.0 (v74)</p>
   </div>
 </div>
 
@@ -882,17 +882,23 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // The market truck is parked by the yard all the time. Drop crops at its
     // back (zone) and it buys them on the spot, but cheap: price x bulkRate.
     // (Tom, 2026-09-23: "bulk sell to a truck, or fill up the stall".)
-    // It parks at the yard's right edge, beside the tills and off the walk
-    // from the fields to them (playtest 1: it sat on that walk and ate
-    // baskets meant for the stall).
-    truck: { interval: 12, from: { x: 52, y: 31 }, stop: { x: 45.6, y: 31 }, speed: 7,
-      zone: { x: 44.4, y: 31.8, w: 2.8, h: 1.4 }, bulkRate: 0.3,
+    // v74 (Tom 2026-09-27): it parks just behind the counter, right of the
+    // tills, so selling in bulk is a short step from serving, and its mat is
+    // bigger (was at x 45.6 with a 2.8 x 1.4 mat). The hold keeps it from
+    // eating baskets meant for the stall on the way past (playtest 1).
+    truck: { interval: 12, from: { x: 52, y: 31 }, stop: { x: 41, y: 31 }, speed: 7,
+      zone: { x: 38.9, y: 31.6, w: 4.4, h: 1.75 }, bulkRate: 0.3,
       hold: 0.8 }, // s to stand on the mat before crops the stall could take are sold (playtest 4)
 
     stand: {
       // You unload on the back rows; the shelves are the front row, facing
       // the customers who come from the bottom of the screen.
-      area: { x: 24, y: 34, w: 16, h: 3 }, // 16 shelves: 12 crops + 4 factories
+      // v74 (Tom 2026-09-27): the tills stand in the middle of the counter
+      // and the shelves grow out from them, one spot right, then one left.
+      // area is the full counter: 16 shelves (12 crops + 4 factories) and 4
+      // tills of tillSlot tiles each, centred on `centre` above the gate.
+      area: { x: 24, y: 34, w: 24, h: 3 },
+      centre: 36, tillSlot: 2,
       // Where the till and the coin pile stand, and where customers come from.
       // Tills in a row from the end of the stand (Tom: buy more tills and
       // sellers). You serve a till by standing on the mat behind it (the
@@ -900,12 +906,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // till costs; keeperCosts: a seller for each till. A new till is for
       // sale once every till you have has a seller (rebalanced 2026-09-24,
       // Tom: tills and sellers felt unbalanced).
-      tills: [{ x: 40, y: 36 }, { x: 41.6, y: 36 }, { x: 43.2, y: 36 }, { x: 44.8, y: 36 }],
+      // v74: in the middle of the counter, the first at the centre, then
+      // right, left, right; they never move once built (the shelves move out).
+      tills: [{ x: 35.5, y: 36 }, { x: 37.5, y: 36 }, { x: 33.5, y: 36 }, { x: 39.5, y: 36 }],
       tillCosts: [0, 660, 2860, 7590], // v70: 10% dearer (was 600, 2,600, 6,900)
       // The SERVE mat behind each till; you serve anywhere within servePad
       // of it (playtest 1: the mat was too small to stop on).
-      cashier: { dx: 0, dy: -1.7, w: 1.5, h: 1.5, servePad: 0.7, stickPad: 1.3, slow: 0.5 },
-      coinPile: { x: 39.2, y: 32.6 },
+      cashier: { dx: -0.25, dy: -1.7, w: 1.5, h: 1.5, servePad: 0.7, stickPad: 1.3, slow: 0.5 },
+      coinPile: { x: 32.4, y: 32.5 }, // v74: behind the counter, left of the tills (the truck is right)
       coinReach: 9, // the pile comes to you anywhere this close (the stall area)
       entrance: { x: 36, y: 46 },
       // Tiles per second for every walk, the walk up included (Tom 2026-09-25:
@@ -6272,15 +6280,20 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // The floor changes with the shop's stage (shopview.js).
     CR.shopView.deck(ctx, G, time);
     // Drop mat: glows while you carry something.
-    var m = G.unloadMat;
+    // One piece each side of the tills (v74: they stand in the middle; the
+    // SERVE mats between still drop what you carry too).
+    var m = G.unloadMat, tb = G.tillBlock;
     var glow = G.carry.items.length ? 0.55 + 0.35 * Math.sin(time * 6) : 0.3;
-    ctx.globalAlpha = glow;
-    ctx.fillStyle = '#7ed957';
-    quadPath(ctx, m.x + 0.2, m.y + 0.2, m.w - 0.4, m.h - 0.4, 4); ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2.5; ctx.setLineDash([10, 7]); ctx.lineDashOffset = -time * 14;
-    quadPath(ctx, m.x + 0.2, m.y + 0.2, m.w - 0.4, m.h - 0.4, 4); ctx.stroke();
-    ctx.setLineDash([]);
+    [[m.x, tb ? tb.x0 : m.x + m.w], [tb ? tb.x1 : m.x + m.w, m.x + m.w]].forEach(function (r) {
+      if (r[1] - r[0] < 0.9) return;
+      ctx.globalAlpha = glow;
+      ctx.fillStyle = '#7ed957';
+      quadPath(ctx, r[0] + 0.2, m.y + 0.2, r[1] - r[0] - 0.4, m.h - 0.4, 4); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = 2.5; ctx.setLineDash([10, 7]); ctx.lineDashOffset = -time * 14;
+      quadPath(ctx, r[0] + 0.2, m.y + 0.2, r[1] - r[0] - 0.4, m.h - 0.4, 4); ctx.stroke();
+      ctx.setLineDash([]);
+    });
     // Serve mat behind the till: glows while customers wait.
     // Green and SERVING while you serve it; pulsing yellow while customers
     // wait and nobody serves (playtest 1: it read the wrong way round).
@@ -9994,12 +10007,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   };
 
   var field = CR.field.create(cfg);
-  // The stall's full footprint (16 spots) and the part built so far: it
-  // starts 2 spots wide at the till end and grows one spot with every crop
-  // and product you unlock, so there is always one spot ready for the next
-  // (Tom 2026-09-27). `area` is the live one; sizeStall() moves its west end.
+  // The stall's full footprint and the part built so far (Tom 2026-09-27):
+  // the tills stand in the middle and the stall starts with 2 spots, one
+  // each side of them, then grows one spot with every crop and product you
+  // unlock, right, then left, so one spot is always ready for the next.
+  // `area` is the live counter (tills and shelves); sizeStall() sets it.
   var fullArea = cfg.stand.area;
-  var area = { x: fullArea.x + fullArea.w - 2, y: fullArea.y, w: 2, h: fullArea.h };
+  var area = { x: cfg.stand.centre - 2, y: fullArea.y, w: 4, h: fullArea.h };
 
   var G = {
     cfg: cfg,
@@ -10080,26 +10094,37 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   cfg.factories.forEach(function (f) { G.solids.push({ x: f.x, y: f.y, w: f.w, h: f.h }); });
   // The customers' side of the stall is theirs (playtest 7: walking round
   // the till's end put you in the queue, where drops do nothing).
-  var sa0 = area, tl0 = cfg.stand.tills[cfg.stand.tills.length - 1];
+  var sa0 = area;
   var custSide = { x: 0, y: sa0.y + sa0.h, w: 0, h: cfg.stand.entrance.y - (sa0.y + sa0.h) };
   G.solids.push(custSide);
-  G.solids.push({ x: fullArea.x + fullArea.w, y: sa0.y + sa0.h - 1, w: tl0.x + 1.6 - (fullArea.x + fullArea.w), h: 1 });
-  // Fills the notch where the shelves' end met the customers' side, so the
-  // stall's west end is one straight wall (playtest 14: stuck 4 s there).
-  var notch = { x: 0, y: sa0.y + sa0.h - 1, w: 0.6, h: 1 };
-  G.solids.push(notch);
-  // Moves the stall's west end so it is `n` spots wide, with its mats,
-  // walls and the customers' side.
+  // Fills the notches where the counter's ends meet the customers' side, so
+  // each end is one straight wall (playtest 14: stuck 4 s there).
+  var notch = { x: 0, y: sa0.y + sa0.h - 1, w: 0.6, h: 1 }, notchR = { x: 0, y: sa0.y + sa0.h - 1, w: 0.6, h: 1 };
+  G.solids.push(notch, notchR);
+  // The tills' part of the counter: a slot for each till you have, in
+  // config order (centre, right, left, right).
+  G.tillBlock = { x0: 0, x1: 0 };
+  // Lays the counter out for `n` shelf spots (at least 2) round the tills
+  // you have: spot 0 right of the tills, spot 1 left, and so on. Moves the
+  // shelves, the mats, the walls and the customers' side with it.
+  var spots = 2;
   function sizeStall(n) {
-    n = Math.max(2, Math.min(fullArea.w, n));
-    area.x = fullArea.x + fullArea.w - n; area.w = n;
+    spots = n = Math.max(2, Math.min(G.shelves.length, n));
+    var slot = cfg.stand.tillSlot, x0 = Infinity, x1 = -Infinity;
+    for (var ti = 0; ti < Math.max(1, G.stand.tills.length); ti++) {
+      var t = cfg.stand.tills[ti];
+      x0 = Math.min(x0, t.x + 0.5 - slot / 2); x1 = Math.max(x1, t.x + 0.5 + slot / 2);
+    }
+    G.tillBlock.x0 = x0; G.tillBlock.x1 = x1;
+    var R = Math.ceil(n / 2), L = Math.floor(n / 2);
+    G.shelves.forEach(function (sh, k) { sh.x = k % 2 ? x0 - 1 - (k - 1) / 2 : x1 + k / 2; });
+    area.x = x0 - L; area.w = x1 - x0 + L + R;
     G.unloadMat.x = area.x; G.unloadMat.w = area.w;
-    G.unloadZone.x = area.x - 0.3; G.unloadZone.w = area.w + 0.3;
+    G.unloadZone.x = area.x - 0.3; G.unloadZone.w = area.w + 0.6;
     G.blocked.x = area.x; G.blocked.w = area.w;
-    custSide.x = area.x - 0.6; custSide.w = tl0.x + 1.6 - custSide.x;
-    notch.x = area.x - 0.6;
+    custSide.x = area.x - 0.6; custSide.w = area.w + 1.2;
+    notch.x = area.x - 0.6; notchR.x = area.x + area.w;
   }
-  sizeStall(2);
 
   // Items are crops ('carrot') or factory goods ('<factory>:<recipe>',
   // e.g. 'cannery:carrot').
@@ -10125,7 +10150,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // Shelves stand on the front row of the stand. Each crop you open and
   // each factory you build gets the next free one, starting at the till.
-  for (var si = 0; si < fullArea.w; si++) G.shelves.push({ x: fullArea.x + fullArea.w - 1 - si, y: fullArea.y + fullArea.h - 1, crop: null });
+  for (var si = 0; si < fullArea.w - cfg.stand.tills.length * cfg.stand.tillSlot; si++) G.shelves.push({ x: 0, y: fullArea.y + fullArea.h - 1, crop: null });
+  sizeStall(2);
   function giveShelf(id, mixed) {
     if (shelfFor(id)) return;
     for (var i = 0; i < G.shelves.length; i++) {
@@ -10143,13 +10169,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     sizeStall(open + 1);
     // The new spot gets a little show once the game is running.
     if (area.w > was && G.started) {
-      var ns = iso.toScreen(area.x + 0.5, area.y + area.h / 2, 30);
+      var nsh = G.shelves[spots - 1], ns = iso.toScreen(nsh.x + 0.5, area.y + area.h / 2, 30);
       fx.burst(ns.x, ns.y, ['#ffeb3b', '#fff', '#7ed957'], 26, 1.1);
       fx.text(ns.x, ns.y - 50, 'Stall grows!', { color: '#ffeb3b', size: 22, max: 1.3 });
     }
   }
   // Only the built part of the stall has shelves.
-  G.stallShelves = function () { return G.shelves.filter(function (q) { return q.x >= area.x; }); };
+  G.stallShelves = function () { return G.shelves.slice(0, spots); };
+  G.layoutStall = function () { sizeStall(spots); };
   function shelfFor(id) {
     for (var i = 0; i < G.shelves.length; i++) if (G.shelves[i].crop === id) return G.shelves[i];
     return null;
@@ -11768,6 +11795,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         G.solids.push({ x: cfg.stand.tills[i].x, y: cfg.stand.tills[i].y, w: 1, h: 1 });
       }
       G.stand.tills[i].keeper = !!keeper;
+      G.layoutStall();
     });
     G.factories.factories.forEach(function (f) {
       var q = S.factories[f.id];
@@ -12191,6 +12219,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     buyTill: function () {
       if (actions.prices.tillLocked() || !(actions.prices.till() < Infinity) || !pay(actions.prices.till())) return;
       var i = CR.stand.addTill(G.stand); bought();
+      G.layoutStall(); // the shelves move out to make room
       var t = cfg.stand.tills[i];
       G.solids.push({ x: t.x, y: t.y, w: 1, h: 1 });
       var s = iso.toScreen(t.x + 0.5, t.y + 0.5, 30);
