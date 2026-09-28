@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v93)</p>
+    <p class="ver">Crop Rush 1.0 (v94)</p>
   </div>
 </div>
 
@@ -7363,12 +7363,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     var s = G.districtSpot(), sc = ws(s.x, s.y), fc = G.cfg.factories[0];
     stroke(ctx, '#6b3f18', 3, sc.x, sc.y, sc.x, sc.y - 30);
     shadow(ctx, sc.x, sc.y + 1, 12, 4);
-    var bw = 66, bh = 22, left = sc.x - bw / 2, top = sc.y - 48;
+    var bw = 116, bh = 22, left = sc.x - bw / 2, top = sc.y - 48;
     ctx.fillStyle = '#7d4a1f'; roundRect(ctx, left - 2, top - 2, bw + 4, bh + 4, 6); ctx.fill();
     ctx.fillStyle = '#f7dca4'; roundRect(ctx, left, top, bw, bh, 5); ctx.fill();
     factoryIcon(ctx, left + 12, top + 11, 0.2, fc);
     ctx.fillStyle = '#4a2c12'; ctx.font = '700 10px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    ctx.fillText('SOON', left + 24, top + 11.5);
+    ctx.fillText('LAND FOR SALE', left + 23, top + 11.5); // Tom 2026-09-28 13:00 (was SOON)
     ctx.fillStyle = '#7d4a1f'; ctx.beginPath(); ctx.moveTo(left + bw - 4, top + 6); ctx.lineTo(left + bw - 12, top + 11); ctx.lineTo(left + bw - 4, top + 16); ctx.closePath(); ctx.fill();
   }
 
