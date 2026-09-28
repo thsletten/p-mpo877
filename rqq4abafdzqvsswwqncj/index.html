@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v98)</p>
+    <p class="ver">Crop Rush 1.0 (v99)</p>
   </div>
 </div>
 
@@ -827,18 +827,22 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // at length 8 (Tom 2026-09-28 12:13: "all starting plots should be the
     // same size"; they were 8, 14, 26 .. x1.8 per field).
     plots: [
+      // v99 (Tom 2026-09-28 16:05, 'expanding is too expensive on a lot of
+      // crops after corn'): since v93 every field starts at length0 8 (was
+      // x1.8 per field), so from corn on the first grow costs 2x the field
+      // (was 5-8x).
       { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 150, costGrowth: 2.4 } },
       { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1550, costGrowth: 2.4 } },
-      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 37500, costGrowth: 2.4 } },
-      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 125000, costGrowth: 2.4 } },
-      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.25e6, costGrowth: 2.4 } },
-      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e6, costGrowth: 2.4 } },
-      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.45e7, costGrowth: 2.4 } },
-      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.0e7, costGrowth: 2.4 } },
-      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e8, costGrowth: 2.4 } },
-      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.0e8, costGrowth: 2.4 } },
-      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.1e9, costGrowth: 2.4 } },
-      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.5e9, costGrowth: 2.4 } }
+      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1e4, /* v99: 2x the field (was 37500) */ costGrowth: 2.4 } },
+      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4e4, /* v99: 2x the field (was 125000) */ costGrowth: 2.4 } },
+      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.8e5, /* v99: 2x the field (was 1.25e6) */ costGrowth: 2.4 } },
+      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.6e5, /* v99: 2x the field (was 2.4e6) */ costGrowth: 2.4 } },
+      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.4e6, /* v99: 2x the field (was 2.45e7) */ costGrowth: 2.4 } },
+      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.2e7, /* v99: 2x the field (was 9.0e7) */ costGrowth: 2.4 } },
+      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.2e7, /* v99: 2x the field (was 2.4e8) */ costGrowth: 2.4 } },
+      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.6e8, /* v99: 2x the field (was 9.0e8) */ costGrowth: 2.4 } },
+      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7.2e8, /* v99: 2x the field (was 2.1e9) */ costGrowth: 2.4 } },
+      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e9, /* v99: 2x the field (was 6.5e9) */ costGrowth: 2.4 } }
     ],
 
     // Factories turn any crop you drop in their hopper into jars worth more,
@@ -884,7 +888,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
           { id: 'melon', name: 'Melon cooler', inputs: { melon: 1, berry: 1 }, learn: 1900000 },
           { id: 'grape', name: 'Grape juice', inputs: { grape: 2 }, learn: 2000000 }
         ] },
-      { id: 'bakery', name: 'Bakery', product: 'pie', goods: 'baked goods', x: 3, y: 33.3, w: 4.4, h: 3.9, street: 39.4, cost: 140000,
+      { id: 'bakery', name: 'Bakery', product: 'pie', goods: 'baked goods', x: 3, y: 33.3, w: 4.4, h: 3.9, street: 39.4, cost: 360000, // v99 (Tom 2026-09-28 16:05, 'a lot cheaper than the ingredients'): 1.5x the Sunflower field its bread needs (was 140K)
         hopper: { x: 4.4, y: 37.2, w: 3, h: 0.9 }, pickup: { x: 7.8, y: 36, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 15, hopperSize: 30, outSize: 200, walls: ['#ffcc80', '#f0a860', '#d98c40'],
         recipes: [
@@ -894,18 +898,18 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
           { id: 'berrypie', name: 'Berry pie', inputs: { berry: 2, wheat: 1 }, learn: 1900000 },
           { id: 'applepie', name: 'Apple pie', inputs: { apple: 1, wheat: 2 }, learn: 8.3e7 }
         ] },
-      { id: 'candy', name: 'Candy factory', product: 'candy', goods: 'candy', x: 16.2, y: 41.9, w: 4.4, h: 3.9, street: 48, cost: 360000,
+      { id: 'candy', name: 'Candy factory', product: 'candy', goods: 'candy', x: 16.2, y: 41.9, w: 4.4, h: 3.9, street: 48, cost: 4.8e6, // v99: 1.5x the Berry field its gummies need (was 360K)
         hopper: { x: 17.6, y: 45.8, w: 3, h: 0.9 }, pickup: { x: 21, y: 44.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 24, hopperSize: 30, outSize: 200, walls: ['#f48fb1', '#ec6f9c', '#d25584'],
         recipes: [
           { id: 'gummies', name: 'Berry gummies', inputs: { berry: 2, sunflower: 1 }, learn: 0 },
-          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 1900000 },
+          { id: 'melonpops', name: 'Melon pops', inputs: { melon: 1, berry: 1, wheat: 1 }, learn: 5e6 /* v99: never below the factory (was 1.9M) */ },
           { id: 'toffee', name: 'Golden toffee', inputs: { apple: 1, cocoa: 1, wheat: 2 }, learn: 8.3e7 }
         ] },
       // v91 (Tom 2026-09-28, "is 4 factories too few?"): two late factories
       // on the far row of the district, for the late crops. Chocolate and
       // Mocha moved here from the Candy factory.
-      { id: 'winery', name: 'Winery', product: 'wine', goods: 'wine', x: 9.6, y: 41.9, w: 4.4, h: 3.9, street: 48, cost: 3e7,
+      { id: 'winery', name: 'Winery', product: 'wine', goods: 'wine', x: 9.6, y: 41.9, w: 4.4, h: 3.9, street: 48, cost: 4.7e7, // v99: 1.5x the Grape field (was 30M)
         hopper: { x: 11, y: 45.8, w: 3, h: 0.9 }, pickup: { x: 14.4, y: 44.6, w: 1.3, h: 1.2 },
         makeTime: 4, valueMult: 30, hopperSize: 30, outSize: 200, walls: ['#9c64c8', '#7b3fa8', '#5e2a88'],
         recipes: [
@@ -13152,9 +13156,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   };
   // A factory is for sale once the district is open and, if it needs a
   // crop (the Juice press needs corn, Tom 2026-09-28 14:01), you own its field.
+  // v99 (Tom 2026-09-28 16:05): a factory is only for sale once you own a
+  // field for every crop its first recipe uses (and cfg.needs, if set).
   G.factoryForSale = function (f) {
-    var n = f.cfg.needs;
-    return G.district.open && (!n || field.plots.some(function (pl) { return pl.unlocked && pl.crop === n; }));
+    var need = Object.keys(f.cfg.recipes[0].inputs);
+    if (f.cfg.needs) need.push(f.cfg.needs);
+    return G.district.open && need.every(function (n) { return field.plots.some(function (pl) { return pl.unlocked && pl.crop === n; }); });
   };
   G.districtReady = function () { return G.districtNeeds().every(function (n) { return n.ok; }); };
   G.districtSpot = function () { var D = cfg.district; return { x: D.gateX + 3.2, y: D.streets[0] + 0.3 }; };
