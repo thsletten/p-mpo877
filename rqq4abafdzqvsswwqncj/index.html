@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v86)</p>
+    <p class="ver">Crop Rush 1.0 (v87)</p>
   </div>
 </div>
 
@@ -880,6 +880,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // by speedMult; level L costs the factory's cost x costGrowth^(L+1), so
     // the first is already dearer than the factory.
     factorySpeed: { maxLevel: 10, speedMult: 0.75, costGrowth: 2.9 }, // v70: was x1.8
+    // v87 (Tom 2026-09-28): a factory turns from showcase to industrial here.
+    factoryLook: { industrialAt: 5 },
+    // v87 (Tom 2026-09-28): a dirt road along the yard end of the fields.
+    // Farmers and their machines go by it instead of across other fields.
+    // Late game each field can buy a belt: a hopper at its bottom where its
+    // farmers drop everything, riding the road to the barn. Price: the
+    // bigger of base x growth^slot and plotMult x the field; needs the barn
+    // and the Combine (unlock: a tool id).
+    farmRoad: { y: 27.5, x0: 20, hopperY: 26.85,
+      belt: { unlock: 'combine', base: 50000, growth: 1.8, plotMult: 3, speed: 2.2 } },
     // Bigger batches (Tom 2026-09-24, "scale both"): each batch level makes
     // sizes[L] goods per cycle from sizes[L] x the recipe, up to crates of
     // 1K and more. Level L+1 costs factory cost x costMult x costGrowth^L.
@@ -2694,12 +2704,42 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return best;
   }
 
-  // Walks toward the target; true when there.
-  function walk(fm, sp, dt) {
-    var dx = fm.target.x - fm.x, dy = fm.target.y - fm.y, d = Math.sqrt(dx * dx + dy * dy);
+  // The farm road (v87, Tom 2026-09-28: "weird that the farmers and
+  // tractors just cross the other plots"): a way that would cross another
+  // field goes out to the road along the fields' yard end, along it, and
+  // in again. NAV is set for each update: { field, y }.
+  var NAV = null;
+  function crosses(ax, ay, bx, by, own) {
+    var n = Math.ceil(Math.hypot(bx - ax, by - ay) / 0.5);
+    for (var i = 1; i < n; i++) {
+      var p = CR.field.plotAt(NAV.field, ax + (bx - ax) * i / n, ay + (by - ay) * i / n);
+      if (p && p.unlocked && p.id !== own) return true;
+    }
+    return false;
+  }
+  function waypoint(fm, t) {
+    if (!crosses(fm.x, fm.y, t.x, t.y, fm.plotId)) return t;
+    // Out to the road first, straight from where it is; then along the road
+    // to below (or above) the target.
+    if (Math.abs(fm.y - NAV.y) > 0.25) return { x: fm.x, y: NAV.y };
+    return { x: t.x, y: NAV.y };
+  }
+  // Walks toward the target (by the road when NAV is set and `direct` is
+  // not); true when there.
+  function walk(fm, sp, dt, direct) {
+    var t = fm.target, w = t;
+    if (NAV && !direct) {
+      if (fm.legFor !== t || !fm.leg) { fm.legFor = t; fm.leg = waypoint(fm, t); }
+      w = fm.leg;
+    }
+    var dx = w.x - fm.x, dy = w.y - fm.y, d = Math.sqrt(dx * dx + dy * dy);
     var step = sp * dt;
     fm.moving = d > 0.05;
-    if (d <= step) { fm.x = fm.target.x; fm.y = fm.target.y; fm.moving = false; return true; }
+    if (d <= step) {
+      fm.x = w.x; fm.y = w.y;
+      if (w !== t) { fm.leg = null; return false; }
+      fm.moving = false; return true;
+    }
     fm.x += dx / d * step; fm.y += dy / d * step;
     fm.fx = dx / d; fm.fy = dy / d;
     fm.walkT += dt * 2.4;
@@ -2719,11 +2759,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   //   { type: 'cut', id, x, y, crop } for each tile a farmer cuts,
   //   { type: 'stock', id, crop, n } when crops go on the shelf,
   //   { type: 'store', id, crop, n } when the rest go in the barn,
-  //   { type: 'bulk', id, crop, n, amount } when the rest go to the truck.
+  //   { type: 'bulk', id, crop, n, amount } when the rest go to the truck,
+  //   { type: 'belt', id, plotId, crop, n } when they go in a field's belt
+  //     hopper (straight into the barn; spots.belt(plotId) -> {x, y} or null).
   // With harvest trucks, fs.carts[farmerId] is that machine's truck (id
   // 'cart<farmerId>'): it collects from the machine and delivers.
   function update(fs, config, field, stand, spots, dt, barn) {
     var events = [], TK = config.farmers.truck, per = {};
+    NAV = config.farmRoad ? { field: field, y: config.farmRoad.y } : null;
     var tol = field.reachTolerance == null ? 0.5 : field.reachTolerance, slots = {}, of = {};
     // Each field's farmers move with their own field's upgrades.
     function kit(plotId) {
@@ -2752,6 +2795,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     function dispatch(fm, spot) {
       var c = fm.carry.items[0];
       fm.wait = 0; fm.fromShelf = false;
+      // A field with a belt (v87, Tom 2026-09-28): everything goes in the
+      // hopper at the field's bottom while the barn has room for it.
+      var bs = spots.belt && barn ? spots.belt(fm.plotId) : null;
+      if (bs && CR.barn.room(barn, config, c) > 0) { fm.phase = 'toBelt'; fm.target = bs; return; }
       var shelfRoom = (c in stand.shelves) && stand.capacity - (stand.shelves[c] || 0) > 0;
       var toBarn = barn && CR.barn.room(barn, config, c) > 0 && (!shelfRoom || (spots.hungry && spots.hungry(c) === true));
       if (toBarn) { fm.phase = 'toBarn'; fm.target = spots.barn; }
@@ -2778,6 +2825,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         });
         Object.keys(stored).forEach(function (c) { events.push({ type: 'store', id: fm.id, crop: c, n: stored[c] }); });
         if (fm.carry.items.length && !fm.fromShelf && (fm.carry.items[0] in stand.shelves) && stand.capacity - (stand.shelves[fm.carry.items[0]] || 0) > 0) { fm.fromShelf = true; fm.phase = 'toStand'; fm.target = spots.stand(fm.carry.items[0]); }
+        else if (fm.carry.items.length) toSurplus(fm);
+        else { fm.phase = 'field'; fm.target = null; fm.fromShelf = false; }
+      } else if (fm.phase === 'toBelt') {
+        if (!walk(fm, v, dt)) return true;
+        var belted = {};
+        fm.carry.items = fm.carry.items.filter(function (it) {
+          if (CR.barn.put(barn, config, it, 1) === 1) { belted[it] = (belted[it] || 0) + 1; return false; }
+          return true;
+        });
+        Object.keys(belted).forEach(function (c) { events.push({ type: 'belt', id: fm.id, plotId: fm.plotId, crop: c, n: belted[c] }); });
+        // The barn filled up on the way: the rest as before.
+        if (fm.carry.items.length && (fm.carry.items[0] in stand.shelves) && stand.capacity - (stand.shelves[fm.carry.items[0]] || 0) > 0) { fm.fromShelf = true; fm.phase = 'toStand'; fm.target = spots.stand(fm.carry.items[0]); }
         else if (fm.carry.items.length) toSurplus(fm);
         else { fm.phase = 'field'; fm.target = null; fm.fromShelf = false; }
       } else if (fm.phase === 'toTruck') {
@@ -2872,7 +2931,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var fl = Math.hypot(m.fx, m.fy) || 1, ax = m.fx / fl, ay = m.fy / fl, side = 1.1 + tl.reach * 0.5;
       tr.target = { x: m.x - ax * 0.6 - ay * side, y: m.y - ay * 0.6 + ax * side };
       var d = Math.hypot(tr.target.x - tr.x, tr.target.y - tr.y);
-      if (d > 0.15) walk(tr, v * Math.min(1, 0.4 + d / 2), dt); else { tr.moving = m.moving; tr.fx = m.fx; tr.fy = m.fy; }
+      if (d > 0.15) walk(tr, v * Math.min(1, 0.4 + d / 2), dt, true); else { tr.moving = m.moving; tr.fx = m.fx; tr.fy = m.fy; }
       if (m.phase === 'field' && m.carry.items.length && Math.hypot(m.x - tr.x, m.y - tr.y) < TK.reach + side) {
         var n = Math.min(m.carry.items.length, tr.carry.limit - tr.carry.items.length, Math.max(1, Math.ceil(m.carry.limit * dt / TK.pourTime)));
         if (n > 0) {
@@ -5984,9 +6043,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     CR.shopView.ground(ctx, G, time);
     var f = G.field, i;
     f.plots.forEach(function (plot) { if (boxHits(plot, box)) drawPlotGround(ctx, G, plot, box, far); });
+    S.drawFactoryYard(ctx, G, time);
     G.factories.factories.forEach(function (fa) { S.drawFactoryGround(ctx, G, fa, time); });
     CR.barnView.drawBarnGround(ctx, G, time);
     CR.barnView.drawBelts(ctx, G, time);
+    CR.barnView.drawFarmRoad(ctx, G, time);
     S.drawStandDeck(ctx, G, time);
     S.drawTruckZone(ctx, G, time);
     // The truck mat's hold, filling round you (playtest 5: show the ring).
@@ -7062,6 +7123,41 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   // ---- the factory ------------------------------------------------------------
 
+  // v87 (Tom 2026-09-28: "the C style but upgradable to A"): a factory
+  // starts as a showcase on bright tiles in its colour and turns into an
+  // industrial shed on asphalt at speed level factoryLook.industrialAt.
+  // f.look overrides (pictures).
+  function lookOf(G, f) {
+    return f.look || ((f.speed || 0) >= G.cfg.factoryLook.industrialAt ? 'A' : 'C');
+  }
+  function drawFactoryYard(ctx, G, time) {
+    init();
+    G.factories.factories.forEach(function (f) {
+      var c = f.cfg;
+      if (!f.unlocked) return;
+      if (lookOf(G, f) === 'A') {
+        ctx.fillStyle = '#5f6468'; quadPath(ctx, c.x - 0.8, c.y - 0.8, 5.6, 5.4, 0); ctx.fill();
+        ctx.fillStyle = '#74797d'; quadPath(ctx, c.x - 0.65, c.y - 0.65, 5.3, 5.1, 0); ctx.fill();
+        ctx.strokeStyle = '#ffd54f'; ctx.lineWidth = 2; quadPath(ctx, c.x - 0.5, c.y - 0.5, c.w + 2.1, c.h + 1.9, 0); ctx.stroke();
+        lampPost(ctx, c.x - 0.6, c.y - 0.6, time, '#fff59d', '#455a64');
+        return;
+      }
+      var wc = c.walls || ['#c9674a'];
+      for (var tx = 0; tx < 6; tx++) for (var ty = 0; ty < 5; ty++) {
+        ctx.fillStyle = (tx + ty) % 2 ? '#fff8e1' : wc[0];
+        ctx.globalAlpha = (tx + ty) % 2 ? 0.9 : 0.45;
+        quadPath(ctx, c.x - 0.6 + tx * 0.98, c.y - 0.6 + ty * 0.98, 0.98, 0.98, 0); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    });
+  }
+  function lampPost(ctx, x, y, time, glow, pole) {
+    var b = ws(x, y, 0), t = ws(x, y, 44);
+    ctx.strokeStyle = pole; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(t.x, t.y); ctx.stroke();
+    ctx.globalAlpha = 0.35; ellipse(ctx, t.x, t.y, 12, 12, glow); ctx.globalAlpha = 1;
+    ellipse(ctx, t.x, t.y, 5, 5, glow);
+  }
+
   function drawFactoryGround(ctx, G, f, time) {
     init();
     var c = f.cfg, hz = c.hopper;
@@ -7128,12 +7224,24 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var cs = ws(c.x + c.w / 2, c.y + c.h / 2);
     shadow(ctx, cs.x + 10, cs.y + 10, 70, 30, 0.2);
     var wc = c.walls || ['#c9674a', '#b35238', '#9b4430'];
-    box(ctx, c.x, c.y, c.w, c.h, 0, wall, wc[0], wc[1], wc[2]);
-    // Brick lines on the two faces we see.
-    ctx.strokeStyle = 'rgba(80,25,10,0.25)'; ctx.lineWidth = 1;
-    for (var z = 7; z < wall; z += 7) {
-      var a = ws(c.x, c.y + c.h, z), b = ws(c.x + c.w, c.y + c.h, z), d = ws(c.x + c.w, c.y, z);
-      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(d.x, d.y); ctx.stroke();
+    // Showcase ('C') until it goes industrial ('A'), see lookOf.
+    var look = lookOf(G, f);
+    if (look === 'A') {
+      box(ctx, c.x, c.y, c.w, c.h, 0, wall, '#b0bec5', '#8a9ba5', '#9fb0ba');
+      // Corrugated metal: upright lines on both faces.
+      ctx.strokeStyle = 'rgba(40,55,65,0.28)'; ctx.lineWidth = 1;
+      for (var ci0 = 0.15; ci0 < c.w; ci0 += 0.22) { var q0 = ws(c.x + ci0, c.y + c.h, 0), q1 = ws(c.x + ci0, c.y + c.h, wall); ctx.beginPath(); ctx.moveTo(q0.x, q0.y); ctx.lineTo(q1.x, q1.y); ctx.stroke(); }
+      for (var ci1 = 0.15; ci1 < c.h; ci1 += 0.22) { var q2 = ws(c.x + c.w, c.y + ci1, 0), q3 = ws(c.x + c.w, c.y + ci1, wall); ctx.beginPath(); ctx.moveTo(q2.x, q2.y); ctx.lineTo(q3.x, q3.y); ctx.stroke(); }
+      // A band in the factory's colour along the top.
+      box(ctx, c.x - 0.02, c.y - 0.02, c.w + 0.04, c.h + 0.04, wall - 9, 9, wc[0], wc[1], wc[2]);
+    } else {
+      box(ctx, c.x, c.y, c.w, c.h, 0, wall, wc[0], wc[1], wc[2]);
+      // Brick lines on the two faces we see.
+      ctx.strokeStyle = 'rgba(80,25,10,0.25)'; ctx.lineWidth = 1;
+      for (var z = 7; z < wall; z += 7) {
+        var a = ws(c.x, c.y + c.h, z), b = ws(c.x + c.w, c.y + c.h, z), d = ws(c.x + c.w, c.y, z);
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.lineTo(d.x, d.y); ctx.stroke();
+      }
     }
     // Windows (glow while working) on the right face.
     var lit = f.working ? 0.6 + 0.3 * Math.sin(ft * 8) : 0;
@@ -7144,12 +7252,45 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.strokeStyle = '#fffaf0'; ctx.lineWidth = 2; ctx.stroke();
     }
     // Roof and chimney.
-    box(ctx, c.x - 0.15, c.y - 0.15, c.w + 0.3, c.h + 0.3, wall, 7, maxed ? '#ffd54f' : '#78909c', maxed ? '#c79a1c' : '#546e7a', maxed ? '#e0b030' : '#607d8b');
+    var roofTop = wall + 7, chimBase = wall + 7, chimH = 30;
+    var roofC = maxed ? ['#ffd54f', '#c79a1c', '#e0b030'] : ['#78909c', '#546e7a', '#607d8b'];
     var chims = sl >= 4 ? [[0.3, 0.3], [1.9, 0.3]] : [[0.3, 0.3]];
+    if (look === 'A') {
+      // Sawtooth roof with skylights facing the camera.
+      box(ctx, c.x - 0.1, c.y - 0.1, c.w + 0.2, c.h + 0.2, wall, 3, roofC[0], roofC[1], roofC[2]);
+      var teeth = 3, tw = (c.w + 0.2) / teeth, th = 16;
+      for (var ti = 0; ti < teeth; ti++) {
+        var x0 = c.x - 0.1 + ti * tw, x1 = x0 + tw, y0 = c.y - 0.1, y1 = c.y + c.h + 0.1, zb = wall + 3;
+        var s0 = ws(x0, y0, zb), s1 = ws(x0, y1, zb), s2 = ws(x1, y1, zb + th), s3 = ws(x1, y0, zb + th);
+        ctx.fillStyle = roofC[0]; ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.lineTo(s2.x, s2.y); ctx.lineTo(s3.x, s3.y); ctx.closePath(); ctx.fill();
+        var g0 = ws(x1, y0, zb), g1 = ws(x1, y1, zb);
+        ctx.fillStyle = f.working ? 'rgba(255,236,160,0.95)' : '#b3e5fc'; ctx.beginPath(); ctx.moveTo(g0.x, g0.y); ctx.lineTo(g1.x, g1.y); ctx.lineTo(s2.x, s2.y); ctx.lineTo(s3.x, s3.y); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = '#455a64'; ctx.lineWidth = 1.5; ctx.stroke();
+        // Triangle end on the front face.
+        ctx.fillStyle = roofC[1]; ctx.beginPath(); ctx.moveTo(s1.x, s1.y); ctx.lineTo(g1.x, g1.y); ctx.lineTo(s2.x, s2.y); ctx.closePath(); ctx.fill();
+      }
+      roofTop = wall + 19; chimBase = wall + 3; chimH = 42;
+    } else {
+      box(ctx, c.x - 0.15, c.y - 0.15, c.w + 0.3, c.h + 0.3, wall, 7, roofC[0], roofC[1], roofC[2]);
+    }
+    function drawChims() {
+      (sl >= 4 ? [[0.3, 0.3], [1.9, 0.3]] : [[0.3, 0.3]]).forEach(function (cp, ci) {
+        if (look === 'A') {
+          box(ctx, c.x + cp[0], c.y + cp[1], 0.5, 0.5, chimBase, chimH + ci * 6, '#eceff1', '#b0bec5', '#cfd8dc');
+          for (var bnd = 0; bnd < 3; bnd++) box(ctx, c.x + cp[0] - 0.01, c.y + cp[1] - 0.01, 0.52, 0.52, chimBase + chimH + ci * 6 - 8 - bnd * 18, 7, '#e53935', '#b71c1c', '#c62828');
+        } else box(ctx, c.x + cp[0], c.y + cp[1], 0.6, 0.6, chimBase, chimH + ci * 6, '#8d6e63', '#6d4c41', '#5d4037');
+      });
+    }
+    drawChims();
+    {
+      // A giant product on the roof, bobbing while it works.
+      var py0 = c.y + c.h / 2 + (look === 'A' ? 0.6 : 0.2), gp0 = ws(c.x + c.w / 2 + 0.2, py0, roofTop + 26 + (f.working ? Math.sin(ft * 5) * 3 : 0));
+      ctx.save(); var gs0 = ws(c.x + c.w / 2 + 0.2, py0, roofTop); shadow(ctx, gs0.x, gs0.y, 22, 9, 0.25);
+      good(ctx, c.product, gp0.x, gp0.y, 3.2, G.cfg.crops[CR.economy.mainCrop(G.cfg, c.recipes[f.recipe])]); ctx.restore();
+    }
     chims.forEach(function (cp, ci) {
-      box(ctx, c.x + cp[0], c.y + cp[1], 0.6, 0.6, wall + 7, 30 + ci * 6, '#8d6e63', '#6d4c41', '#5d4037');
       if (!f.working) return;
-      var ch = ws(c.x + cp[0] + 0.3, c.y + cp[1] + 0.3, wall + 40 + ci * 6);
+      var ch = ws(c.x + cp[0] + 0.3, c.y + cp[1] + 0.3, chimBase + chimH + 4 + ci * 6);
       var puffs = boost > 1 ? 7 : 4;
       for (var k = 0; k < puffs; k++) {
         var ph = (ft * (0.7 + sl * 0.06) + k / puffs + ci * 0.37) % 1;
@@ -7157,7 +7298,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       }
     });
     if (maxed) {
-      var star = ws(c.x + c.w / 2, c.y + c.h / 2, wall + 18 + Math.sin(time * 3) * 3);
+      var star = ws(c.x + c.w / 2, c.y + c.h / 2, roofTop + 71 + Math.sin(time * 3) * 3);
       ctx.fillStyle = '#ffeb3b'; ctx.beginPath();
       for (var sp = 0; sp < 10; sp++) { var sr = sp % 2 ? 5 : 11, sa = -Math.PI / 2 + sp * Math.PI / 5; ctx.lineTo(star.x + Math.cos(sa) * sr, star.y + Math.sin(sa) * sr); }
       ctx.closePath(); ctx.fill(); ctx.strokeStyle = '#c77f00'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -7204,6 +7345,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var np = ws(c.x + c.w / 2, c.y + c.h, wall - 6);
     ctx.font = '700 11px Fredoka, system-ui, sans-serif';
     var nw = Math.max(64, ctx.measureText(c.name.toUpperCase()).width + 14);
+    if (look === 'C') {
+      // A marquee sign with chasing bulbs.
+      ctx.fillStyle = wc[2]; roundRect(ctx, np.x - nw / 2 - 6, np.y - 14, nw + 12, 26, 7); ctx.fill();
+      for (var bl = 0; bl < 14; bl++) {
+        var bt = bl / 14, per = 2 * (nw + 12) + 52, dpos = bt * per, bxp, byp;
+        if (dpos < nw + 12) { bxp = np.x - nw / 2 - 6 + dpos; byp = np.y - 14; } else if (dpos < nw + 38) { bxp = np.x + nw / 2 + 6; byp = np.y - 14 + (dpos - nw - 12); } else if (dpos < 2 * nw + 50) { bxp = np.x + nw / 2 + 6 - (dpos - nw - 38); byp = np.y + 12; } else { bxp = np.x - nw / 2 - 6; byp = np.y + 12 - (dpos - 2 * nw - 50); }
+        ellipse(ctx, bxp, byp, 2.4, 2.4, (bl + Math.floor(time * 6)) % 3 ? '#fff59d' : '#ff8f00');
+      }
+    }
     ctx.fillStyle = '#fffaf0'; roundRect(ctx, np.x - nw / 2, np.y - 9, nw, 16, 5); ctx.fill();
     ctx.fillStyle = wc[2]; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(c.name.toUpperCase(), np.x, np.y);
@@ -7646,7 +7796,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   CR.scenery = {
     drawGround: drawGround, drawYard: drawYard, decorate: decorate,
     drawStandDeck: drawStandDeck, drawShelf: drawShelf, drawAwning: drawAwning, drawTill: drawTill, drawCoinPile: drawCoinPile,
-    drawPlotSign: drawPlotSign, drawFactoryGround: drawFactoryGround, drawFactory: drawFactory, drawJarPallet: drawJarPallet, drawStageProp: drawStageProp,
+    drawPlotSign: drawPlotSign, drawFactoryGround: drawFactoryGround, drawFactoryYard: drawFactoryYard, factoryLook: lookOf, drawFactory: drawFactory, drawJarPallet: drawJarPallet, drawStageProp: drawStageProp,
     drawAd: drawAd, drawFieldProp: drawFieldProp, drawFence: drawFence,
     drawTruck: drawTruck, drawTruckZone: drawTruckZone, drawFarmer: drawFarmer, drawCart: drawCart, drawKeeper: drawKeeper, drawCustomer: drawCustomer, drawExtraItem: drawExtraItem, vignette: vignette, icon: icon,
     hash: hash, shadow: shadow, coin: coin, drawSignBoard: drawSignBoard, drawMat: drawMat
@@ -7753,6 +7903,49 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var at = beltAt(pts, e), sp = ws(at.x, at.y, 8);
         var cr = ins[(Math.floor((time * B.speed) / step) - k + ins.length * 1000) % ins.length];
         drawItem(ctx, cr, G.cfg.crops[cr], sp.x, sp.y, 0.75, 0);
+      }
+    });
+  }
+
+  // The farm road along the yard end of the fields (v87, Tom 2026-09-28),
+  // and on it the belt to the barn with a hopper under each field that has
+  // bought one. Crops ride it for a moment after a farmer drops some.
+  function drawFarmRoad(ctx, G, time) {
+    init();
+    var R = G.cfg.farmRoad;
+    if (!R) return;
+    var plots = G.field.plots.filter(function (p) { return p.unlocked; });
+    var xEnd = Math.max.apply(null, plots.map(function (p) { return p.ox + p.width; })) + 0.5, x0 = R.x0, ry = R.y;
+    ctx.fillStyle = '#b08a5a'; quadPath(ctx, x0, ry - 0.55, xEnd - x0, 1.1, 0); ctx.fill();
+    ctx.fillStyle = '#c9a36e'; quadPath(ctx, x0, ry - 0.45, xEnd - x0, 0.9, 0); ctx.fill();
+    ctx.strokeStyle = 'rgba(110,80,40,0.35)'; ctx.lineWidth = 2;
+    [ry - 0.2, ry + 0.2].forEach(function (y) { var a = ws(x0 + 0.2, y), b = ws(xEnd, y); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
+    var belted = plots.filter(function (p) { return p.belt; });
+    if (!belted.length || !G.barn.unlocked) return;
+    var W = 0.22, by = ry + 0.1, bx = G.cfg.barn.mat.x + 1.4, top = G.cfg.barn.mat.y + G.cfg.barn.mat.h;
+    var far = Math.max.apply(null, belted.map(function (p) { return p.ox + p.width / 2; })) + 0.8;
+    [[bx - W, by - W, far - bx + W, 2 * W], [bx - W, top, 2 * W, by - top + W]].forEach(function (r) {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2], r[3], 0); ctx.fill();
+      ctx.fillStyle = '#607d8b'; quadPath(ctx, r[0], r[1], r[2], r[3], 3); ctx.fill();
+      ctx.fillStyle = '#37474f'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2] - 0.12, r[3] - 0.12, 3.5); ctx.fill();
+    });
+    // Slats, moving while anything rides.
+    var busy = belted.some(function (p) { return G.time - (p.beltT || -9) < 2; }), shift = busy ? (time * R.belt.speed) % 0.5 : 0, d;
+    ctx.strokeStyle = '#78909c'; ctx.lineWidth = 1.5;
+    for (d = shift; d < far - bx; d += 0.5) { var s0 = ws(far - d, by - W + 0.06, 4), s1 = ws(far - d, by + W - 0.06, 4); ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.stroke(); }
+    belted.forEach(function (p) {
+      var hx = p.ox + p.width / 2;
+      // The hopper: a yellow bin on legs with a chute onto the belt.
+      box(ctx, hx - 0.6, ry - 0.55, 1.2, 0.45, 0, 12, '#ffc629', '#c79100', '#e0a800');
+      box(ctx, hx - 0.5, ry - 0.5, 1.0, 0.35, 12, 2, '#6d4c00', '#6d4c00', '#6d4c00');
+      // What it just took rides off toward the barn.
+      var age = G.time - (p.beltT || -9);
+      if (age > 2 || !p.beltCrop) return;
+      for (var k = 0; k < 5; k++) {
+        var e = age * R.belt.speed - k * 0.7;
+        if (e < 0 || hx - e < bx + 0.2) continue;
+        var sp = ws(hx - e, by, 8);
+        drawItem(ctx, p.beltCrop, G.cfg.crops[p.beltCrop], sp.x, sp.y, 0.7, 0);
       }
     });
   }
@@ -8091,7 +8284,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     return false;
   }
 
-  CR.barnView = { seat: function (ctx, p, person) { init(); return seat(ctx, p, person); }, item: function (ctx, G, id, x, y, k) { init(); item(ctx, G, id, x, y, k); }, isVehicle: isVehicle, drawBarnGround: drawBarnGround, drawBelts: drawBelts, drawBarn: drawBarn, drawWorker: drawWorker, drawCarrier: drawCarrier, bigCrates: function (ctx, G, x, y, z, count, what) { init(); bigCrates(ctx, G, x, y, z, count, what); }, icon: icon };
+  CR.barnView = { seat: function (ctx, p, person) { init(); return seat(ctx, p, person); }, item: function (ctx, G, id, x, y, k) { init(); item(ctx, G, id, x, y, k); }, isVehicle: isVehicle, drawBarnGround: drawBarnGround, drawBelts: drawBelts, drawFarmRoad: drawFarmRoad, drawBarn: drawBarn, drawWorker: drawWorker, drawCarrier: drawCarrier, bigCrates: function (ctx, G, x, y, z, count, what) { init(); bigCrates(ctx, G, x, y, z, count, what); }, icon: icon };
 })(this.CR = this.CR || {});
 
 </script>
@@ -9127,7 +9320,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
             level: f.batch || 0, max: cfg.factoryBatch.sizes.length - 1, price: bp, done: !(bp < Infinity), act: function () { actions.factoryBatch(f.id); } });
           var sp = P.facSpeed(f.id);
           list.push({ key: 'speed' + f.id, icon: ['factory', f.id], title: 'Faster ' + f.cfg.name.toLowerCase(),
-            sub: f.known > 1 ? 'Every line makes each one quicker' : 'Makes each one quicker', level: f.speed, max: cfg.factorySpeed.maxLevel, price: sp, done: !(sp < Infinity),
+            sub: (f.known > 1 ? 'Every line makes each one quicker' : 'Makes each one quicker') + (f.speed < cfg.factoryLook.industrialAt ? '. Level ' + cfg.factoryLook.industrialAt + ': goes industrial' : ''), level: f.speed, max: cfg.factorySpeed.maxLevel, price: sp, done: !(sp < Infinity),
             act: function () { actions.factorySpeed(f.id); } });
           list = list.concat(workerCards(f), beltCards(f));
         });
@@ -9207,7 +9400,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       { key: 'better' + k, icon: ['crop', k], title: 'Better seeds',
         sub: 'Per plant ' + y + (bp < Infinity ? ' → ' + CR.economy.seedYield(cfg, lv + 1) : ''),
         level: lv, max: cfg.seedUpgrade.yields.length - 1, price: bp, done: !(bp < Infinity), act: function () { actions.betterSeed(k); },
-        gain: bp < Infinity ? G.farmRateOf(k) * (CR.economy.seedYield(cfg, lv + 1) / y - 1) * G.worth(k) : 0 }];
+        gain: bp < Infinity ? G.farmRateOf(k) * (CR.economy.seedYield(cfg, lv + 1) / y - 1) * G.worth(k) : 0 }].concat(fieldBeltCard(plot));
+    }
+    // v87 (Tom 2026-09-28): a belt from the field's bottom to the barn.
+    function fieldBeltCard(plot) {
+      var id = plot.id, need = cfg.tools.filter(function (t) { return t.id === cfg.farmRoad.belt.unlock; })[0].name;
+      if (plot.belt) return [{ key: 'pbelt' + id, icon: ['barn', 'barn'], title: 'Belt to the barn', sub: 'Farmers drop everything in its hopper, and the belt takes it to the barn', noBuy: true, done: true }];
+      var ready = actions.fieldBeltReady();
+      return [{ key: 'pbelt' + id, icon: ['barn', 'barn'], title: 'Belt to the barn',
+        sub: ready ? 'A hopper at the bottom of this field: farmers drop everything there and it rides to the barn. Barn helpers stock the stall from there' : !G.barn.unlocked ? 'Build the barn first' : 'Get the ' + need + ' first',
+        price: actions.prices.fieldBelt(id), locked: !ready, act: function () { actions.buyFieldBelt(id); } }];
     }
     // One field's farmers: hiring, then their own upgrades once there are any.
     function fieldFarm(plot) {
@@ -10961,7 +11163,16 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // ---- farmers you hire ----------------------------------------------------
 
   var barnSpot = { x: cfg.barn.mat.x + cfg.barn.mat.w / 2, y: cfg.barn.mat.y + cfg.barn.mat.h / 2 };
+  var beltSpots = {};
   var farmerSpots = {
+    // A field's belt hopper, at its bottom on the road (v87).
+    belt: function (plotId) {
+      var pl = field.plotById[plotId];
+      if (!pl || !pl.belt || !G.barn.unlocked) return null;
+      var b = beltSpots[plotId] || (beltSpots[plotId] = {});
+      b.x = pl.ox + pl.width / 2; b.y = cfg.farmRoad.hopperY;
+      return b;
+    },
     // They drop their basket at the stall nearest their field, on the
     // outside of that arm (Tom 2026-09-27: "the farmers should only need to
     // offload at the closest stall"); it flies to its own shelf.
@@ -11029,6 +11240,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       } else if (e.type === 'store') {
         G.barn.bump = 1;
         fx.sound.tick(G.item.pitch(e.crop) - 4, 0, 0.3);
+      } else if (e.type === 'belt') {
+        var bp = field.plotById[e.plotId];
+        if (bp) { bp.beltT = G.time; bp.beltCrop = e.crop; }
+        G.barn.bump = 1;
+        fx.sound.tick(G.item.pitch(e.crop) - 4, 0, 0.2);
       } else if (e.type === 'bulk') {
         G.money += e.amount; G.incomeNow += e.amount;
         G.stats.truckItems += e.n; G.stats.truckEarned += e.amount;
@@ -12074,7 +12290,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     S.seedLv = JSON.parse(JSON.stringify(G.seedLv));
     S.carry = St.countItems(G.carry.items);
     field.plots.forEach(function (pl) {
-      S.plots[pl.id] = { unlocked: pl.unlocked, paid: pl.paid, level: pl.level, crop: pl.crop, harvested: pl.harvested };
+      S.plots[pl.id] = { unlocked: pl.unlocked, paid: pl.paid, level: pl.level, crop: pl.crop, harvested: pl.harvested, belt: !!pl.belt };
     });
     S.stand = JSON.parse(JSON.stringify(G.standLv));
     S.tills = G.stand.tills.map(function (t) { return !!t.keeper; });
@@ -12120,6 +12336,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var q = S.plots[pl.id];
       if (!q) return;
       pl.paid = Math.max(0, Number(q.paid) || 0);
+      pl.belt = !!q.belt;
       if (q.unlocked) CR.field.unlockPlot(field, pl.id);
       if (pl.unlocked) CR.field.setPlotLevel(field, pl.id, num(q.level, 0, pl.maxLevel));
       pl.harvested = Number(q.harvested) || 0;
@@ -12451,6 +12668,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       learn: function (fid) { var f = CR.factory.byId(G.factories, fid), r = CR.factory.nextRecipe(f); return r ? r.learn : Infinity; },
       facSpeed: function (fid) { return CR.factory.speedCost(G.factories, CR.factory.byId(G.factories, fid)); },
       belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg); },
+      fieldBelt: function (id) {
+        var pl = field.plotById[id], B = cfg.farmRoad.belt, slot = cfg.plots.filter(function (q) { return q.id === id; })[0].slot;
+        return pl.belt ? Infinity : Math.round(Math.max(B.base * Math.pow(B.growth, slot), pl.cost * B.plotMult));
+      },
       facBatch: function (fid) { return CR.factory.batchCost(G.factories, CR.factory.byId(G.factories, fid)); },
       tool: function () { return ECON.toolUpgradeCost(cfg, G.tier, G.toolLevel); },
       next: function () { var n = cfg.tools[G.tier + 1]; return n ? n.cost : Infinity; },
@@ -12533,6 +12754,17 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       factoryCheer(f, f.cfg.name + ' worker hired!', true);
     },
     // A belt from the barn to its hopper (v83, Tom 2026-09-27).
+    // v87: a field's belt to the barn (needs the barn and the Combine).
+    fieldBeltReady: function () {
+      var need = cfg.tools.map(function (t) { return t.id; }).indexOf(cfg.farmRoad.belt.unlock);
+      return G.barn.unlocked && G.tier >= need;
+    },
+    buyFieldBelt: function (id) {
+      var pl = field.plotById[id];
+      if (!pl || !pl.unlocked || pl.belt || !actions.fieldBeltReady() || !pay(actions.prices.fieldBelt(id))) return;
+      pl.belt = true; bought();
+      celebrate(fieldName(id) + ' belt to the barn!', true);
+    },
     buyBelt: function (fid) {
       var f = CR.factory.byId(G.factories, fid);
       if (!f || !f.unlocked || f.belt || !G.barn.unlocked || !pay(actions.prices.belt(fid))) return;
@@ -12593,7 +12825,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var f = CR.factory.byId(G.factories, fid);
       if (!f || !f.unlocked || !pay(actions.prices.facSpeed(fid))) return;
       f.speed++; bought();
-      factoryCheer(f, 'Faster ' + f.cfg.name.toLowerCase() + '!', false);
+      var ind = f.speed === cfg.factoryLook.industrialAt;
+      factoryCheer(f, ind ? f.cfg.name + ' goes industrial!' : 'Faster ' + f.cfg.name.toLowerCase() + '!', ind);
     },
     // Bigger batches: more goods per cycle, up to crates of 1K (Tom).
     factoryBatch: function (fid) {
