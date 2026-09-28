@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v94)</p>
+    <p class="ver">Crop Rush 1.0 (v95)</p>
   </div>
 </div>
 
@@ -934,7 +934,9 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // v92 (Tom 2026-09-28 11:31: "unlocked after 2 conditions, having 1k
       // and having unlocked some fitting upgrades"): the gate opens for
       // cost once you have the tool (tier), the crop's field and farmers.
-      open: { cost: 1000, tier: 1, crop: 'tomato', farmers: 1 } },
+      // Tom 13:36: "It should unlock when you get the tomato farmer and
+      // have 200 coins" (was Sickle, Tomato field, a farmer and 1,000).
+      open: { cost: 200, tier: 0, crop: 'tomato', farmers: 1 } },
     // Every recipe a factory knows runs at once on its own line (v83, Tom
     // 2026-09-27), so its speed and batch upgrades cost + lineCost x for
     // each line after the first (Tom: "scale the balance around this").
@@ -9880,7 +9882,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         var stg = cfg.stand.stages[newStage];
         var names = { shelves: newStage >= 0 ? ['Open ' + (/^[aeiou]/i.test(sh.tiers[newStage]) ? 'an ' : 'a ') + sh.tiers[newStage].toLowerCase(), stg.buyers + ' come, with ' + stg.carry + '. Customers buy up to ' + G.fmt(Math.round(bulkNext * cfg.stand.takeMax)) + ' at once'] : ['Bigger ' + shTier.toLowerCase(), 'Hold ' + G.fmt(G.stand.capacity) + ' → ' + G.fmt(nextCap) + ' of each crop. Customers buy up to ' + G.fmt(Math.round(bulkNext * cfg.stand.takeMax)) + ' at once'],
           signboard: [ad.tiers[Math.min(ad.tiers.length - 1, Math.floor(adLv / ad.perTier))],
-            perMin2 > perMin ? 'Customers a minute: ' + perMin + ' → ' + perMin2 : 'About ' + perMin + ' customers a minute, the most the stall gets'],
+            perMin2 > perMin ? 'Customers a minute: ' + perMin + ' → ' + perMin2 : 'About ' + perMin + ' customers a minute, the most this stall gets: each buys a bit more'],
           till: ['Quick hands', 'Serve each customer faster'] };
         // v81: Better prices removed (Tom 2026-09-27: too OP).
         // Payback where the gain is clear (playtest 12: asked for on every
@@ -9896,9 +9898,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
           var span = u.perTier ? CR.stand.tierSpan(cfg, k, Math.min(lv, top - 1)) : null;
           list.push({ key: 'stand' + k, icon: ['stand', k], title: names[k][0], sub: names[k][1], gain: standGain[k] || 0,
             level: span ? Math.min(lv, top) - span.from : lv, max: span ? span.to - span.from : top,
-            // Advertising at the most customers the stall can get does
-            // nothing more (playtest 14: capped Flyers still for sale).
-            price: P.stand(k), done: lv >= top || (k === 'signboard' && lv > 0 && perMin2 <= perMin), act: function () { actions.standUp(k); } });
+            // Advertising stays for sale at the most customers the stall
+            // gets (Tom 2026-09-28 13:36: Flyers said max at level 2); past
+            // the cap buyers take a bit more (stand.overflowPow).
+            price: P.stand(k), done: lv >= top, act: function () { actions.standUp(k); } });
         });
         list.push(pricesCard());
       }
@@ -11211,9 +11214,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     U.left = x0 - U.tillPad - 1; U.right = x1 + U.tillPad;
     area.x = U.left; area.w = U.right + 1 - U.left;
     G.shelves.forEach(function (sh, k) {
-      sh.side = k % 2 ? 'left' : 'right';
-      sh.x = k % 2 ? U.left : U.right;
-      sh.y = U.armStart + Math.floor(k / 2) * U.pitch;
+      // Carrots and tomatoes swap places (Tom 2026-09-28 13:36): carrots
+      // top left, tomatoes top right; the rest as before.
+      var q = k === 0 ? 1 : k === 1 ? 0 : k;
+      sh.side = q % 2 ? 'left' : 'right';
+      sh.x = q % 2 ? U.left : U.right;
+      sh.y = U.armStart + Math.floor(q / 2) * U.pitch;
     });
     G.stallSolids.forEach(function (b, k) {
       var sh = G.shelves[k], on = k < n;
@@ -13122,11 +13128,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   G.district = { cost: cfg.district.open.cost, paid: 0, open: false };
   G.districtNeeds = function () {
     var o = cfg.district.open, crop = cfg.crops[o.crop];
-    return [
-      { name: cfg.tools[o.tier].name, ok: G.tier >= o.tier },
-      { name: crop.name + ' field', ok: field.plots.some(function (pl) { return pl.unlocked && pl.crop === o.crop; }) },
-      { name: o.farmers > 1 ? o.farmers + ' farmers' : 'A farmer', ok: G.farmers.list.length >= o.farmers }
-    ];
+    var pl = field.plots.filter(function (q) { return q.crop === o.crop; })[0];
+    return (o.tier ? [{ name: cfg.tools[o.tier].name, ok: G.tier >= o.tier }] : []).concat([
+      { name: crop.name + ' farmer', ok: !!pl && pl.unlocked && (G.farmers.count[pl.id] || 0) >= o.farmers }
+    ]);
   };
   G.districtNeedsAll = function () {
     return G.districtNeeds().concat([{ name: E.fmt(G.district.cost) + ' coins', ok: G.money >= G.district.cost }]);
