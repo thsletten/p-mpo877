@@ -518,6 +518,29 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 .awayNext { margin: 4px 0 10px; font-weight: 700; color: #2e7d32; }
 .awayNext[hidden] { display: none; }
 
+/* ---- the soft tutorial (tutorial.js, v92) ---- */
+#tut {
+  position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+  margin: 0 auto; width: fit-content; max-width: calc(100% - 28px); box-sizing: border-box;
+  display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center;
+  background: linear-gradient(#fffaf0, #f3e2c2); color: var(--ink);
+  border: 3px solid var(--woodDark); border-radius: 18px; padding: 6px 14px 7px 8px;
+  box-shadow: 0 5px 0 rgba(60, 30, 5, 0.35), 0 10px 20px rgba(0,0,0,.2);
+}
+#tut[hidden] { display: none; }
+#tut.bump { animation: toastIn .45s cubic-bezier(.2,1.5,.4,1); }
+#tut em {
+  grid-row: span 2; font-style: normal; font-weight: 700; font-size: 15px; color: #fff;
+  background: #43a047; border-radius: 12px; padding: 6px 8px; box-shadow: 0 3px 0 #2e7d32;
+}
+#tut b { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #e65100; }
+#tut span { font-size: 16px; font-weight: 700; line-height: 1.2; }
+body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
+#howtoRows { display: grid; gap: 8px; margin: 8px 0 14px; text-align: left; }
+.howRow { display: flex; align-items: center; gap: 10px; }
+.howRow canvas { width: 48px; height: 48px; flex: none; border-radius: 12px; background: #ffe9a8; }
+.howRow p { font-size: 15px; line-height: 1.25; }
+
 </style>
 </head>
 <body>
@@ -545,7 +568,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     <b id="orderTime"></b>
   </div>
   <div id="toasts"></div>
-  <div id="hint">Drag anywhere to walk.<br>Walk through the carrots!</div>
+  <div id="tut" hidden><em id="tutN"></em><b id="tutLabel"></b><span id="tutText"></span></div>
+  <div id="hint">Drag anywhere to walk.</div>
 </div>
 
 <div id="dock">
@@ -601,6 +625,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   </div>
 </div>
 
+<div id="howto" class="modal" hidden>
+  <div class="box">
+    <h2 id="howtoTitle"></h2>
+    <div id="howtoRows"></div>
+    <button type="button" class="wide" id="howtoBtn">Got it</button>
+  </div>
+</div>
+
 <div id="away" class="modal" hidden>
   <div class="box">
     <h2>Welcome back!</h2>
@@ -626,7 +658,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v91)</p>
+    <p class="ver">Crop Rush 1.0 (v92)</p>
   </div>
 </div>
 
@@ -896,7 +928,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Belts from the barn run along the back of each row (trunkY, rowBY),
     // down trunkX2 to the far row, under the first street.
     district: { x: 2.2, y: 32, w: 22.8, h: 17.5, streets: [39.4, 48], streetH: 2.2, gateX: 23.9, avenueX: 24.3,
-      trunkX: 19.3, trunkY: 32.6, trunkX2: 23.3, rowBY: 41.3 },
+      trunkX: 19.3, trunkY: 32.6, trunkX2: 23.3, rowBY: 41.3,
+      // v92 (Tom 2026-09-28 11:31: "unlocked after 2 conditions, having 1k
+      // and having unlocked some fitting upgrades"): the gate opens for
+      // cost once you have the tool (tier), the crop's field and farmers.
+      open: { cost: 1000, tier: 1, crop: 'tomato', farmers: 1 } },
     // Every recipe a factory knows runs at once on its own line (v83, Tom
     // 2026-09-27), so its speed and batch upgrades cost + lineCost x for
     // each line after the first (Tom: "scale the balance around this").
@@ -4014,6 +4050,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       runEarned: 0,                 // money made on this farm (for Golden seeds)
       playTime: 0,                  // seconds played, all farms
       goldenFound: 0,               // golden crops cut, all farms
+      tut: 0,                       // soft tutorial step (tutorial.js; 99 = done)
+      tutSeen: {},
+      district: { open: false, paid: 0 }, // the factory district's gate (v92)                  // tutorial pop-ups seen: { farmer, factory }
       fresh: false,                 // a farm just started from selling the last
       savedAt: 0
     };
@@ -6147,6 +6186,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // A golden crop is out: point at it (playtest 10: nobody saw one).
     if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
     else if (G.field.golden) drawArrowTo(ctx, G, time, G.field.golden.x + 0.5, G.field.golden.y + 0.5);
+    else if (G.tutArrow) drawArrowTo(ctx, G, time, G.tutArrow.x, G.tutArrow.y);
     else if (G.serveArrow && G.serveArrow.until > G.time) drawArrowTo(ctx, G, time, G.serveArrow.x, G.serveArrow.y);
     else if (G.homeArrow && !G.full) drawArrowTo(ctx, G, time, G.homeArrow.x, G.homeArrow.y);
     else if (G.jarArrow && G.jarArrow.until > G.time) drawArrowTo(ctx, G, time, G.jarArrow.x, G.jarArrow.y);
@@ -6227,6 +6267,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       list.push({ x: bd.x + bd.w / 2, y: bd.y + bd.h / 2, h: 1, fn: S.drawFactory, f: fa });
       if (fa.unlocked) list.push({ x: c.pickup.x + 0.2, y: c.pickup.y - 0.6, h: 1, fn: S.drawJarPallet, f: fa });
     });
+    if (G.cfg.district && !G.district.open) { var dsp = G.districtSpot(); list.push({ x: dsp.x, y: dsp.y, h: 1, fn: S.drawDistrictSign }); }
     if (G.cfg.district) G.cfg.district.streets.forEach(function (sy) { list.push({ x: G.cfg.district.gateX + 0.15, y: sy + G.cfg.district.streetH / 2 + 0.2, h: 1, fn: S.drawDistrictGate, sy: sy }); });
     list.push({ x: G.truck.x + 0.3, y: G.truck.y, h: 1, fn: S.drawTruck });
     G.customers.order.forEach(function (c) { list.push({ x: c.x, y: c.y, h: 1, fn: S.drawCustomer, c: c }); });
@@ -7292,6 +7333,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var D = G.cfg.district, x = D.gateX, sy = it.sy, y0 = sy - D.streetH / 2 - 0.35, y1 = sy + D.streetH / 2 + 0.05;
     box(ctx, x, y0, 0.3, 0.3, 0, 62, '#eceff1', '#b0bec5', '#cfd8dc');
     box(ctx, x, y1, 0.3, 0.3, 0, 62, '#eceff1', '#b0bec5', '#cfd8dc');
+    if (!G.district.open) {
+      // Closed (v92): a striped boom across the street.
+      for (var bz = 14; bz <= 26; bz += 12) {
+        var b0 = ws(x + 0.15, y0 + 0.3, bz), b1 = ws(x + 0.15, y1, bz);
+        ctx.lineCap = 'butt'; ctx.lineWidth = 7; ctx.strokeStyle = '#fafafa'; ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke();
+        ctx.strokeStyle = '#e53935'; ctx.setLineDash([9, 9]); ctx.beginPath(); ctx.moveTo(b0.x, b0.y); ctx.lineTo(b1.x, b1.y); ctx.stroke(); ctx.setLineDash([]);
+      }
+    }
     var l = ws(x + 0.3, y0 + 0.15, 62), r = ws(x + 0.3, y1 + 0.15, 62), m = ws(x + 0.3, sy, 62);
     ctx.fillStyle = '#3949ab'; ctx.beginPath(); ctx.moveTo(l.x, l.y - 18); ctx.lineTo(r.x, r.y - 18); ctx.lineTo(r.x, r.y + 4); ctx.lineTo(l.x, l.y + 4); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = '#ffd54f'; ctx.lineWidth = 1.5; ctx.stroke();
@@ -7299,6 +7348,36 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ctx.fillStyle = '#fff'; ctx.font = '700 11px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('FACTORY DISTRICT', 0, 0); ctx.restore();
   }
+  // The closed district's sign at its first gate (v92): what it still
+  // needs, then a sign you pay on like a field's.
+  function drawDistrictSign(ctx, G) {
+    if (G.district.open) return;
+    var s = G.districtSpot(), sc = ws(s.x, s.y), fc = G.cfg.factories[0];
+    if (G.districtReady()) {
+      drawSignBoard(ctx, G, sc.x, sc.y, 'Factory district', G.district.cost, G.district.paid, function (x, y) { factoryIcon(ctx, x, y, 0.28, fc); },
+        'Opens the district: build factories that turn crops into goods');
+      return;
+    }
+    var needs = G.districtNeeds();
+    stroke(ctx, '#6b3f18', 4, sc.x - 30, sc.y, sc.x - 30, sc.y - 30);
+    stroke(ctx, '#6b3f18', 4, sc.x + 30, sc.y, sc.x + 30, sc.y - 30);
+    shadow(ctx, sc.x, sc.y + 2, 34, 8);
+    var bw = 150, bh = 22 + needs.length * 16, left = sc.x - bw / 2, top = sc.y - 26 - bh;
+    ctx.fillStyle = '#7d4a1f'; roundRect(ctx, left - 3, top - 3, bw + 6, bh + 6, 9); ctx.fill();
+    ctx.fillStyle = '#f7dca4'; roundRect(ctx, left, top, bw, bh, 7); ctx.fill();
+    ctx.font = '700 12px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#4a2c12'; ctx.fillText('FACTORY DISTRICT OPENS WITH', sc.x, top + 11);
+    ctx.textAlign = 'left';
+    needs.forEach(function (n, i) {
+      var y = top + 27 + i * 16;
+      ctx.fillStyle = n.ok ? '#43a047' : '#bdbdbd'; ctx.beginPath(); ctx.arc(left + 14, y, 6, 0, TAU); ctx.fill();
+      if (n.ok) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(left + 11, y); ctx.lineTo(left + 13.5, y + 2.5); ctx.lineTo(left + 17.5, y - 2.5); ctx.stroke(); }
+      ctx.fillStyle = n.ok ? '#2e7d32' : '#4a2c12'; ctx.fillText(n.name, left + 26, y + 0.5);
+    });
+    coin(ctx, left + bw - 44, top + 27, 0.7);
+    ctx.fillStyle = '#4a2c12'; ctx.fillText(G.fmt(G.district.cost), left + bw - 36, top + 27.5);
+  }
+
   function lampPost(ctx, x, y, time, glow, pole) {
     var b = ws(x, y, 0), t = ws(x, y, 44);
     ctx.strokeStyle = pole; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(t.x, t.y); ctx.stroke();
@@ -7343,6 +7422,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       box(ctx, c.x + 0.3, c.y + 0.3, 0.8, 0.8, 0, 14, '#d9a066', '#9c6532', '#b77a40');
       box(ctx, c.x + 1.4, c.y + 0.4, 0.7, 0.7, 0, 12, '#d9a066', '#9c6532', '#b77a40');
       box(ctx, c.x + 0.4, c.y + 0.4, 0.6, 0.6, 14, 11, '#e3b27a', '#9c6532', '#b77a40');
+      if (!G.district.open) return;
       var s = ws(c.hopper.x + c.hopper.w / 2, c.hopper.y + c.hopper.h / 2);
       var ins = Object.keys(c.recipes[0].inputs).map(function (k) { return G.cfg.crops[k].name.toLowerCase(); }).join(' + ');
       drawSignBoard(ctx, G, s.x, s.y, c.name, f.cost, f.paid, function (x, y) { factoryIcon(ctx, x, y, 0.28, c); },
@@ -7989,7 +8069,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   CR.scenery = {
     drawGround: drawGround, drawYard: drawYard, decorate: decorate,
     drawStandDeck: drawStandDeck, drawShelf: drawShelf, drawAwning: drawAwning, drawTill: drawTill, drawCoinPile: drawCoinPile,
-    drawPlotSign: drawPlotSign, drawFactoryGround: drawFactoryGround, drawFactoryYard: drawFactoryYard, drawDistrictGate: drawDistrictGate, factoryStage: stageOf, drawFactory: drawFactory, drawJarPallet: drawJarPallet, drawStageProp: drawStageProp,
+    drawPlotSign: drawPlotSign, drawFactoryGround: drawFactoryGround, drawFactoryYard: drawFactoryYard, drawDistrictGate: drawDistrictGate, drawDistrictSign: drawDistrictSign, factoryStage: stageOf, drawFactory: drawFactory, drawJarPallet: drawJarPallet, drawStageProp: drawStageProp,
     drawAd: drawAd, drawFieldProp: drawFieldProp, drawFence: drawFence,
     drawTruck: drawTruck, drawTruckZone: drawTruckZone, drawFarmer: drawFarmer, drawCart: drawCart, drawKeeper: drawKeeper, drawCustomer: drawCustomer, drawExtraItem: drawExtraItem, vignette: vignette, icon: icon,
     hash: hash, shadow: shadow, coin: coin, drawSignBoard: drawSignBoard, drawMat: drawMat
@@ -9317,6 +9397,116 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
 
   CR.input = { create: create, dir: dir };
 })(this.CR = this.CR || {});
+
+</script>
+<script>
+// A soft tutorial (Tom 2026-09-28 11:24: "harvesting, stocking, selling,
+// bulk sell and that you later can get more crops", plus a short pop-up
+// for the first farmer and the first factory). Nothing stops you: a card
+// at the bottom says the next thing to do and the arrows point at it; each
+// step ends when you have done it. G.tut is the step (DONE when finished)
+// and is saved; G.tutSeen remembers the pop-ups.
+(function () {
+  var CR = window.CR = window.CR || {};
+  var DONE = 99;
+
+  // Each step: its label, what to do, where the arrows point (null: none),
+  // and when it is done. s is the step's own memory, t its seconds shown.
+  var STEPS = [
+    { id: 'harvest', label: 'Harvest',
+      text: function () { return 'Walk through the carrots to harvest them'; },
+      target: function (G) {
+        var pl = G.field.plots[0], p = G.player;
+        if (CR.field.plotAt(G.field, p.x, p.y) === pl) return null;
+        return CR.field.plotPoint(pl, Math.min(pl.length / 2, 4), pl.width / 2);
+      },
+      done: function (G) { return G.full || G.carry.items.length >= 5; } },
+    { id: 'stock', label: 'Stock the stall',
+      text: function () { return 'Carry them to the stall and stand on DROP'; },
+      target: function (G) { return G.carry.items.length ? G.dropSpot() : null; },
+      done: function (G, s) {
+        var n = 0; for (var k in G.stand.shelves) n += G.stand.shelves[k];
+        return n + (G.stand.sold || 0) > 0;
+      } },
+    { id: 'sell', label: 'Sell',
+      text: function (G) { return 'Customers pay at the till: stand on SERVE (' + Math.min(3, (G.served || 0) - G.tutServed0) + '/3)'; },
+      start: function (G) { G.tutServed0 = G.served || 0; },
+      target: function (G) {
+        if (G.stand.serving != null) return null;
+        var z = G.cashierZones[0]; return { x: z.x + z.w / 2, y: z.y + z.h / 2 };
+      },
+      done: function (G) { return (G.served || 0) - G.tutServed0 >= 3 || G.stand.tills[0].keeper; } },
+    { id: 'bulk', label: 'Bulk sell',
+      text: function () { return 'Stall full? The truck buys any amount on BULK, for less'; },
+      start: function (G) { G.tutTruck0 = G.stats.truckItems; },
+      target: function (G) {
+        if (!G.carry.items.length) return null;
+        var z = G.truckZone; return { x: z.x + z.w / 2, y: z.y + z.h / 2 };
+      },
+      // Soft: it also moves on by itself after a while.
+      done: function (G, t) { return G.stats.truckItems > G.tutTruck0 || t > 40; } },
+    { id: 'crops', label: 'More crops',
+      text: function (G) {
+        var s = next(G);
+        return s ? 'New crops sell for more: save up for the ' + s.name + ' (' + G.fmt(Math.min(G.money, s.left)) + '/' + G.fmt(s.left) + ')'
+          : 'New crops sell for more';
+      },
+      target: function (G) { var s = next(G); return s && G.money >= s.left ? s : null; },
+      done: function (G) { return G.field.plots.filter(function (pl) { return pl.unlocked; }).length > 1; } }
+  ];
+  // The next field you can buy, as its sign.
+  function next(G) {
+    for (var i = 0; i < G.field.plots.length; i++) {
+      var pl = G.field.plots[i];
+      if (!pl.unlocked) return G.signAt('plot' + pl.id);
+    }
+    return null;
+  }
+
+  // Called every frame from main.js; sets G.tutArrow and the card.
+  function update(G, ui, dt) {
+    G.tutArrow = null;
+    if (!(G.tut < STEPS.length)) { ui.tutCard(null); return; }
+    var st = STEPS[G.tut];
+    if (G.tutAt !== G.tut) { G.tutAt = G.tut; G.tutT = 0; if (st.start) st.start(G); }
+    G.tutT += dt;
+    if (st.done(G, G.tutT)) {
+      G.tut++;
+      CR.fx.sound.tick(12); CR.fx.sound.tick(16, 0.08);
+      if (G.tut >= STEPS.length) {
+        G.tut = DONE; ui.tutCard(null);
+        ui.toast('You know the basics!', 'Harvest, stock, sell, and grow your farm. Upgrades make everything faster.', ['farmer', 'carrot']);
+      }
+      return;
+    }
+    G.tutArrow = st.target(G);
+    ui.tutCard({ n: G.tut + 1, of: STEPS.length, label: st.label, text: st.text(G) });
+  }
+
+  // The pop-ups, once each.
+  function farmerIntro(G, ui, plot) {
+    if (G.tutSeen.farmer) return;
+    G.tutSeen.farmer = true;
+    var c = G.cfg.crops[plot.crop];
+    ui.howTo('Your first farmer!', [
+      [['farmer', plot.crop], 'Farmers harvest their own field by themselves, a bit slower than you.'],
+      [['stand', 'shelves'], 'They carry the ' + c.name.toLowerCase() + ' to the stall, then to the barn or the truck when it is full.'],
+      [['field', plot.id], 'Tap the field to upgrade their tools or hire a second farmer.']
+    ], 'Got it');
+  }
+  function factoryIntro(G, ui, f) {
+    if (G.tutSeen.factory) return;
+    G.tutSeen.factory = true;
+    var c = f.cfg, crop = Object.keys(c.recipes[0].inputs)[0], item = c.id + ':' + c.recipes[0].id;
+    ui.howTo('The ' + c.name + ' is open!', [
+      [['crop', crop], 'Drop ' + G.cfg.crops[crop].name.toLowerCase() + ' on DROP CROPS in front of it.'],
+      [['good', item], 'It makes ' + c.goods + '. Pick them up at the pallet and sell them at the stall for ' + c.valueMult + 'x.'],
+      [['factory', c.id], 'Stand on its mat and it works ' + G.cfg.factoryBoost.mult + 'x faster. Tap it to upgrade it or hire a worker.']
+    ], 'Got it');
+  }
+
+  CR.tutorial = { STEPS: STEPS, DONE: DONE, update: update, farmerIntro: farmerIntro, factoryIntro: factoryIntro };
+})();
 
 </script>
 <script>
@@ -10789,6 +10979,36 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     ui.hideHint = function () { ui.hint.classList.add('gone'); };
     ui.menuOpen = function () { return !ui.shop.hidden || !ui.settings.hidden || !ui.goals.hidden || !ui.legacySheet.hidden; };
     ui.showHint = function (html) { ui.hint.innerHTML = html; ui.hint.classList.remove('gone'); };
+    // The soft tutorial's card (tutorial.js): the step and what to do.
+    var tutEl = $('tut'), tutKey = '';
+    ui.tutCard = function (c) {
+      var k = c ? c.n + '|' + c.text : '';
+      if (k === tutKey) return;
+      var fresh = !c || !tutKey || tutKey.split('|')[0] !== String(c.n);
+      tutKey = k;
+      document.body.classList.toggle('tut', !!c);
+      tutEl.hidden = !c;
+      if (!c) return;
+      $('tutN').textContent = c.n + '/' + c.of;
+      $('tutLabel').textContent = c.label;
+      $('tutText').textContent = c.text;
+      if (fresh) { tutEl.classList.remove('bump'); void tutEl.offsetWidth; tutEl.classList.add('bump'); }
+    };
+    // A short pop-up with a picture per line (first farmer, first factory).
+    ui.howTo = function (title, rows, btn) {
+      $('howtoTitle').textContent = title;
+      var box = $('howtoRows'); box.innerHTML = '';
+      rows.forEach(function (r) {
+        var row = document.createElement('div'), c = document.createElement('canvas'), p = document.createElement('p');
+        row.className = 'howRow'; c.width = 72; c.height = 72;
+        CR.render.icon(c, r[0][0], r[0][1], G);
+        p.textContent = r[1];
+        row.appendChild(c); row.appendChild(p); box.appendChild(row);
+      });
+      $('howtoBtn').textContent = btn || 'Got it';
+      $('howtoBtn').onclick = function () { $('howto').hidden = true; };
+      $('howto').hidden = false;
+    };
     ui.refreshPanel();
     return ui;
   }
@@ -11854,7 +12074,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (onPad) onMat = f.id;
       var there = onPad || (!f.unlocked && Math.hypot(p.x - mid.x, p.y - mid.y) < cfg.economy.signReach);
       if (!f.unlocked) {
-        if (!there) return;
+        if (!there || !G.district.open) return;
         // Build it by standing on its sign, like a plot.
         var spent = G.free ? f.cost - f.paid : payIn(f, dt);
         if (G.free) { f.paid = f.cost; f.unlocked = true; } else G.money -= spent;
@@ -11873,8 +12093,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           refreshShelves();
           // No free helper (Tom 2026-09-26 20:39): its own worker is hired
           // in its menu (v71), and its mat makes it 3x faster.
-          ui.showHint(cap(f.cfg.goods) + ' sell for ' + f.cfg.valueMult + 'x their crop!<br>Stand on its mat and it works ' + cfg.factoryBoost.mult + 'x faster. Tap it to hire a worker.');
-          setTimeout(function () { ui.hideHint(); }, 6000);
+          // The first one explains itself in a pop-up (tutorial.js).
+          if (!G.tutSeen.factory) CR.tutorial.factoryIntro(G, ui, f);
+          else {
+            ui.showHint(cap(f.cfg.goods) + ' sell for ' + f.cfg.valueMult + 'x their crop!<br>Stand on its mat and it works ' + cfg.factoryBoost.mult + 'x faster. Tap it to hire a worker.');
+            setTimeout(function () { ui.hideHint(); }, 6000);
+          }
         }
         return;
       }
@@ -12236,12 +12460,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (G.hintShown && G.seenFull && inZone(G.unloadZone, p.x, p.y)) { G.hintShown = false; ui.hideHint(); }
 
     guideStep(dt);
+    CR.tutorial.update(G, ui, dt);
     partyStep(dt);
     surplusStep();
     unloadStep(dt);
     truckStep(dt);
     farmerStep(dt);
     barnStep(dt);
+    districtStep(dt);
     workerStep(dt);
     standStep(dt);
     factoryStep(dt);
@@ -12558,9 +12784,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // farmers, and the first came at 7-11 min for two testers).
       else if (!(G.farmers.count[pl.id] > 0)) offer({ name: cfg.crops[pl.crop].name + ' farmer', price: actions.prices.farmer(pl.id), paid: 0, tab: 'farmers', icon: ['farmer', pl.crop], buy: function () { actions.hireFarmer(pl.id); } });
     });
+    if (!G.district.open && G.districtReady()) offer({ name: 'Factory district', price: G.district.cost, paid: G.district.paid, sign: 'district', icon: ['factory', cfg.factories[0].id] });
     // The first seller.
     if (!G.stand.tills.some(function (t) { return t.keeper; })) offer({ name: 'Seller', price: actions.prices.keeper(), paid: 0, tab: 'stand', icon: ['seller', 0], buy: function () { actions.hireKeeper(); } });
     G.factories.factories.forEach(function (f) {
+      if (!f.unlocked && !G.district.open) return;
       if (!f.unlocked) { offer({ name: f.cfg.name, price: f.cost, paid: f.paid, sign: 'fac' + f.id, icon: ['factory', f.id] }); return; }
       // Its worker puts it in the loop (v71, no free one): the goods go to
       // the stall by themselves, and with the barn its crops come in too.
@@ -12587,8 +12815,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var pt = CR.field.plotPoint(pl, Math.min(pl.length / 2, 5), pl.width / 2);
       return { x: pt.x, y: pt.y, name: cfg.crops[pl.crop].name + ' field', left: pl.cost - pl.paid, icon: ['crop', pl.crop] };
     }
+    if (key === 'district') {
+      var ds = G.districtSpot();
+      return G.district.open || !G.districtReady() ? null
+        : { x: ds.x, y: ds.y, name: 'Factory district', left: G.district.cost - G.district.paid, icon: ['factory', cfg.factories[0].id] };
+    }
     var f = G.factories.factories.filter(function (q) { return 'fac' + q.id === key; })[0];
-    if (!f || f.unlocked) return null;
+    if (!f || f.unlocked || !G.district.open) return null;
     var hz = f.cfg.hopper;
     return { x: hz.x + hz.w / 2, y: hz.y + hz.h / 2, name: f.cfg.name, left: f.cost - f.paid, icon: ['factory', f.id] };
   };
@@ -12645,7 +12878,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!g) {
       G.guideKey = null;
       [].concat(field.plots.map(function (pl) { return 'plot' + pl.id; }),
-        G.factories.factories.map(function (f) { return 'fac' + f.id; }), ['barn']).forEach(function (k) {
+        G.factories.factories.map(function (f) { return 'fac' + f.id; }), ['barn', 'district']).forEach(function (k) {
         var s = G.signAt(k);
         if (s && G.money >= s.left && (!g || s.left < g.left)) { g = s; g.key = k; }
       });
@@ -12695,6 +12928,8 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     S.runEarned = G.runEarned;
     S.playTime = G.playTime;
     S.goldenFound = G.golden.found;
+    S.tut = G.tut; S.tutSeen = JSON.parse(JSON.stringify(G.tutSeen));
+    S.district = { open: G.district.open, paid: G.district.paid };
     return S;
   }
 
@@ -12814,6 +13049,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     G.runEarned = Math.max(0, S.runEarned);
     G.playTime = Math.max(0, S.playTime);
     G.golden.found = Math.max(0, S.goldenFound | 0);
+    // The soft tutorial: a save from before it (v92) has played a while,
+    // and skips it; one with farmers or a factory has seen those.
+    G.tut = typeof S.tut === 'number' && S.tut >= 0 ? S.tut : CR.tutorial.DONE;
+    if (G.tut === 0 && G.playTime > 120) G.tut = CR.tutorial.DONE;
+    // A save from before the gate (v92) with a factory has it open.
+    G.district.open = !!S.district.open || G.factories.factories.some(function (f) { return f.unlocked; });
+    G.district.paid = G.district.open ? G.district.cost : Math.max(0, Math.min(G.district.cost, Number(S.district.paid) || 0));
+    G.tutSeen = { farmer: !!S.tutSeen.farmer || G.farmers.list.length > 0, factory: !!S.tutSeen.factory || G.factories.factories.some(function (f) { return f.unlocked; }) };
     if (S.fresh) newFarm(S);
     applyGear();
     G.carry.items = St.listItems(S.carry, G.carry.limit);
@@ -12871,6 +13114,53 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   G.legacy = LEG;
   G.runEarned = 0;
   G.playTime = 0;
+  // The soft tutorial (tutorial.js) covers the first full basket and the
+  // first queue, so their old one-off hints stay quiet.
+  G.tut = 0; G.tutSeen = {};
+  // The factory district's gate (v92): what it still needs, and paying for
+  // it on its sign at the gate, like a field.
+  G.district = { cost: cfg.district.open.cost, paid: 0, open: false };
+  G.districtNeeds = function () {
+    var o = cfg.district.open, crop = cfg.crops[o.crop];
+    return [
+      { name: cfg.tools[o.tier].name, ok: G.tier >= o.tier },
+      { name: crop.name + ' field', ok: field.plots.some(function (pl) { return pl.unlocked && pl.crop === o.crop; }) },
+      { name: o.farmers > 1 ? o.farmers + ' farmers' : 'A farmer', ok: G.farmers.list.length >= o.farmers }
+    ];
+  };
+  G.districtReady = function () { return G.districtNeeds().every(function (n) { return n.ok; }); };
+  G.districtSpot = function () { var D = cfg.district; return { x: D.gateX + 3.2, y: D.streets[0] + 0.3 }; };
+  function districtStep(dt) {
+    var d = G.district;
+    if (d.open) return;
+    var p = G.player, s = G.districtSpot();
+    if (Math.hypot(p.x - s.x, p.y - s.y) > cfg.economy.signReach) return;
+    if (!G.districtReady() && !G.free) {
+      if (G.time - (d.saidNeed || -9) > 2.5) {
+        d.saidNeed = G.time;
+        var miss = G.districtNeeds().filter(function (n) { return !n.ok; }).map(function (n) { return n.name.toLowerCase(); });
+        var sn = iso.toScreen(p.x, p.y, 30);
+        fx.text(sn.x, sn.y - 150, 'First get: ' + miss.join(', '), { color: '#ffcdd2', size: 16, max: 2.2, rise: 8 });
+      }
+      return;
+    }
+    var spent = G.free ? d.cost - d.paid : payIn(d, dt);
+    if (G.free) d.paid = d.cost; else G.money -= spent;
+    if (spent > 0 && Math.random() < dt * 14) {
+      var sp = iso.toScreen(p.x, p.y, 30), sm = iso.toScreen(cfg.district.gateX, s.y, 40);
+      fx.fly('coin', sp.x, sp.y, function () { return sm; }, { dur: 0.3, arc: 40, kind: 'pay' });
+      fx.sound.coin(-5);
+    }
+    if (d.paid >= d.cost - 1e-9) {
+      d.open = true; bought();
+      cfg.district.streets.forEach(function (sy) { grandOpening(cfg.district.gateX, sy, ['#3949ab', '#ffeb3b']); });
+      var sc = iso.toScreen(cfg.district.gateX, s.y, 60);
+      fx.text(sc.x, sc.y - 40, 'Factory district open!', { color: '#ffeb3b', size: 26, max: 1.6 });
+      fx.shake(8); fx.sound.done(); fx.vibrate(cfg.feel.vibrateUnlock, 0);
+      ui.toast('Factory district open!', 'Build your first factory: it turns crops into goods worth much more.', ['factory', cfg.factories[0].id]);
+    }
+  }
+  G.seenFull = G.saidServe = true;
   G.legacyGain = function () { return CR.legacy.gain(cfg, G.legacy, G.runEarned); };
   // Legacy shows once you could get a Golden seed, or have had one.
   G.legacyOpen = function () { return G.legacy.runs > 0 || G.legacy.allEarned + G.runEarned >= cfg.legacy.per * 0.25; };
@@ -12889,7 +13179,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var lg = JSON.parse(JSON.stringify(G.legacy));
     var got = CR.legacy.sell(cfg, lg, G.runEarned);
     var S = CR.state.create(cfg), st = CR.legacy.start(cfg, lg);
-    S.legacy = lg; S.fresh = true; S.playTime = G.playTime; S.goldenFound = G.golden.found;
+    S.legacy = lg; S.fresh = true; S.playTime = G.playTime; S.goldenFound = G.golden.found; S.tut = G.tut; S.tutSeen = G.tutSeen;
     if (st.keepSeeds) S.seeds = JSON.parse(JSON.stringify(G.seeds));
     if (st.keepMilestones) { S.milestonesTaken = G.milestonesTaken.slice(); S.cut = JSON.parse(JSON.stringify(G.cut)); }
     G.noSave = true;
@@ -13082,6 +13372,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       if (!plot || !plot.unlocked || !pay(actions.prices.farmer(plotId))) return;
       var home = { x: cfg.yard.x + 6, y: cfg.yard.y + 4.5 };
       CR.farmers.hire(G.farmers, cfg, plot, home); bought();
+      CR.tutorial.farmerIntro(G, ui, plot);
       var s = iso.toScreen(home.x, home.y, 40);
       fx.burst(s.x, s.y, ['#ffeb3b', '#fff', cfg.crops[plot.crop].color], 24, 1.1);
       fx.text(s.x, s.y - 30, 'Farmer hired!', { color: '#ffeb3b', size: 20, max: 1.1 });
