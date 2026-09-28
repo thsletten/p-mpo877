@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v97)</p>
+    <p class="ver">Crop Rush 1.0 (v98)</p>
   </div>
 </div>
 
@@ -961,8 +961,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // Farmers and their machines go by it instead of across other fields.
     // Late game each field can buy a belt: a hopper at its bottom where its
     // farmers drop everything, riding the road to the barn. Price: the
-    // bigger of base x growth^slot and plotMult x the field; needs the barn
-    // and the Combine (unlock: a tool id).
+    // bigger of base and plotMult x the field; needs the barn and the
+    // Combine (unlock: a tool id). v97 (Tom 2026-09-28 14:57, "the fields
+    // to barn belt were expensive": corn's cost 162K, more than growing the
+    // field): scales with the field's price only (was base 50K x 1.8^slot).
     // v89 (Tom 2026-09-28 09:10: the belt must not be on the road; 09:29
     // "add something that adds the field storage to the belt ... a path over
     // the belt"): the belt runs along the fields' bottom edge (belt.y), the
@@ -971,7 +973,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // over it (bridgeDx), plus one by the barn (barnBridge). It turns up to
     // the barn at barnX.
     farmRoad: { y: 28.4, x0: 20, hopperY: 26.85,
-      belt: { unlock: 'combine', base: 50000, growth: 1.8, plotMult: 3, speed: 2.2,
+      belt: { unlock: 'combine', base: 5000, plotMult: 3, speed: 2.2,
         y: 27.5, half: 0.22, barnX: 20.5, binDx: 5, bridgeDx: 1.5, barnBridge: 23.3,
         // v90 (Tom 2026-09-28): the belt always runs; a drop of more than
         // crateAt crops rides as crates showing the crop. look: bin A (bin
@@ -1252,10 +1254,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // has the crops. With a belt its worker only carries goods.
     // v91: each belt runs from the barn along the district's trunk (see
     // district) into the back of its factory; main.js beltPath.
-    // v97 (Tom 2026-09-28 14:28: "at corn a field grow costs more than a
-    // belt"): a belt costs at least base x growth ^ (belts you already own),
-    // so the first is 50K (a corn field grow is 37.5K), then 200K, 800K ..
-    belt: { costMult: 3, base: 50000, growth: 4, rate: 5, spare: 1.25, speed: 2.2 },
+    belt: { costMult: 3, rate: 5, spare: 1.25, speed: 2.2 },
     // Stand on a factory's mat and it runs mult x faster (Tom 2026-09-26,
     // "B"): only what is in its hopper. When you step off, or popAfter s
     // after its hopper runs dry, a "Batch: N jars!" pop in the Haul's style
@@ -3548,11 +3547,9 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
 
   // A belt from the barn to a factory's hopper (Tom 2026-09-27: "conveyer
   // belts from barn to factories to always supply the factories"). Bought
-  // once per factory for belt.costMult x the factory, once the barn stands,
-  // and never less than belt.base x belt.growth ^ (belts already owned).
-  function beltCost(config, factoryCfg, owned) {
-    var b = config.belt;
-    return Math.round(Math.max(factoryCfg.cost * b.costMult, (b.base || 0) * Math.pow(b.growth || 1, owned || 0)));
+  // once per factory for belt.costMult x the factory, once the barn stands.
+  function beltCost(config, factoryCfg) {
+    return Math.round(factoryCfg.cost * config.belt.costMult);
   }
 
   // Items a second a belt carries: at least belt.rate, and always more than
@@ -13351,10 +13348,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     prices: {
       learn: function (fid) { var f = CR.factory.byId(G.factories, fid), r = CR.factory.nextRecipe(f); return r ? r.learn : Infinity; },
       facSpeed: function (fid) { return CR.factory.speedCost(G.factories, CR.factory.byId(G.factories, fid)); },
-      belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg, G.factories.factories.filter(function (x) { return x.belt; }).length); },
+      belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg); },
       fieldBelt: function (id) {
-        var pl = field.plotById[id], B = cfg.farmRoad.belt, slot = cfg.plots.filter(function (q) { return q.id === id; })[0].slot;
-        return pl.belt ? Infinity : Math.round(Math.max(B.base * Math.pow(B.growth, slot), pl.cost * B.plotMult));
+        var pl = field.plotById[id], B = cfg.farmRoad.belt;
+        return pl.belt ? Infinity : Math.round(Math.max(B.base, pl.cost * B.plotMult));
       },
       facBatch: function (fid) { return CR.factory.batchCost(G.factories, CR.factory.byId(G.factories, fid)); },
       tool: function () { return ECON.toolUpgradeCost(cfg, G.tier, G.toolLevel); },
