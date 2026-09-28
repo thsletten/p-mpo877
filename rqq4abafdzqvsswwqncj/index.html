@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v96)</p>
+    <p class="ver">Crop Rush 1.0 (v97)</p>
   </div>
 </div>
 
@@ -1052,8 +1052,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // that), then more with every upgrade you buy (fameBonus each), every
       // extra shelf you open (shelfBonus each) and Advertising levels.
       spawnInterval: 4,
-      shelfBonus: 0.15,
-      fameBonus: 0.03, // v85 (Tom 2026-09-28): "3% more instead of 6%" (v70-v84 0.06)
+      // v97 (Tom 2026-09-28 14:26, too many customers again at the juice
+      // unlock): upgrades no longer bring customers by themselves (was 3%
+      // per buy, ~2.5x by the Juice press), so only what you pay for does:
+      // Advertising and new shelves (+25% each, was 15%).
+      shelfBonus: 0.25,
+      fameBonus: 0, // v85-v96 0.03, v70-v84 0.06
       minSpawnInterval: 0.5,
       // v85 (Tom 2026-09-28, too crowded early): each shop stage lets a
       // customer come at most once every stageEvery[stage] s (Roadside
@@ -1248,7 +1252,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // has the crops. With a belt its worker only carries goods.
     // v91: each belt runs from the barn along the district's trunk (see
     // district) into the back of its factory; main.js beltPath.
-    belt: { costMult: 3, rate: 5, spare: 1.25, speed: 2.2 },
+    // v97 (Tom 2026-09-28 14:28: "at corn a field grow costs more than a
+    // belt"): a belt costs at least base x growth ^ (belts you already own),
+    // so the first is 50K (a corn field grow is 37.5K), then 200K, 800K ..
+    belt: { costMult: 3, base: 50000, growth: 4, rate: 5, spare: 1.25, speed: 2.2 },
     // Stand on a factory's mat and it runs mult x faster (Tom 2026-09-26,
     // "B"): only what is in its hopper. When you step off, or popAfter s
     // after its hopper runs dry, a "Batch: N jars!" pop in the Haul's style
@@ -3541,9 +3548,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
 
   // A belt from the barn to a factory's hopper (Tom 2026-09-27: "conveyer
   // belts from barn to factories to always supply the factories"). Bought
-  // once per factory for belt.costMult x the factory, once the barn stands.
-  function beltCost(config, factoryCfg) {
-    return Math.round(factoryCfg.cost * config.belt.costMult);
+  // once per factory for belt.costMult x the factory, once the barn stands,
+  // and never less than belt.base x belt.growth ^ (belts already owned).
+  function beltCost(config, factoryCfg, owned) {
+    var b = config.belt;
+    return Math.round(Math.max(factoryCfg.cost * b.costMult, (b.base || 0) * Math.pow(b.growth || 1, owned || 0)));
   }
 
   // Items a second a belt carries: at least belt.rate, and always more than
@@ -4146,7 +4155,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     });
     // Fame: the same customers as before (it counts buys, each worth
     // fameBonus).
-    S.fame = Math.round(lv(S.fame) * V2.fameBonus / config.stand.fameBonus);
+    S.fame = config.stand.fameBonus ? Math.round(lv(S.fame) * V2.fameBonus / config.stand.fameBonus) : Math.round(lv(S.fame));
     Object.keys(S.factories || {}).forEach(function (id) {
       var f = S.factories[id];
       f.speed = unfold(f.speed, V2.factorySpeed, config.factorySpeed.maxLevel);
@@ -4223,7 +4232,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   var V1_FAME = 0.03;
   function migrate(S, config) {
     if (S.v === 2) unfoldLevels(S, config);
-    else if (!(S.v >= 3)) S.fame = Math.round(Math.max(0, Number(S.fame) || 0) * V1_FAME / config.stand.fameBonus);
+    else if (!(S.v >= 3)) S.fame = Math.round(Math.max(0, Number(S.fame) || 0) * (config.stand.fameBonus ? V1_FAME / config.stand.fameBonus : 1));
     if (!(S.v >= 4)) convertWorkers(S, config);
     if (!(S.v >= 5)) convertCarry(S, config);
     S.v = VERSION;
@@ -13271,7 +13280,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     return !!(f && CR.workers.workerFor(G.workers, f.id));
   };
 
-  // Every upgrade you buy makes the farm better known: more customers.
+  // Counts every upgrade you buy (brings customers only if stand.fameBonus is set; 0 since v97).
   function bought() { G.stand.fame++; }
   function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
   function showOff(x, y) { G.camLook = { x: x, y: y, t: 1.3 }; }
@@ -13342,7 +13351,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     prices: {
       learn: function (fid) { var f = CR.factory.byId(G.factories, fid), r = CR.factory.nextRecipe(f); return r ? r.learn : Infinity; },
       facSpeed: function (fid) { return CR.factory.speedCost(G.factories, CR.factory.byId(G.factories, fid)); },
-      belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg); },
+      belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg, G.factories.factories.filter(function (x) { return x.belt; }).length); },
       fieldBelt: function (id) {
         var pl = field.plotById[id], B = cfg.farmRoad.belt, slot = cfg.plots.filter(function (q) { return q.id === id; })[0].slot;
         return pl.belt ? Infinity : Math.round(Math.max(B.base * Math.pow(B.growth, slot), pl.cost * B.plotMult));
