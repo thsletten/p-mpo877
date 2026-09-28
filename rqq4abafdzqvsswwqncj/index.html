@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v102)</p>
+    <p class="ver">Crop Rush 1.0 (v103)</p>
   </div>
 </div>
 
@@ -834,18 +834,22 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // Tom 19:47 'starts a bit cheaper and upgrades 2x in price': the first
       // grow costs 1.5x the field from corn on (carrots 120, tomatoes 1,200;
       // was 2x, 150, 1,550) and each grow 2x the last (was 2.4x).
-      { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 120, costGrowth: 2 } },
-      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1200, costGrowth: 2 } },
-      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7500, costGrowth: 2 } },
-      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3e4, costGrowth: 2 } },
-      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.6e5, costGrowth: 2 } },
-      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7.2e5, costGrowth: 2 } },
-      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.8e6, costGrowth: 2 } },
-      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e7, costGrowth: 2 } },
-      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.65e7, costGrowth: 2 } },
-      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.95e8, costGrowth: 2 } },
-      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 5.4e8, costGrowth: 2 } },
-      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.8e9, costGrowth: 2 } }
+      // v103 (Tom 20:00 '2x is also too much. Set it to 1.5x, and first
+      // upgrade 250k' for Sunflowers, 'do the same on the other plots'):
+      // each grow 1.5x the last; the first costs about the field's price
+      // (1.04x, sunflowers 250K; tomatoes 260, was 1,200). Carrots stay 120.
+      { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 120, costGrowth: 1.5 } },
+      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 260, costGrowth: 1.5 } },
+      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 5200, costGrowth: 1.5 } },
+      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.1e4, costGrowth: 1.5 } },
+      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.5e5, costGrowth: 1.5 } },
+      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 5e5, costGrowth: 1.5 } },
+      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.3e6, costGrowth: 1.5 } },
+      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.7e7, costGrowth: 1.5 } },
+      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.2e7, costGrowth: 1.5 } },
+      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.35e8, costGrowth: 1.5 } },
+      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.75e8, costGrowth: 1.5 } },
+      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.25e9, costGrowth: 1.5 } }
     ],
 
     // Factories turn any crop you drop in their hopper into jars worth more,
@@ -1385,6 +1389,23 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         { time: 90, share: 0.4, bonus: 0.3 },
         { time: 180, share: 0.45, bonus: 0.45 },
         { time: 300, share: 0.5, bonus: 0.6 }
+      ]
+    },
+    // Contracts (contracts.js, v103, Tom 2026-09-28 19:18/19:38): they
+    // replace orders. One offer per size on the board; taking one sends its
+    // truck to the dock by the yard, and you carry the goods onto its LOAD
+    // mat. share: of what the stall sells of that item in the time; bonus:
+    // paid on top of the goods' price when it is filled in time. Open once
+    // you have sold afterSold items (the old order board's rule).
+    contracts: {
+      afterSold: 200, every: 20, minItems: 20,
+      mat: { x: 42.3, y: 34.3, w: 2.2, h: 1.2 },   // LOAD mat, below the bulk truck
+      truck: { x: 45.4, y: 34.9 },                 // where the contract truck parks
+      board: { x: 45.9, y: 32.7 },                 // the CONTRACTS signboard
+      sizes: [
+        { time: 180, share: 1.0, bonus: 0.3, truck: 'pickup', name: 'Small' },
+        { time: 300, share: 1.25, bonus: 0.5, truck: 'lorry', name: 'Medium' },
+        { time: 600, share: 1.6, bonus: 0.8, truck: 'roadTrain', name: 'Big' }
       ]
     },
     // Away earnings: `share` of what your helpers made a second lately, for
@@ -3974,6 +3995,108 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
 
 </script>
 <script>
+// Contracts (v103, Tom 2026-09-28 19:18 "redo the order thing with a
+// Contract feature, where you have to deliver larger amounts in 3, 5, 10 min
+// periods, where a truck comes and collects the products or crops"; 19:38
+// picked the dock truck and the board). They replace the order board.
+//
+// The board holds one offer per size (config.contracts.sizes: 3, 5 and 10
+// minutes). Taking one sends its truck (pickup, lorry, road train) to the
+// dock by the yard; you carry the goods onto its LOAD mat. Filled in time it
+// drives off and pays n x price x (1 + bonus); when time runs out it leaves
+// with what it has, paid at the normal price. One contract at a time.
+(function (CR) {
+  'use strict';
+
+  function nice(n) {
+    if (n <= 1) return 1;
+    var p = Math.pow(10, Math.floor(Math.log10(n))), d = n / p;
+    return (d < 1.5 ? 1 : d < 3.5 ? 2 : d < 7.5 ? 5 : 10) * p;
+  }
+
+  function create() {
+    return { offers: [], active: null, timer: 0, nextId: 1, done: 0, earned: 0 };
+  }
+
+  // One offer of size index si. items: what you can deliver now (crops you
+  // grow, goods you make); perMinute(item): how many of it you usually sell
+  // a minute; worth(item): its price.
+  function make(config, rand, si, items, perMinute, worth, id) {
+    var C = config.contracts, s = C.sizes[si];
+    var item = items[Math.floor(rand() * items.length)];
+    var n = nice(Math.max(C.minItems * (si + 1), perMinute(item) * s.time / 60 * s.share));
+    var w = worth(item);
+    return { id: id, size: si, item: item, n: n, time: s.time, left: s.time, loaded: 0, worth: w,
+      reward: Math.round(n * w * (1 + s.bonus)), truck: s.truck };
+  }
+
+  // Keeps one offer of every size on the board (a new one every `every`
+  // seconds after one is taken). Returns true when one went up.
+  function refill(board, config, rand, items, perMinute, worth, dt) {
+    if (!items.length) return false;
+    board.timer -= dt;
+    if (board.timer > 0) return false;
+    var C = config.contracts;
+    for (var si = 0; si < C.sizes.length; si++) {
+      var has = board.offers.some(function (o) { return o.size === si; }) || (board.active && board.active.size === si);
+      if (has) continue;
+      board.offers.push(make(config, rand, si, items, perMinute, worth, board.nextId++));
+      board.offers.sort(function (a, b) { return a.size - b.size; });
+      board.timer = C.every;
+      return true;
+    }
+    return false;
+  }
+
+  // Swaps every offer for a new one.
+  function reroll(board, config, rand, items, perMinute, worth) {
+    board.offers.length = 0; board.timer = 0;
+    var n = 0;
+    while (refill(board, config, rand, items, perMinute, worth, 0)) { n++; board.timer = 0; }
+    return n;
+  }
+
+  function accept(board, id) {
+    if (board.active) return false;
+    for (var i = 0; i < board.offers.length; i++) {
+      if (board.offers[i].id === id) { board.active = board.offers.splice(i, 1)[0]; return true; }
+    }
+    return false;
+  }
+
+  // Loads up to n of `item` onto the truck; returns how many it took.
+  function load(board, item, n) {
+    var a = board.active;
+    if (!a || a.item !== item || a.left <= 0) return 0;
+    var k = Math.max(0, Math.min(n, a.n - a.loaded));
+    a.loaded += k;
+    return k;
+  }
+
+  // Runs the clock: { type: 'done', c, pay } when full, { type: 'missed',
+  // c, pay } when time ran out (pay = what was loaded at the normal price).
+  function tick(board, dt) {
+    var a = board.active;
+    if (!a) return null;
+    if (a.loaded >= a.n) {
+      board.active = null; board.done++; board.earned += a.reward;
+      return { type: 'done', c: a, pay: a.reward };
+    }
+    a.left -= dt;
+    if (a.left <= 0) {
+      board.active = null;
+      var pay = Math.round(a.loaded * a.worth);
+      board.earned += pay;
+      return { type: 'missed', c: a, pay: pay };
+    }
+    return null;
+  }
+
+  CR.contracts = { create: create, make: make, refill: refill, reroll: reroll, accept: accept, load: load, tick: tick, nice: nice };
+})(this.CR = this.CR || {});
+
+</script>
+<script>
 // Legacy: sell the farm and start again, stronger (Tom 2026-09-24 19:40:
 // "at least 10 hours of core gameplay"; Cookie Clicker's prestige).
 //   - Everything you ever earned counts towards Golden seeds:
@@ -6270,6 +6393,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     CR.barnView.drawFarmRoad(ctx, G, time);
     S.drawStandDeck(ctx, G, time);
     S.drawTruckZone(ctx, G, time);
+    S.drawContractMat(ctx, G, time);
     // The truck mat's hold, filling round you (playtest 5: show the ring).
     if (G.truckHold > 0 && G.truckHold < G.cfg.truck.hold) {
       var hs = ws(G.player.x, G.player.y, 0), hk = G.truckHold / G.cfg.truck.hold;
@@ -6290,6 +6414,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
     else if (G.field.golden) drawArrowTo(ctx, G, time, G.field.golden.x + 0.5, G.field.golden.y + 0.5);
     else if (G.field.goldChain && G.field.goldChain.length) drawArrowTo(ctx, G, time, G.field.goldChain[0].x + 0.5, G.field.goldChain[0].y + 0.5);
+    else if (G.contracts.active && !G.onDock && G.carry.items.some(function (i) { return G.item.shelf(i) === G.contracts.active.item; })) { var cm = G.cfg.contracts.mat; drawArrowTo(ctx, G, time, cm.x + cm.w / 2, cm.y + cm.h / 2); }
     else if (G.tutArrow) drawArrowTo(ctx, G, time, G.tutArrow.x, G.tutArrow.y);
     else if (G.serveArrow && G.serveArrow.until > G.time) drawArrowTo(ctx, G, time, G.serveArrow.x, G.serveArrow.y);
     else if (G.homeArrow && !G.full) drawArrowTo(ctx, G, time, G.homeArrow.x, G.homeArrow.y);
@@ -6375,6 +6500,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (G.cfg.district && !G.district.open) { var dsp = G.districtSpot(); list.push({ x: dsp.x, y: dsp.y, h: 1, fn: S.drawDistrictSign }); }
     if (G.cfg.district && G.district.open) G.cfg.district.streets.forEach(function (sy) { list.push({ x: G.cfg.district.gateX + 0.15, y: sy + G.cfg.district.streetH / 2 + 0.2, h: 1, fn: S.drawDistrictGate, sy: sy }); });
     list.push({ x: G.truck.x + 0.3, y: G.truck.y, h: 1, fn: S.drawTruck });
+    // v103 contracts: the board, and the truck while one runs (and as it leaves).
+    if (G.ordersOpen()) { var cb = G.cfg.contracts.board; list.push({ x: cb.x, y: cb.y, h: 1, fn: S.drawContractBoard }); }
+    var ctq = G.cfg.contracts.truck;
+    if (G.contracts.active) list.push({ x: ctq.x, y: ctq.y, h: 1, fn: S.drawContractTruck, c: G.contracts.active, arrive: G.contractArrive && G.contractArrive.t < 1 ? G.contractArrive.t : null });
+    else if (G.contractLeave) list.push({ x: ctq.x, y: ctq.y, h: 1, fn: S.drawContractTruck, c: G.contractLeave.c, leave: G.contractLeave.t });
     // v102 Bus of buyers: a golden bus by the gate while its customers shop.
     if (G.stand.bus) { var ent = G.cfg.stand.entrance; list.push({ x: ent.x - 3, y: ent.y + 0.9, h: 1, fn: drawBus }); }
     G.customers.order.forEach(function (c) { list.push({ x: c.x, y: c.y, h: 1, fn: S.drawCustomer, c: c }); });
@@ -6805,6 +6935,54 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     var carrying = G.carry.items.length > 0;
     drawMat(ctx, G.truckZone, '#90caf9', carrying ? 0.5 + 0.3 * Math.sin(time * 6) : 0.3,
       'BULK ' + Math.round(G.cfg.truck.bulkRate * 100) + '%', time);
+  }
+
+  // v103 contracts: the LOAD mat, the board and the truck at the dock.
+  function drawContractMat(ctx, G, time) {
+    if (!G.ordersOpen()) return;
+    var a = G.contracts.active, z = G.cfg.contracts.mat;
+    var mine = a && G.carry.items.some(function (it) { return G.item.shelf(it) === a.item; });
+    drawMat(ctx, z, a ? '#ffb74d' : '#e0e0e0', a ? (mine ? 0.6 + 0.3 * Math.sin(time * 6) : 0.45) : 0.2, a ? 'LOAD' : 'DOCK', time);
+  }
+  function drawContractBoard(ctx, G) {
+    if (!G.ordersOpen()) return;
+    var b = G.cfg.contracts.board, sc = ws(b.x, b.y), B = G.contracts;
+    stroke(ctx, '#6b3f18', 3, sc.x - 16, sc.y, sc.x - 16, sc.y - 26);
+    stroke(ctx, '#6b3f18', 3, sc.x + 16, sc.y, sc.x + 16, sc.y - 26);
+    shadow(ctx, sc.x, sc.y + 1, 22, 5);
+    var bw = 64, bh = 34, left = sc.x - bw / 2, top = sc.y - 58;
+    ctx.fillStyle = '#7d4a1f'; roundRect(ctx, left - 2, top - 2, bw + 4, bh + 4, 6); ctx.fill();
+    ctx.fillStyle = '#f7dca4'; roundRect(ctx, left, top, bw, bh, 5); ctx.fill();
+    ctx.fillStyle = '#4a2c12'; ctx.font = '700 9px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('CONTRACTS', sc.x, top + 9);
+    for (var i = 0; i < 3; i++) {
+      var on = B.offers.some(function (o) { return o.size === i; }) || (B.active && B.active.size === i);
+      ctx.fillStyle = B.active && B.active.size === i ? '#43a047' : on ? '#ffffff' : 'rgba(255,255,255,0.4)';
+      roundRect(ctx, left + 6 + i * 18, top + 17, 15, 11, 3); ctx.fill();
+    }
+    if (B.offers.length && !B.active) { ctx.fillStyle = '#e53935'; ctx.beginPath(); ctx.arc(left + bw, top, 5, 0, TAU); ctx.fill(); }
+  }
+  function drawContractTruck(ctx, G, it, time) {
+    var V = CR.vehicles, c = it.c, tq = G.cfg.contracts.truck, s = c.truck;
+    var fill = Math.min(1, c.loaded / Math.max(1, c.n)), look = G.item.show(c.item), col = (G.cfg.crops[look] && G.cfg.crops[look].color) || '#c49a6c';
+    var sc = s === 'pickup' ? 0.7 : s === 'lorry' ? 0.95 : 1.2, cab = s === 'pickup' ? '#43a047' : s === 'lorry' ? '#fb8c00' : '#c62828';
+    var x = tq.x, y = tq.y;
+    if (it.leave != null) x += it.leave * it.leave * 2.2; // drives off to the right
+    if (it.arrive != null) x += (1 - it.arrive) * (1 - it.arrive) * 8;
+    V.render(ctx, V.lorry({ cab: cab, box: 'tipper', body: s === 'roadTrain' ? '#6d4c41' : '#8d6e63', stripe: '#f4c430', fill: Math.max(0.05, fill), load: col }),
+      x, y, 1, 0, { scale: sc, shadow: [-1.55, 1.6, -0.5, 0.5] });
+    if (it.leave != null) return;
+    // Fill bar and clock over it.
+    var p = ws(x, y, 95 * sc), w = 96, h = 13;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; roundRect(ctx, p.x - w / 2 - 2, p.y - 2, w + 4, h + 4, 8); ctx.fill();
+    ctx.fillStyle = '#ffffff'; roundRect(ctx, p.x - w / 2, p.y, w, h, 6); ctx.fill();
+    ctx.fillStyle = c.left < 20 ? '#e53935' : '#43a047'; roundRect(ctx, p.x - w / 2, p.y, Math.max(h, w * fill), h, 6); ctx.fill();
+    ctx.fillStyle = '#1b3a10'; ctx.font = '700 10px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(shortNum(c.loaded) + ' / ' + shortNum(c.n), p.x, p.y + h / 2 + 0.5);
+    var t = Math.max(0, Math.ceil(c.left));
+    ctx.fillStyle = '#ffffff'; ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 3; ctx.font = '700 11px Fredoka, system-ui, sans-serif';
+    var ts = Math.floor(t / 60) + ':' + ('0' + t % 60).slice(-2);
+    ctx.strokeText(ts, p.x, p.y - 9); ctx.fillText(ts, p.x, p.y - 9);
   }
 
   // A crate-shelf with its produce and a tag showing how full it is.
@@ -8175,7 +8353,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     drawStandDeck: drawStandDeck, drawShelf: drawShelf, drawAwning: drawAwning, drawTill: drawTill, drawCoinPile: drawCoinPile,
     drawPlotSign: drawPlotSign, drawFactoryGround: drawFactoryGround, drawFactoryYard: drawFactoryYard, drawDistrictGate: drawDistrictGate, drawDistrictSign: drawDistrictSign, factoryStage: stageOf, drawFactory: drawFactory, drawJarPallet: drawJarPallet, drawStageProp: drawStageProp,
     drawAd: drawAd, drawFieldProp: drawFieldProp, drawFence: drawFence,
-    drawTruck: drawTruck, drawTruckZone: drawTruckZone, drawFarmer: drawFarmer, drawCart: drawCart, drawKeeper: drawKeeper, drawCustomer: drawCustomer, drawExtraItem: drawExtraItem, vignette: vignette, icon: icon,
+    drawTruck: drawTruck, drawTruckZone: drawTruckZone, drawContractMat: drawContractMat, drawContractBoard: drawContractBoard, drawContractTruck: drawContractTruck, drawFarmer: drawFarmer, drawCart: drawCart, drawKeeper: drawKeeper, drawCustomer: drawCustomer, drawExtraItem: drawExtraItem, vignette: vignette, icon: icon,
     hash: hash, shadow: shadow, coin: coin, drawSignBoard: drawSignBoard, drawMat: drawMat
   };
 })(this.CR = this.CR || {});
@@ -9722,6 +9900,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     $('shopBtn').addEventListener('click', function () { unfocus(); open(ui.shop); });
     $('settingsBtn').addEventListener('click', function () { open(ui.settings); });
     $('goalsBtn').addEventListener('click', function () { open(ui.goals); });
+    ui.openGoals = function () { open(ui.goals); };
     // Two taps, not window.confirm: the artifact frame blocks dialogs, so
     // confirm() returned false and Start over did nothing (Tom, v54).
     var resetBtn = $('resetBtn'), resetLabel = resetBtn.innerHTML, resetT = 0;
@@ -9811,7 +9990,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         ['Crops your farmers harvested', G.fmt(farmCut)],
         ['Customers served', G.fmt(G.stand.served || 0)],
         ['Golden crops found', G.fmt(G.golden.found)],
-        ['Orders filled', G.fmt(G.board.done)],
+        ['Contracts filled', G.fmt(G.contracts.done + G.board.done)],
         ['Milestones', G.milestonesTaken.length + ' / ' + CR.goals.milestones(cfg).length],
         ['Farms sold', lg.runs + (lg.seeds ? ' (' + G.fmt(lg.seeds) + ' Golden seeds)' : '')]
       ];
@@ -10728,32 +10907,34 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       t = Math.max(0, Math.ceil(t));
       return Math.floor(t / 60) + ':' + ('0' + t % 60).slice(-2);
     }
-    function orderTitle(o) { return 'Sell ' + G.fmt(o.n) + ' ' + G.item.name(o.item).toLowerCase(); }
+    // v103: contracts replace orders (Tom 2026-09-28).
+    var TRUCKN = { pickup: 'pickup', lorry: 'lorry', roadTrain: 'road train' };
+    function orderTitle(o) { return cfg.contracts.sizes[o.size].name + ': ' + G.fmt(o.n) + ' ' + G.item.name(o.item).toLowerCase(); }
     function goalCards() {
-      var list = [{ section: 'Orders' }], B = G.board;
+      var list = [{ section: 'Contracts' }], B = G.contracts;
       if (!G.ordersOpen()) {
-        list.push({ key: 'ordersLocked', icon: ['stand', 'prices'], title: 'Order board',
-          sub: 'Opens after you sell ' + cfg.orders.afterSold + ' items. Orders pay a big bonus for selling a lot in time.', noBuy: true });
+        list.push({ key: 'ordersLocked', icon: ['stand', 'prices'], title: 'Contracts',
+          sub: 'Open after you sell ' + cfg.contracts.afterSold + ' items. A truck comes for a big delivery and pays a bonus if you fill it in time.', noBuy: true });
       } else {
         if (B.active) {
           var a = B.active;
           list.push({ key: 'active', icon: G.item.icon(a.item), title: orderTitle(a),
-            sub: G.fmt(a.sold) + ' sold, ' + clock(a.left) + ' left. Bonus ' + G.fmt(a.reward), level: a.sold, max: a.n, bar: true, noBuy: true, stats: true });
+            sub: G.fmt(a.loaded) + ' on the ' + TRUCKN[a.truck] + ', ' + clock(a.left) + ' left. Carry them to its LOAD mat by the yard. Pays ' + G.fmt(a.reward), level: a.loaded, max: a.n, bar: true, noBuy: true, stats: true });
         }
         B.offers.forEach(function (o) {
           list.push({ key: 'offer' + o.id, icon: G.item.icon(o.item), title: orderTitle(o),
-            sub: 'Bonus +' + G.fmt(o.reward) + '. Sell them at the stall in ' + clock(o.time), label: B.active ? 'Busy' : 'Take', locked: !!B.active,
-            act: function () { if (CR.goals.accept(G.board, o.id)) { CR.fx.sound.tick(9); ui.goals.hidden = true; } } });
+            sub: 'Pays ' + G.fmt(o.reward) + ': their price plus ' + Math.round(cfg.contracts.sizes[o.size].bonus * 100) + '%. A ' + TRUCKN[o.truck] + ' waits ' + clock(o.time) + ' at the dock', label: B.active ? 'Busy' : 'Take', locked: !!B.active,
+            act: function () { if (CR.contracts.accept(G.contracts, o.id)) { CR.fx.sound.tick(9); ui.goals.hidden = true; G.contractArrive = { t: 0 }; } } });
         });
         // Swap the offers for new ones, once a minute (playtest 11).
         if (B.offers.length) {
           var rin = G.rerollIn();
-          list.push({ key: 'reroll', icon: ['stand', 'prices'], title: 'New offers', sub: 'Swap these offers for new ones. Once a minute',
+          list.push({ key: 'reroll', icon: ['stand', 'prices'], title: 'New contracts', sub: 'Swap these for new ones. Once a minute',
             label: rin > 0 ? 'In ' + clock(rin) : 'Swap', locked: rin > 0,
             act: function () { if (G.rerollOrders()) CR.fx.sound.tick(5); } });
         }
-        if (!B.active && !B.offers.length) list.push({ key: 'wait', icon: ['stand', 'prices'], title: 'New orders soon', sub: 'A new one comes every ' + cfg.orders.every + ' seconds.', noBuy: true });
-        if (B.done) list.push({ key: 'odone', icon: ['stand', 'prices'], title: B.done + (B.done === 1 ? ' order filled' : ' orders filled'), sub: 'Bonus money so far ' + G.fmt(B.earned), noBuy: true, stats: true });
+        if (!B.active && !B.offers.length) list.push({ key: 'wait', icon: ['stand', 'prices'], title: 'New contracts soon', sub: 'A new one comes every ' + cfg.contracts.every + ' seconds.', noBuy: true });
+        if (B.done) list.push({ key: 'odone', icon: ['stand', 'prices'], title: B.done + (B.done === 1 ? ' contract filled' : ' contracts filled'), sub: 'Paid so far ' + G.fmt(B.earned), noBuy: true, stats: true });
       }
       list.push({ section: 'Big goals ' + G.legacy.goals.length + ' / ' + cfg.bigGoals.length });
       // Done ones first, then the next three to aim for.
@@ -11039,7 +11220,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         var fk = gf.kind + ':' + gf.tag + ':' + Math.ceil(gf.left);
         if (L.rush !== fk) { ui.rushMult.textContent = gf.tag; ui.rushName.textContent = gf.name; ui.rushTime.textContent = clock(Math.max(0, gf.left)); L.rush = fk; }
       }
-      var a = G.board.active, orr = !a && G.orderResult && G.time < G.orderResult.until ? G.orderResult : null;
+      var a = G.contracts.active, orr = !a && G.orderResult && G.time < G.orderResult.until ? G.orderResult : null;
       ui.order.hidden = !a && !orr;
       ui.order.classList.toggle('done', !!(orr && orr.ok));
       ui.order.classList.toggle('missed', !!(orr && !orr.ok));
@@ -11049,18 +11230,18 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         var ok0 = 'r' + orr.order.id;
         if (L.order !== ok0) {
           var oi0 = G.item.icon(orr.order.item); CR.render.icon($('orderIcon'), oi0[0], oi0[1], G);
-          ui.orderFill.style.width = (orr.ok ? 100 : Math.min(100, orr.order.sold / orr.order.n * 100)) + '%';
-          ui.orderText.textContent = orr.ok ? 'Order filled! +' + G.fmt(orr.order.reward) : 'Missed: ' + G.fmt(orr.order.sold) + ' / ' + G.fmt(orr.order.n);
+          ui.orderFill.style.width = (orr.ok ? 100 : Math.min(100, orr.order.loaded / orr.order.n * 100)) + '%';
+          ui.orderText.textContent = orr.ok ? 'Contract filled! +' + G.fmt(orr.pay) : 'Time up: +' + G.fmt(orr.pay) + ' for ' + G.fmt(orr.order.loaded);
           ui.orderTime.textContent = orr.ok ? '✓' : '✗';
           ui.order.classList.remove('late');
           L.order = ok0;
         }
       } else if (a) {
-        var key = a.id + ':' + a.sold + ':' + Math.ceil(a.left);
+        var key = a.id + ':' + a.loaded + ':' + Math.ceil(a.left);
         if (L.order !== key) {
           if (!L.order || L.order.split(':')[0] !== String(a.id)) { var oi = G.item.icon(a.item); CR.render.icon($('orderIcon'), oi[0], oi[1], G); }
-          ui.orderFill.style.width = Math.min(100, a.sold / a.n * 100) + '%';
-          ui.orderText.textContent = G.fmt(a.sold) + ' / ' + G.fmt(a.n);
+          ui.orderFill.style.width = Math.min(100, a.loaded / a.n * 100) + '%';
+          ui.orderText.textContent = 'Truck ' + G.fmt(a.loaded) + ' / ' + G.fmt(a.n);
           ui.orderTime.textContent = clock(a.left);
           ui.order.classList.toggle('late', a.left < 20);
           L.order = key;
@@ -11257,7 +11438,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     stats: { cut: 0, truckItems: 0, truckEarned: 0 }, // totals so far, for the info panels
     cut: {},              // crop -> harvested so far, for milestones
     milestonesTaken: [],  // milestone ids reached (goals.js)
-    board: CR.goals.createBoard(), // the order board
+    board: CR.goals.createBoard(), // the old order board (v103: contracts replace it)
+    contracts: CR.contracts.create(),
     // Items sold a minute (sizes orders) and money helpers make a second
     // (pays you while you're away), both smoothed.
     rates: { sold: 8, helpers: 0 }, soldNow: 0, helperNow: 0,
@@ -12557,6 +12739,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // 19:58: "you can't harvest when having canned food. Fix"); the crops
     // go on top of the goods and both unload at the stall.
     var cuts = onFactoryLot(p) || dropSpot ? [] : CR.field.cut(field, p, goldTool(), G.carry);
+    contractDockStep(dt, p);
     // Standing in a bare patch: say the crops come back (playtest 9: new
     // players wandered for a minute before seeing that they regrow).
     var bare = !cuts.length && !dropSpot && !CR.field.isFull(G.carry) && G.stats.cut < 3000;
@@ -12675,7 +12858,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     return n.charAt(0).toUpperCase() + n.slice(1);
   };
   G.ordersOpen = function () {
-    return G.stand.sold + G.stats.truckItems >= cfg.orders.afterSold || G.board.done > 0;
+    return G.stand.sold + G.stats.truckItems >= cfg.contracts.afterSold || G.board.done > 0 || G.contracts.done > 0;
   };
 
   var goalT = 0;
@@ -12702,31 +12885,29 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (G.prevMoney != null) G.runEarned += Math.max(0, G.money - G.prevMoney);
     G.prevMoney = G.money; G.windfall = 0;
 
-    // Orders ask for your best sellers, not carrots once tomatoes are worth
-    // 5x (playtest 7).
+    // v103 contracts (they replace orders): best sellers, as orders had it.
     var oItems = orderItems();
-    if (G.ordersOpen() && CR.goals.refill(G.board, cfg, G.rand, oItems, itemDemand, worth, dt, G.rates.money)) {
-      ui.goalsNews();
+    if (G.ordersOpen() && CR.contracts.refill(G.contracts, cfg, G.rand, oItems, itemDemand, worth, dt)) ui.goalsNews();
+    var r = CR.contracts.tick(G.contracts, dt);
+    if (r) G.orderResult = { order: r.c, ok: r.type === 'done', pay: r.pay, until: G.time + 8 };
+    if (r) {
+      G.money += r.pay; ui.bumpMoney();
+      var tq = cfg.contracts.truck, s = iso.toScreen(tq.x, tq.y, 40);
+      for (var i = 0; i < (r.type === 'done' ? 14 : 5); i++) fx.fly('coin', s.x + (Math.random() - 0.5) * 80, s.y - Math.random() * 40, function () { return iso.toScreen(G.player.x, G.player.y, 30); }, { dur: 0.5 + i * 0.03, arc: 50, kind: 'pay' });
+      G.contractLeave = { c: r.c, t: 0 };
+      if (r.type === 'done') {
+        celebrate(null, true);
+        grandOpening(tq.x, tq.y, ['#ffd54f', '#66bb6a', '#ffffff']);
+        ui.showHint('CONTRACT FILLED!<br>+' + E.fmt(r.pay));
+        setTimeout(function () { ui.hideHint(); }, 3000);
+      } else {
+        var ms0 = iso.toScreen(G.player.x, G.player.y, 30);
+        fx.text(ms0.x, ms0.y - 110, 'Time ran out: the truck paid ' + E.fmt(r.pay) + ' for ' + E.fmt(r.c.loaded), { color: '#ffe0b2', size: 18, max: 1.8, rise: 14 });
+        fx.sound.full();
+      }
     }
-    CR.goals.liftRewards(G.board, cfg, G.rates.money);
-    var r = CR.goals.tick(G.board, dt);
-    if (r) G.orderResult = { order: r.order, ok: r.type === 'done', until: G.time + 8 };
-    if (r && r.type === 'done') {
-      G.money += r.order.reward; ui.bumpMoney();
-      var s = iso.toScreen(G.player.x, G.player.y);
-      for (var i = 0; i < 12; i++) fx.fly('coin', s.x + (Math.random() - 0.5) * 160, s.y - 120 - Math.random() * 80, function () { return iso.toScreen(G.player.x, G.player.y, 30); }, { dur: 0.5 + i * 0.03, arc: 50, kind: 'pay' });
-      celebrate(null, true);
-      grandOpening(G.player.x, G.player.y, ['#ffd54f', '#66bb6a', '#ffffff']);
-      // A big moment, where you look (playtest 8: filled with no clear moment),
-      // said once, with the order bar (playtest 11: the same news 4 times).
-      ui.showHint('ORDER FILLED!<br>Bonus +' + E.fmt(r.order.reward));
-      setTimeout(function () { ui.hideHint(); }, 3000);
-    } else if (r) {
-      // Said where you look too (playtest 9: it just disappeared).
-      var ms0 = iso.toScreen(G.player.x, G.player.y, 30);
-      fx.text(ms0.x, ms0.y - 110, 'Order missed: time ran out', { color: '#ffcdd2', size: 18, max: 1.8, rise: 14 });
-      fx.sound.full();
-    }
+    if (G.contractLeave) { G.contractLeave.t += dt; if (G.contractLeave.t > 3) G.contractLeave = null; }
+    if (G.contractArrive) { G.contractArrive.t += dt; if (G.contractArrive.t > 1) G.contractArrive = null; }
 
     goalT -= dt;
     if (goalT > 0) return;
@@ -12854,6 +13035,28 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       ui.showHint('Picking pay!<br>Crops you harvest yourself pay a bonus on the spot.');
       setTimeout(function () { ui.hideHint(); }, 4000);
     }
+  }
+
+  // ---- v103 contracts: on the LOAD mat, the contract's goods go on its truck.
+  function contractDockStep(dt, p) {
+    var a = G.contracts.active, z = cfg.contracts.mat;
+    G.onDock = !!a && p.x >= z.x - 0.3 && p.x <= z.x + z.w + 0.3 && p.y >= z.y - 0.3 && p.y <= z.y + z.h + 0.3;
+    if (!G.onDock) { G.dockT = 0; return; }
+    var items = G.carry.items, mine = 0, i;
+    for (i = 0; i < items.length; i++) if (G.item.shelf(items[i]) === a.item) mine++;
+    if (!mine) return;
+    G.dockT = (G.dockT || 0) + dt;
+    var step = Math.min(cfg.stand.unloadInterval, cfg.stand.unloadTime / mine);
+    var tq = cfg.contracts.truck;
+    while (G.dockT >= step && mine > 0 && a.loaded < a.n) {
+      G.dockT -= step;
+      for (i = items.length - 1; i >= 0; i--) if (G.item.shelf(items[i]) === a.item) break;
+      var it = items.splice(i, 1)[0]; mine--;
+      CR.contracts.load(G.contracts, a.item, 1);
+      var s0 = iso.toScreen(p.x, p.y, 30);
+      if (mine % 2 === 0) fx.fly(G.item.show(a.item), s0.x, s0.y, function () { return iso.toScreen(tq.x, tq.y, 30); }, { dur: 0.3, arc: 40, kind: 'buy' });
+    }
+    if (G.item.shelf && mine === 0) fx.sound.tick(12);
   }
 
   // ---- v102 golden specials (Tom 2026-09-28 19:38 picked C, D, E, F) ----
@@ -13145,7 +13348,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     S.cut = JSON.parse(JSON.stringify(G.cut));
     S.milestonesTaken = G.milestonesTaken.slice();
     // The order you're working on is kept too (playtest 5: lost on reload).
-    S.orders = { done: G.board.done, earned: G.board.earned, active: G.board.active ? JSON.parse(JSON.stringify(G.board.active)) : null };
+    S.orders = { done: G.board.done, earned: G.board.earned, active: null };
+    S.contracts = { done: G.contracts.done, earned: G.contracts.earned, active: G.contracts.active ? JSON.parse(JSON.stringify(G.contracts.active)) : null };
     S.awayRate = G.rates.helpers;
     S.legacy = JSON.parse(JSON.stringify(G.legacy));
     S.runEarned = G.runEarned;
@@ -13265,9 +13469,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     G.milestonesTaken = S.milestonesTaken.filter(function (id) { return typeof id === 'string'; });
     G.stand.demand = CR.goals.boosts(cfg, G.milestonesTaken);
     G.board.done = S.orders.done; G.board.earned = S.orders.earned;
-    var oa = S.orders.active;
+    var SC = S.contracts && typeof S.contracts === 'object' ? S.contracts : {};
+    G.contracts.done = Math.max(0, Number(SC.done) || 0); G.contracts.earned = Math.max(0, Number(SC.earned) || 0);
+    var oa = SC.active;
     if (oa && typeof oa === 'object' && typeof oa.item === 'string' && (cfg.crops[oa.item] || G.factories.factories.some(function (f) { return f.id === oa.item; }))
-        && [oa.n, oa.sold, oa.left, oa.reward].every(function (v) { return typeof v === 'number' && isFinite(v); })) G.board.active = oa;
+        && cfg.contracts.sizes[oa.size] && [oa.n, oa.loaded, oa.left, oa.reward, oa.worth].every(function (v) { return typeof v === 'number' && isFinite(v); })) G.contracts.active = oa;
     G.rates.helpers = Math.max(0, S.awayRate);
     G.runEarned = Math.max(0, S.runEarned);
     G.playTime = Math.max(0, S.playTime);
@@ -13470,7 +13676,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   G.rerollOrders = function () {
     if (G.rerollIn() > 0 || !G.ordersOpen()) return false;
     G.rerollAt = G.time;
-    return CR.goals.reroll(G.board, cfg, G.rand, orderItems(), itemDemand, worth, G.rates.money) > 0;
+    return CR.contracts.reroll(G.contracts, cfg, G.rand, orderItems(), itemDemand, worth) > 0;
   };
 
   // A factory good whose loop runs by itself (it has its worker): no "No
@@ -13858,6 +14064,9 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       }
       if ((G.barn.unlocked || CR.barn.forSale(cfg, G.factories)) && (inRect(cfg.barn, w.x, w.y, 0.1) || (h <= 10 && inRect(cfg.barn.mat, w.x, w.y)))) return { kind: 'barn' };
       if (h <= 30 && (inRect(area, w.x, w.y) || G.cashierZones.some(function (c, ti) { return ti < G.stand.tills.length && inRect(c, w.x, w.y, 0.4); }))) return { kind: 'stand' };
+      // v103: the contract board, mat and truck open the Contracts list.
+      var cb = cfg.contracts.board, ctq = cfg.contracts.truck;
+      if (G.ordersOpen() && h <= 40 && (Math.hypot(w.x - cb.x, w.y - cb.y) < 1.1 || (G.contracts.active && Math.hypot(w.x - ctq.x, w.y - ctq.y) < 1.6))) return { kind: 'contracts' };
       if (h <= 30 && (inRect(G.truckZone, w.x, w.y) || Math.hypot(w.x - G.truck.x, w.y - G.truck.y) < 1.4)) return { kind: 'truck' };
       if (h === 0) {
         var pl = CR.field.plotAt(field, w.x, w.y);
@@ -13884,7 +14093,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // (playtest 2: the tool pill opened a field's menu).
     if (py < (G.hudBottom || 0) + 6) return;
     var hit = whatIsAt(px, py);
-    if (hit) { ui.openFocus(hit.kind, hit.id); ui.openedAt = Date.now(); fx.sound.tick(9); }
+    if (hit && hit.kind === 'contracts') { ui.openGoals(); ui.openedAt = Date.now(); fx.sound.tick(9); }
+    else if (hit) { ui.openFocus(hit.kind, hit.id); ui.openedAt = Date.now(); fx.sound.tick(9); }
   };
   G.hintShown = true;
 
