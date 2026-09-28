@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v87)</p>
+    <p class="ver">Crop Rush 1.0 (v88)</p>
   </div>
 </div>
 
@@ -1058,8 +1058,15 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // field, their storage holds the harvest while the truck is away.
       // The bed holds bedMult x the farmers' storage, bedGrowth x more per
       // Bigger bed level; it drives speed x as fast as they do.
-      truck: { cost: 12000, bedMult: 3, bedGrowth: 1.6, bedMax: 10, bedBase: 27500, bedCostGrowth: 4.04, speed: 1.6, reach: 2.6, pourTime: 0.6 },
+      // v88: after the truck.after trailer; bed levels capped by their machine.
+      truck: { after: 4, caps: { tractor: 3, combine: 6, mega: 10 }, cost: 12000, bedMult: 3, bedGrowth: 1.6, bedMax: 10, bedBase: 27500, bedCostGrowth: 4.04, speed: 1.6, reach: 2.6, pourTime: 0.6 },
       carrierBase: 100, carrierGrowth: 7.2, carrierMax: 8, // their rung on the carrier ladder (steep, Tom 06:17), up to the pallet truck
+      // v88 (Tom 2026-09-28: "it does not make sense to have forklift as
+      // farmers as tractors always come before, add a wagon/trailer to the
+      // tractor that gets larger"): once they drive, the same storage levels
+      // are a trailer behind the machine, named here per level. The harvest
+      // truck comes with the Grain trailer (truck.after).
+      trailers: ['Hay cart', 'Small trailer', 'Trailer', 'Big trailer', 'Grain trailer', 'Big grain trailer', 'Double trailer', 'Tipper trailer', 'Giant tipper'],
       bootsBonus: 0.1, bootsMax: 10, bootsBase: 100, bootsGrowth: 1.73,
       // Their swing: all around them, reachMult x the tool's base reach (no
       // tool levels), one swing every swingEvery s (Tom 2026-09-24: farmers
@@ -2589,7 +2596,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var t = config.farmers.truck;
     return fs.truck ? Math.round(carrierSize(fs, config) * t.bedMult * Math.pow(t.bedGrowth, fs.truck - 1)) : 0;
   }
-  function canBuyTruck(fs, config) { return driving(fs, config) && truckCost(config, fs.truck) < Infinity; }
+  // The harvest truck is a later storage step (v88, Tom 2026-09-28): it
+  // comes with the truck.after trailer, and its bed can only grow as far
+  // as their machine allows (truck.caps by look: "a small tractor and a
+  // large truck does not make sense").
+  function truckReady(fs, config) { return driving(fs, config) && (fs.truck > 0 || (fs.carrier || 0) >= config.farmers.truck.after); }
+  function truckCap(fs, config) { var lk = look(fs, config); return lk ? config.farmers.truck.caps[lk] : 0; }
+  function canBuyTruck(fs, config) { return truckReady(fs, config) && fs.truck < truckCap(fs, config) && truckCost(config, fs.truck) < Infinity; }
+  // What their storage is called at a level: a trailer once they drive.
+  function storageName(fs, config, level) {
+    var t = config.farmers.trailers, L = level == null ? fs.carrier : level;
+    return driving(fs, config) && t ? t[Math.min(L, t.length - 1)] : CR.barn.carrier(config, L).name;
+  }
   // With trucks bought, farmers who drive never leave their field: their
   // truck comes to them.
   function hasTrucks(fs, config) { return fs.truck > 0 && driving(fs, config); }
@@ -2954,7 +2972,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     create: create, up: up, plotMult: plotMult, hire: hire, update: update, nearestRipe: nearestRipe, route: route, nextOnRoute: nextOnRoute,
     hireCost: hireCost, toolCost: toolCost, carrierCost: carrierCost, bootsCost: bootsCost, bootsMax: bootsMax, driving: driving,
     widthCost: widthCost, widthCap: widthCap, canWiden: canWiden, look: look,
-    truckCost: truckCost, truckBed: truckBed, canBuyTruck: canBuyTruck, hasTrucks: hasTrucks, lookRows: lookRows,
+    truckCost: truckCost, truckBed: truckBed, canBuyTruck: canBuyTruck, truckReady: truckReady, truckCap: truckCap, storageName: storageName, hasTrucks: hasTrucks, lookRows: lookRows,
     canUpgradeTool: canUpgradeTool, speed: speed, carrier: carrier, carrierSize: carrierSize, tool: tool
   };
 })(this.CR = this.CR || {});
@@ -6892,10 +6910,30 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var parts = comb ? V.combine({ body: col, trim: mega ? '#ffc400' : '#37474f', header: mega ? '#ffc400' : null, half: Math.max(0.6, reach / (mega ? 0.95 : 0.85) * 0.45), time: time })
         : V.tractor({ body: col, trim: '#f4c430' });
       var n = fm.carry.items.length;
-      if (n) parts.push({ t: 'fn', a: comb ? -0.3 : -0.5, b: 0, z0: 1, up: true, draw: function (ctx, F) {
-        var z = comb ? 1.08 : 0.66, q = V.pt(F, comb ? -0.3 : -0.52, 0, z);
-        for (var k = 0; k < Math.min(3, n); k++) CR.barnView.item(ctx, G, fm.carry.items[k], q.x - 5 + k * 5, q.y - 3 - (k % 2) * 3, 0.75);
-      } });
+      // Their storage: a trailer behind the machine that grows with each
+      // storage level (v88, Tom 2026-09-28), filling up with the crop.
+      var tl = Math.min(fu.carrier || 0, G.cfg.farmers.carrierMax), hitch = comb ? -0.95 : -0.5;
+      var TL = 0.45 + tl * 0.1, TW = 0.24 + tl * 0.025, TH = 0.18 + tl * 0.03, t0 = hitch - 0.22, t1 = t0 - TL;
+      var tcol = tl >= 7 ? '#fbc02d' : tl >= 4 ? '#43a047' : '#a1887f', tdark = V.shade(tcol, 0.75);
+      parts.push({ a0: t0, a1: hitch, b0: -0.03, b1: 0.03, z0: 0.18, z1: 0.24, c: '#37474f' });
+      var axles = tl >= 6 ? [t1 + TL * 0.3, t1 + TL * 0.62] : [t1 + TL * 0.45];
+      axles.forEach(function (a) {
+        parts.push({ t: 'wheel', a: a, b: TW + 0.06, r: 0.16 + tl * 0.008, w: 0.09, hub: '#cfd8dc' });
+        parts.push({ t: 'wheel', a: a, b: -TW - 0.06, r: 0.16 + tl * 0.008, w: 0.09, hub: '#cfd8dc' });
+      });
+      parts.push({ a0: t1, a1: t0, b0: -TW, b1: TW, z0: 0.2, z1: 0.26, c: '#5d4037' });
+      parts.push({ a0: t1, a1: t0, b0: TW - 0.04, b1: TW, z0: 0.26, z1: 0.26 + TH, c: tcol, front: tdark });
+      parts.push({ a0: t1, a1: t0, b0: -TW, b1: -TW + 0.04, z0: 0.26, z1: 0.26 + TH, c: tcol, front: tdark });
+      parts.push({ a0: t1, a1: t1 + 0.04, b0: -TW, b1: TW, z0: 0.26, z1: 0.26 + TH, c: tdark });
+      parts.push({ a0: t0 - 0.04, a1: t0, b0: -TW, b1: TW, z0: 0.26, z1: 0.26 + TH, c: tdark });
+      if (n) {
+        var fill = Math.max(0.2, Math.min(1, n / Math.max(1, fm.carry.limit))), cc = G.cfg.crops[fm.carry.items[n - 1]];
+        parts.push({ a0: t1 + 0.04, a1: t0 - 0.04, b0: -TW + 0.04, b1: TW - 0.04, z0: 0.26, z1: 0.26 + TH * fill, c: cc ? cc.color : '#e0b84a', bias: 0.01 });
+        parts.push({ t: 'fn', a: (t0 + t1) / 2, b: 0, z0: 0.3 + TH, up: true, draw: function (ctx, F) {
+          var q = V.pt(F, (t0 + t1) / 2, 0, 0.28 + TH * fill);
+          for (var k = 0; k < Math.min(3, n); k++) CR.barnView.item(ctx, G, fm.carry.items[n - 1 - k], q.x - 5 + k * 5, q.y - 2 - (k % 2) * 3, 0.7);
+        } });
+      }
       var s0 = ws(fm.x, fm.y);
       V.render(ctx, parts, fm.x, fm.y, fm.fx || 0.7, fm.fy || 0.7, { scale: mega ? 0.95 : comb ? 0.85 : 0.8, spin: (fm.walkT || 0) * 0.3,
         shadow: comb ? [-0.85, 0.7, -0.5, 0.5] : [-0.6, 0.65, -0.48, 0.48],
@@ -7922,29 +7960,32 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     [ry - 0.2, ry + 0.2].forEach(function (y) { var a = ws(x0 + 0.2, y), b = ws(xEnd, y); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); });
     var belted = plots.filter(function (p) { return p.belt; });
     if (!belted.length || !G.barn.unlocked) return;
-    var W = 0.22, by = ry + 0.1, bx = G.cfg.barn.mat.x + 1.4, top = G.cfg.barn.mat.y + G.cfg.barn.mat.h;
+    var W = 0.22, by = R.belt.y != null ? R.belt.y : ry + 0.1, bz = R.belt.z || 0, bx = G.cfg.barn.mat.x + 1.4, top = G.cfg.barn.mat.y + G.cfg.barn.mat.h;
     var far = Math.max.apply(null, belted.map(function (p) { return p.ox + p.width / 2; })) + 0.8;
+    if (bz) for (var px = far; px > bx; px -= 2.5) { box(ctx, px - 0.08, by - W, 0.16, 0.12, 0, bz, '#90a4ae', '#607d8b', '#78909c'); box(ctx, px - 0.08, by + W - 0.12, 0.16, 0.12, 0, bz, '#90a4ae', '#607d8b', '#78909c'); }
     [[bx - W, by - W, far - bx + W, 2 * W], [bx - W, top, 2 * W, by - top + W]].forEach(function (r) {
-      ctx.fillStyle = 'rgba(0,0,0,0.18)'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2], r[3], 0); ctx.fill();
-      ctx.fillStyle = '#607d8b'; quadPath(ctx, r[0], r[1], r[2], r[3], 3); ctx.fill();
-      ctx.fillStyle = '#37474f'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2] - 0.12, r[3] - 0.12, 3.5); ctx.fill();
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'; quadPath(ctx, r[0] + 0.06 + bz / 60, r[1] + 0.06 + bz / 60, r[2], r[3], 0); ctx.fill();
+      if (bz) box(ctx, r[0], r[1], r[2], r[3], bz - 4, 4, '#607d8b', '#455a64', '#546e7a');
+      ctx.fillStyle = '#607d8b'; quadPath(ctx, r[0], r[1], r[2], r[3], bz + 3); ctx.fill();
+      ctx.fillStyle = '#37474f'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2] - 0.12, r[3] - 0.12, bz + 3.5); ctx.fill();
     });
     // Slats, moving while anything rides.
     var busy = belted.some(function (p) { return G.time - (p.beltT || -9) < 2; }), shift = busy ? (time * R.belt.speed) % 0.5 : 0, d;
     ctx.strokeStyle = '#78909c'; ctx.lineWidth = 1.5;
-    for (d = shift; d < far - bx; d += 0.5) { var s0 = ws(far - d, by - W + 0.06, 4), s1 = ws(far - d, by + W - 0.06, 4); ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.stroke(); }
+    for (d = shift; d < far - bx; d += 0.5) { var s0 = ws(far - d, by - W + 0.06, bz + 4), s1 = ws(far - d, by + W - 0.06, bz + 4); ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.stroke(); }
     belted.forEach(function (p) {
       var hx = p.ox + p.width / 2;
       // The hopper: a yellow bin on legs with a chute onto the belt.
-      box(ctx, hx - 0.6, ry - 0.55, 1.2, 0.45, 0, 12, '#ffc629', '#c79100', '#e0a800');
-      box(ctx, hx - 0.5, ry - 0.5, 1.0, 0.35, 12, 2, '#6d4c00', '#6d4c00', '#6d4c00');
+      var hy = R.hopperY + 0.1;
+      box(ctx, hx - 0.6, hy, 1.2, 0.45, 0, 12 + bz, '#ffc629', '#c79100', '#e0a800');
+      box(ctx, hx - 0.5, hy + 0.05, 1.0, 0.35, 12 + bz, 2, '#6d4c00', '#6d4c00', '#6d4c00');
       // What it just took rides off toward the barn.
       var age = G.time - (p.beltT || -9);
       if (age > 2 || !p.beltCrop) return;
       for (var k = 0; k < 5; k++) {
         var e = age * R.belt.speed - k * 0.7;
         if (e < 0 || hx - e < bx + 0.2) continue;
-        var sp = ws(hx - e, by, 8);
+        var sp = ws(hx - e, by, bz + 8);
         drawItem(ctx, p.beltCrop, G.cfg.crops[p.beltCrop], sp.x, sp.y, 0.7, 0);
       }
     });
@@ -9541,14 +9582,22 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
           price: P.farmerWidth(id), done: wdone, locked: !wdone && !wok && u.width >= wcap, act: function () { actions.farmerWidth(id); } });
         // Harvest trucks (Tom 2026-09-25): one beside every machine, so the
         // machines never leave the field; then bigger beds.
-        var tk = cfg.farmers.truck, tmax = tk.bedMax, tdone = u.truck >= tmax;
-        out.push({ key: 'ftruck' + id, icon: ['cart', u.truck], title: u.truck ? 'Bigger truck beds' : 'Harvest trucks',
-          sub: tdone ? 'The biggest bed there is' : u.truck ? 'Bed ' + G.fmt(FM.truckBed(u, cfg)) + ' → ' + G.fmt(FM.truckBed(Object.assign({}, u, { truck: u.truck + 1 }), cfg)) + ' per trip'
+        var tk = cfg.farmers.truck, tmax = tk.bedMax, tdone = u.truck >= tmax, tcap = u.truck >= FM.truckCap(u, cfg) && !tdone;
+        if (FM.truckReady(u, cfg)) out.push({ key: 'ftruck' + id, icon: ['cart', u.truck], title: u.truck ? 'Bigger truck beds' : 'Harvest trucks',
+          sub: tdone ? 'The biggest bed there is' : tcap ? 'A bigger truck needs a bigger machine: ' + (FM.look(u, cfg) === 'tractor' ? 'give them combines' : 'give them big combines')
+            : u.truck ? 'Bed ' + G.fmt(FM.truckBed(u, cfg)) + ' → ' + G.fmt(FM.truckBed(Object.assign({}, u, { truck: u.truck + 1 }), cfg)) + ' per trip'
             : 'A truck drives beside each machine and takes the harvest home. Machines never stop to deliver',
-          level: u.truck, max: tmax, price: P.farmerTruck(id), done: tdone, act: function () { actions.farmerTruck(id); } });
+          level: u.truck, max: tmax, price: P.farmerTruck(id), done: tdone, locked: tcap, act: function () { actions.farmerTruck(id); } });
       }
       var fst = carrierCard('fcarrier' + id, 'Farmer', u.carrier, P.farmerCarrier(id), function () { actions.farmerCarrier(id); }, false, cfg.farmers.carrierMax);
-      if (drives) { fst.title = 'Farmer storage'; fst.sub = u.truck ? 'Holds the harvest while the truck is away' : fst.sub.replace(' a trip', ' per trip'); }
+      if (drives) {
+        // A trailer behind the machine, not forklifts (v88).
+        var tnext = u.carrier < cfg.farmers.carrierMax, nowSize = CR.barn.carrier(cfg, u.carrier).size;
+        fst.icon = ['tool', 4];
+        fst.title = tnext ? 'Farmer ' + FM.storageName(u, cfg, u.carrier + 1).toLowerCase() + 's' : 'Farmer ' + FM.storageName(u, cfg).toLowerCase() + 's';
+        fst.sub = tnext ? 'Trailer holds ' + G.fmt(nowSize) + ' → ' + G.fmt(CR.barn.carrier(cfg, u.carrier + 1).size) + ' per trip' + (u.carrier + 1 === cfg.farmers.truck.after ? ', and harvest trucks open up' : '')
+          : u.truck ? 'Holds the harvest while the truck is away' : 'The biggest trailer';
+      }
       out.push(fst);
       var bmax = FM.bootsMax(cfg, drives);
       out.push({ key: 'fboots' + id, icon: ['boots', u.boots], title: drives ? 'Farmer engines' : 'Farmer boots', sub: drives ? 'They drive faster' : 'They walk faster',
@@ -10350,7 +10399,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         var hb = 0;
         ['carryBox', 'next', 'rush', 'order'].forEach(function (id) { var el = $(id); if (el && !el.hidden) hb = Math.max(hb, el.getBoundingClientRect().bottom); });
         G.hudBottom = hb;
-        var perMin = (G.rates.money || 0) * 60, cr = $('cashRate');
+        var perMin = G.perMinShown || 0, cr = $('cashRate');
         cr.hidden = !(perMin >= 1 && G.playTime > 30);
         // What sellers left at the till shows too (playtest 5: the counter
         // barely moved while the rate counted their sales).
@@ -11963,6 +12012,18 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // Money you make a second (money a minute, lucky harvests): sales as
     // they happen, not lucky harvests, orders or a rush's extra.
     G.rates.money = CR.state.smoothRate(G.rates.money, G.incomeNow, dt, 60);
+    // The HUD's "a minute" (Tom 2026-09-28: "avg of last min, and update
+    // every 3 sek"): coins in one-second buckets, summed over the last 60 s
+    // (scaled up while the run is younger), shown anew every 3 s.
+    var MW = G.minWin || (G.minWin = { b: [], cur: 0, t: 0, span: 0, show: 0, showT: 0 });
+    MW.cur += G.incomeNow; MW.t += dt; MW.span = Math.min(60, MW.span + dt);
+    while (MW.t >= 1) { MW.t -= 1; MW.b.push(MW.cur); MW.cur = 0; if (MW.b.length > 59) MW.b.shift(); }
+    MW.showT -= dt;
+    if (MW.showT <= 0) {
+      MW.showT = 3;
+      var won = MW.cur; MW.b.forEach(function (v) { won += v; });
+      G.perMinShown = MW.span >= 60 ? won : won * 60 / Math.max(3, MW.span);
+    }
     G.incomeNow = 0;
     if (G.prevMoney != null) G.runEarned += Math.max(0, G.money - G.prevMoney);
     G.prevMoney = G.money; G.windfall = 0;
@@ -12043,7 +12104,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // ---- golden crops (goals.js): a rare plant only you can cut ---------------
 
   G.golden = CR.goals.createGolden(cfg);
-  G.rates.money = 0; G.prevMoney = null; G.windfall = 0; G.incomeNow = 0;
+  G.rates.money = 0; G.prevMoney = null; G.windfall = 0; G.incomeNow = 0; G.minWin = null; G.perMinShown = 0;
 
   function goldenStep(dt) {
     var gt = field.golden;
@@ -12726,7 +12787,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var u = fup(id);
       if (!(actions.prices.farmerCarrier(id) < Infinity) || !pay(actions.prices.farmerCarrier(id))) return;
       u.carrier++; bought();
-      celebrate(fieldName(id) + ' farmers get ' + carrierName(CR.farmers.carrier(u, cfg)) + '!', u.carrier % 2 === 0);
+      celebrate(fieldName(id) + ' farmers get ' + (CR.farmers.driving(u, cfg) ? 'a ' + CR.farmers.storageName(u, cfg).toLowerCase() : carrierName(CR.farmers.carrier(u, cfg))) + '!', u.carrier % 2 === 0);
     },
     // The barn: a bigger one holds more, and big steps change how it looks.
     barnUp: function () {
