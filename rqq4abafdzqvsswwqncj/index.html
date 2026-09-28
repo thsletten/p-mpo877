@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v83)</p>
+    <p class="ver">Crop Rush 1.0 (v84)</p>
   </div>
 </div>
 
@@ -873,6 +873,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // 2026-09-27), so its speed and batch upgrades cost + lineCost x for
     // each line after the first (Tom: "scale the balance around this").
     factoryLines: { lineCost: 1 },
+    // Show the Testing tools (free upgrades, open fields, + cash) in
+    // Settings. Turn off before a store release.
+    devTools: true,
     // Factory speed upgrades, shared numbers: each level multiplies makeTime
     // by speedMult; level L costs the factory's cost x costGrowth^(L+1), so
     // the first is already dearer than the factory.
@@ -8916,12 +8919,19 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ];
       $('statsList').innerHTML = rows.map(function (r) { return '<div><span>' + r[0] + '</span><b>' + r[1] + '</b></div>'; }).join('');
     }
-    // Testing tools are hidden from players (playtest 3): open them with
-    // #dev in the address, or by tapping the version line 7 times.
+    // Testing tools: shown while cfg.devTools is on (Tom 2026-09-28: "add
+    // back the dev mode for free upgrades so i can test"; hidden from
+    // players since playtest 3). Off, they still open with #dev in the
+    // address or 7 taps on the version line. Free upgrades stays on across
+    // reloads until you untick it.
     var devTaps = 0;
-    if (/dev/.test(window.location.hash + window.location.search)) $('testing').hidden = false;
+    if (cfg.devTools || /dev/.test(window.location.hash + window.location.search)) $('testing').hidden = false;
     document.querySelector('#settings .ver').addEventListener('click', function () { if (++devTaps >= 7) $('testing').hidden = false; });
-    $('freeOpt').addEventListener('change', function (e) { G.free = e.target.checked; renderCards(); });
+    try { if (localStorage.getItem('crop-rush-free') === '1') { G.free = true; $('freeOpt').checked = true; } } catch (e) {}
+    $('freeOpt').addEventListener('change', function (e) {
+      G.free = e.target.checked; renderCards();
+      try { localStorage.setItem('crop-rush-free', G.free ? '1' : '0'); } catch (e2) {}
+    });
     $('plotsBtn').addEventListener('click', function () { actions.openPlots(); ui.settings.hidden = true; });
     $('cashBtn').addEventListener('click', function () { G.money += 1e6; bump(ui.cash); });
 
