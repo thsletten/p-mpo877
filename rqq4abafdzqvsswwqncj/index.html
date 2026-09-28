@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v100)</p>
+    <p class="ver">Crop Rush 1.0 (v101)</p>
   </div>
 </div>
 
@@ -977,7 +977,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // over it (bridgeDx), plus one by the barn (barnBridge). It turns up to
     // the barn at barnX.
     farmRoad: { y: 28.4, x0: 20, hopperY: 26.85,
-      belt: { unlock: 'combine', base: 5000, plotMult: 3, speed: 2.2,
+      belt: { unlock: 'combine', growLevel: 4, /* v101 (Tom 19:35 'as expensive as the 5 plot size upgrade'): the price of the field's 5th grow (v98: 3x the field, at least 5,000) */ speed: 2.2,
         y: 27.5, half: 0.22, barnX: 20.5, binDx: 5, bridgeDx: 1.5, barnBridge: 23.3,
         // v90 (Tom 2026-09-28): the belt always runs; a drop of more than
         // crateAt crops rides as crates showing the crop. look: bin A (bin
@@ -13385,8 +13385,9 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       facSpeed: function (fid) { return CR.factory.speedCost(G.factories, CR.factory.byId(G.factories, fid)); },
       belt: function (fid) { var f = CR.factory.byId(G.factories, fid); return f.belt ? Infinity : CR.workers.beltCost(cfg, f.cfg); },
       fieldBelt: function (id) {
+        // v101 (Tom 2026-09-28 19:35): as dear as the field's 5th grow.
         var pl = field.plotById[id], B = cfg.farmRoad.belt;
-        return pl.belt ? Infinity : Math.round(Math.max(B.base, pl.cost * B.plotMult));
+        return pl.belt ? Infinity : Math.round(CR.economy.plotGrowCost(cfg, id, B.growLevel));
       },
       facBatch: function (fid) { return CR.factory.batchCost(G.factories, CR.factory.byId(G.factories, fid)); },
       tool: function () { return ECON.toolUpgradeCost(cfg, G.tier, G.toolLevel); },
