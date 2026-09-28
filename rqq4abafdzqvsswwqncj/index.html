@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v89)</p>
+    <p class="ver">Crop Rush 1.0 (v90)</p>
   </div>
 </div>
 
@@ -897,7 +897,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // the barn at barnX.
     farmRoad: { y: 28.4, x0: 20, hopperY: 26.85,
       belt: { unlock: 'combine', base: 50000, growth: 1.8, plotMult: 3, speed: 2.2,
-        y: 27.5, half: 0.22, barnX: 20.5, binDx: 5, bridgeDx: 1.5, barnBridge: 23.3 } },
+        y: 27.5, half: 0.22, barnX: 20.5, binDx: 5, bridgeDx: 1.5, barnBridge: 23.3,
+        // v90 (Tom 2026-09-28): the belt always runs; a drop of more than
+        // crateAt crops rides as crates showing the crop. look: bin A (bin
+        // on legs), B (wooden chute), C (grain funnel); cross A (planks),
+        // B (path over a tunnel), C (arched bridge).
+        crateAt: 10, look: { bin: 'A', cross: 'A' } } },
     // Bigger batches (Tom 2026-09-24, "scale both"): each batch level makes
     // sizes[L] goods per cycle from sizes[L] x the recipe, up to crates of
     // 1K and more. Level L+1 costs factory cost x costMult x costGrowth^L.
@@ -2755,6 +2760,12 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var yb = (B.y0 + B.y1) / 2, k = (yb - fm.y) / (t.y - fm.y), cx = fm.x + (t.x - fm.x) * k;
     if (cx < B.x0 || cx > B.x1) return null;
     var bx = above && B.own[fm.plotId] != null && CR.field.plotAt(NAV.field, fm.x, fm.y) ? B.own[fm.plotId] : null;
+    // From the road into a field: that field's own bridge (v90: the nearest
+    // bridge could lead into the field next door and back out, forever).
+    // A field past the belt's end is reached round the end.
+    var tp = below ? CR.field.plotAt(NAV.field, t.x, t.y) : null;
+    if (bx == null && tp && B.own[tp.id] != null) bx = B.own[tp.id];
+    else if (bx == null && t.x > B.x1) return { x: B.x1 + 0.5, y: fm.y };
     if (bx == null) B.bridges.forEach(function (x) { if (bx == null || Math.abs(x - t.x) < Math.abs(bx - t.x)) bx = x; });
     var yNear = above ? B.y0 - 0.2 : B.y1 + 0.2, yFar = above ? B.y1 + 0.2 : B.y0 - 0.2;
     if (Math.abs(fm.x - bx) > 0.05 || Math.abs(fm.y - yNear) > 0.05) return { x: bx, y: yNear };
@@ -2766,9 +2777,11 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     if (!crosses(fm.x, fm.y, t.x, t.y, fm.plotId)) return t;
     // Out to the road first, straight from where it is; then along the road
     // to below (or above) the target.
-    if (Math.abs(fm.y - NAV.y) > 0.25) return { x: fm.x, y: NAV.y };
+    if (Math.abs(fm.y - NAV.y) > 0.25) { var r = { x: fm.x, y: NAV.y }; return beltCross(fm, r) || r; }
     return { x: t.x, y: NAV.y };
   }
+  // The next leg from fm toward t on nav (for tests).
+  function navLeg(nav, fm, t) { var old = NAV; NAV = nav; var w = waypoint(fm, t); NAV = old; return w; }
   // Walks toward the target (by the road when NAV is set and `direct` is
   // not); true when there.
   function walk(fm, sp, dt, direct) {
@@ -2996,7 +3009,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   }
 
   CR.farmers = {
-    create: create, up: up, plotMult: plotMult, hire: hire, update: update, nearestRipe: nearestRipe, route: route, nextOnRoute: nextOnRoute,
+    create: create, up: up, plotMult: plotMult, hire: hire, update: update, navLeg: navLeg, nearestRipe: nearestRipe, route: route, nextOnRoute: nextOnRoute,
     hireCost: hireCost, toolCost: toolCost, carrierCost: carrierCost, bootsCost: bootsCost, bootsMax: bootsMax, driving: driving,
     widthCost: widthCost, widthCap: widthCap, canWiden: canWiden, look: look,
     truckCost: truckCost, truckBed: truckBed, canBuyTruck: canBuyTruck, truckReady: truckReady, truckCap: truckCap, storageName: storageName, hasTrucks: hasTrucks, lookRows: lookRows,
@@ -7995,48 +8008,133 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       ctx.fillStyle = '#37474f'; quadPath(ctx, r[0] + 0.06, r[1] + 0.06, r[2] - 0.12, r[3] - 0.12, 3.5); ctx.fill();
     });
     var belted = plots.filter(function (p) { return p.belt; });
-    var busy = belted.some(function (p) { return G.time - (p.beltT || -9) < 3; }), shift = busy ? (time * B.speed) % 0.5 : 0, d;
+    var shift = (time * B.speed) % 0.5, d, look = B.look || {};
     ctx.strokeStyle = '#78909c'; ctx.lineWidth = 1.5;
     for (d = shift; d < far - bx; d += 0.5) { var s0 = ws(far - d, by - W + 0.06, 4), s1 = ws(far - d, by + W - 0.06, 4); ctx.beginPath(); ctx.moveTo(s0.x, s0.y); ctx.lineTo(s1.x, s1.y); ctx.stroke(); }
-    // Crops riding off from each bin toward the barn.
+    // What rides: each drop leaves its field's bin and runs to the barn,
+    // along the belt and up to the barn. Small drops ride as loose crops,
+    // big ones as crates with the crop on them (Tom 2026-09-28).
+    var Lv = by - top;
     belted.forEach(function (p) {
-      var age = G.time - (p.beltT || -9), hx = p.ox + B.binDx;
-      if (age > 3 || !p.beltCrop) return;
-      for (var k = 0; k < 7; k++) {
-        var e = age * B.speed - k * 0.45;
-        if (e < 0 || hx - e < bx + 0.2) continue;
-        var sp = ws(hx - e, by, 7);
-        drawItem(ctx, p.beltCrop, G.cfg.crops[p.beltCrop], sp.x, sp.y, 0.65, 0);
-      }
+      var hx = p.ox + B.binDx, Lh = hx - bx;
+      p.rides = (p.rides || []).filter(function (r) { return (G.time - r.t) * B.speed < Lh + Lv + 3; });
+      p.rides.forEach(function (r) {
+        var big = r.n > (B.crateAt || 10), cnt = big ? Math.min(3, Math.ceil(r.n / (B.crateAt * 5))) : Math.min(5, r.n), gap = big ? 0.8 : 0.4;
+        for (var k = 0; k < cnt; k++) {
+          var e = (G.time - r.t) * B.speed - k * gap;
+          if (e < 0 || e > Lh + Lv) continue;
+          var px = e <= Lh ? hx - e : bx, py = e <= Lh ? by : by - (e - Lh);
+          if (big) beltCrate(ctx, G, r.crop, px, py);
+          else { var sp = ws(px, py, 7); drawItem(ctx, r.crop, G.cfg.crops[r.crop], sp.x, sp.y, 0.65, 0); }
+        }
+      });
     });
-    // Footbridges: planks on two beams, with a hand rail on the road side.
+    // Where paths cross the belt.
     L.bridges.forEach(function (x) {
       if (x < L.x0 || x > L.x1) return;
+      (CROSS[look.cross] || CROSS.A)(ctx, x, by, W);
+    });
+    // Each belted field's bin, pouring onto the belt while crops come.
+    belted.forEach(function (p) {
+      var hx = p.ox + B.binDx, age = G.time - (p.beltT || -9);
+      var sp = (BINS[look.bin] || BINS.A)(ctx, G, p, hx, by, W);
+      if (age < 1.5 && p.beltCrop) for (var k = 0; k < 3; k++) {
+        var u = (time * 3 + k / 3) % 1, e1 = ws(hx, by, 5), cy = sp.y + (e1.y - sp.y) * u;
+        drawItem(ctx, p.beltCrop, G.cfg.crops[p.beltCrop], sp.x + (k - 1) * 2 + (e1.x - sp.x) * u, cy, 0.55, 0);
+      }
+    });
+  }
+
+  // A crate riding the belt, the crop's picture on its side and on top.
+  function beltCrate(ctx, G, crop, x, y) {
+    var k = 0.75, s = 0.62 * k;
+    crate(ctx, x - s / 2, y - s / 2, 3.5, k);
+    var f = ws(x + s / 2, y, 3.5 + 5 * k), t = ws(x, y, 3.5 + 12 * k);
+    drawItem(ctx, crop, G.cfg.crops[crop], f.x, f.y, 0.45, 0);
+    drawItem(ctx, crop, G.cfg.crops[crop], t.x, t.y - 2, 0.5, 0);
+  }
+
+  // Bins: each draws itself over the belt at hx and returns the screen
+  // point its crops pour from.
+  function cropSign(ctx, G, p, x, y, z) { var sg = ws(x, y, z); drawItem(ctx, p.crop, G.cfg.crops[p.crop], sg.x, sg.y, 0.6, 0); }
+  var BINS = {
+    // A: a yellow bin on four legs straddling the belt.
+    A: function (ctx, G, p, hx, by, W) {
+      var x0b = hx - 0.55, y0b = by - W - 0.35, w = 1.1, h = 2 * W + 0.7, legZ = 16;
+      [[x0b, y0b], [x0b + w - 0.08, y0b], [x0b, y0b + h - 0.08], [x0b + w - 0.08, y0b + h - 0.08]].forEach(function (q) { box(ctx, q[0], q[1], 0.08, 0.08, 0, legZ, '#78909c', '#546e7a', '#607d8b'); });
+      box(ctx, x0b, y0b, w, h, legZ, 16, '#ffc629', '#c79100', '#e0a800');
+      box(ctx, x0b + 0.1, y0b + 0.1, w - 0.2, h - 0.2, legZ + 16, 1, '#6d4c00', '#6d4c00', '#6d4c00');
+      var sp0 = ws(hx, by, legZ);
+      ctx.fillStyle = '#c79100'; ctx.beginPath(); ctx.moveTo(sp0.x - 6, sp0.y); ctx.lineTo(sp0.x + 6, sp0.y); ctx.lineTo(sp0.x + 3, sp0.y + 5); ctx.lineTo(sp0.x - 3, sp0.y + 5); ctx.closePath(); ctx.fill();
+      cropSign(ctx, G, p, x0b + w / 2, y0b + h, legZ + 8);
+      return { x: sp0.x, y: sp0.y + 5 };
+    },
+    // B: a wooden crate bin on the field edge with a plank chute onto the belt.
+    B: function (ctx, G, p, hx, by, W) {
+      var y1 = by - W - 0.12, x0b = hx - 0.6;
+      box(ctx, x0b, y1 - 1.0, 1.2, 1.0, 0, 18, '#c69c6d', '#8d6e4a', '#a47d55');
+      ctx.strokeStyle = 'rgba(90,60,30,0.5)'; ctx.lineWidth = 1;
+      [6, 12].forEach(function (z) { var a1 = ws(x0b, y1, z), b1 = ws(x0b + 1.2, y1, z), c1 = ws(x0b + 1.2, y1 - 1, z); ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(b1.x, b1.y); ctx.lineTo(c1.x, c1.y); ctx.stroke(); });
+      box(ctx, x0b + 0.08, y1 - 0.92, 1.04, 0.84, 18, 1, '#5d4030', '#5d4030', '#5d4030');
+      var c0 = ws(hx - 0.3, y1, 14), c1 = ws(hx + 0.3, y1, 14), c2 = ws(hx + 0.2, by + 0.05, 7), c3 = ws(hx - 0.2, by + 0.05, 7);
+      ctx.fillStyle = '#b98a58'; ctx.beginPath(); ctx.moveTo(c0.x, c0.y); ctx.lineTo(c1.x, c1.y); ctx.lineTo(c2.x, c2.y); ctx.lineTo(c3.x, c3.y); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = '#7a5836'; ctx.lineWidth = 1.5; ctx.stroke();
+      cropSign(ctx, G, p, hx, y1, 9);
+      var m = ws(hx, (y1 + by) / 2, 11);
+      return { x: m.x, y: m.y };
+    },
+    // C: a red grain funnel on legs, wide at the top, narrow over the belt.
+    C: function (ctx, G, p, hx, by, W) {
+      var r = 0.6, zT = 34, zB = 18, rb = 0.16, legZ = zT - 4;
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (q) { box(ctx, hx + q[0] * r - 0.04, by + q[1] * r - 0.04, 0.08, 0.08, 0, legZ, '#78909c', '#546e7a', '#607d8b'); });
+      function P(dx, dy, z) { return ws(hx + dx, by + dy, z); }
+      var faces = [
+        [P(-r, r, zT), P(r, r, zT), P(rb, rb, zB), P(-rb, rb, zB), '#c62828'],
+        [P(r, -r, zT), P(r, r, zT), P(rb, rb, zB), P(rb, -rb, zB), '#e53935']
+      ];
+      faces.forEach(function (f) { ctx.fillStyle = f[4]; ctx.beginPath(); ctx.moveTo(f[0].x, f[0].y); for (var i = 1; i < 4; i++) ctx.lineTo(f[i].x, f[i].y); ctx.closePath(); ctx.fill(); });
+      box(ctx, hx - r, by - r, 2 * r, 2 * r, zT, 5, '#ef5350', '#b71c1c', '#c62828');
+      box(ctx, hx - r + 0.08, by - r + 0.08, 2 * r - 0.16, 2 * r - 0.16, zT + 5, 1, '#5d2a1a', '#5d2a1a', '#5d2a1a');
+      box(ctx, hx - rb, by - rb, 2 * rb, 2 * rb, zB - 6, 6, '#90a4ae', '#607d8b', '#78909c');
+      cropSign(ctx, G, p, hx, by + r * 0.8, zT - 5);
+      var o = ws(hx, by, zB - 6);
+      return { x: o.x, y: o.y };
+    }
+  };
+
+  // Crossings over the belt at x.
+  var CROSS = {
+    // A: planks on two beams, a hand rail on the road side.
+    A: function (ctx, x, by, W) {
       var y0 = by - W - 0.15, y1 = by + W + 0.15;
       box(ctx, x - 0.42, y0, 0.84, y1 - y0, 0, 6, '#c69c6d', '#8d6e4a', '#a47d55');
       ctx.strokeStyle = 'rgba(90,60,30,0.45)'; ctx.lineWidth = 1;
       for (var pk = y0 + 0.14; pk < y1; pk += 0.14) { var a1 = ws(x - 0.42, pk, 6), b1 = ws(x + 0.42, pk, 6); ctx.beginPath(); ctx.moveTo(a1.x, a1.y); ctx.lineTo(b1.x, b1.y); ctx.stroke(); }
       box(ctx, x + 0.36, y0, 0.06, y1 - y0, 6, 10, '#8d6e4a', '#6d5236', '#7a5c3e');
-    });
-    // Each belted field's bin: a yellow hopper on four legs over the belt,
-    // its spout pouring onto it while crops come.
-    belted.forEach(function (p) {
-      var hx = p.ox + B.binDx, x0b = hx - 0.55, y0b = by - W - 0.35, w = 1.1, h = 2 * W + 0.7, legZ = 16;
-      [[x0b, y0b], [x0b + w - 0.08, y0b], [x0b, y0b + h - 0.08], [x0b + w - 0.08, y0b + h - 0.08]].forEach(function (q) { box(ctx, q[0], q[1], 0.08, 0.08, 0, legZ, '#78909c', '#546e7a', '#607d8b'); });
-      box(ctx, x0b, y0b, w, h, legZ, 16, '#ffc629', '#c79100', '#e0a800');
-      box(ctx, x0b + 0.1, y0b + 0.1, w - 0.2, h - 0.2, legZ + 16, 1, '#6d4c00', '#6d4c00', '#6d4c00');
-      var sp0 = ws(hx, by, legZ), sp1 = ws(hx, by, 5);
-      ctx.fillStyle = '#c79100'; ctx.beginPath(); ctx.moveTo(sp0.x - 6, sp0.y); ctx.lineTo(sp0.x + 6, sp0.y); ctx.lineTo(sp0.x + 3, sp0.y + 5); ctx.lineTo(sp0.x - 3, sp0.y + 5); ctx.closePath(); ctx.fill();
-      var age = G.time - (p.beltT || -9);
-      if (age < 1.5 && p.beltCrop) for (var k = 0; k < 3; k++) {
-        var u = (time * 3 + k / 3) % 1, cy = sp0.y + 5 + (sp1.y - sp0.y - 5) * u;
-        drawItem(ctx, p.beltCrop, G.cfg.crops[p.beltCrop], sp0.x + (k - 1) * 2, cy, 0.55, 0);
+    },
+    // B: the path stays on the ground and the belt runs under it through
+    // a little stone tunnel.
+    B: function (ctx, x, by, W) {
+      var y0 = by - W - 0.3, y1 = by + W + 0.3, h = 5;
+      box(ctx, x - 0.45, y0, 0.9, y1 - y0, 0, h, '#c9a36e', '#9e9e9e', '#8d8d8d');
+      var m0 = ws(x + 0.45, by - W + 0.02, 0), m1 = ws(x + 0.45, by + W - 0.02, 0), mt = ws(x + 0.45, by, h - 0.5);
+      ctx.fillStyle = '#263238'; ctx.beginPath(); ctx.moveTo(m0.x, m0.y); ctx.quadraticCurveTo(mt.x, mt.y - 3, m1.x, m1.y); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(110,80,40,0.25)'; quadPath(ctx, x - 0.3, y0, 0.6, y1 - y0, h); ctx.fill();
+    },
+    // C: a little arched wooden bridge with a rail on both sides.
+    C: function (ctx, x, by, W) {
+      var y0 = by - W - 0.45, y1 = by + W + 0.45, n = 8, dy = (y1 - y0) / n;
+      for (var i = 0; i < n; i++) {
+        var z = 3 + 7 * Math.sin(Math.PI * (i + 0.5) / n);
+        box(ctx, x - 0.42, y0 + i * dy, 0.84, dy - 0.02, z - 3, 3, i % 2 ? '#c69c6d' : '#bf9464', '#8d6e4a', '#a47d55');
       }
-      // What it holds is the barn's: a crop sign on the front.
-      var sg = ws(x0b + w / 2, y0b + h, legZ + 8);
-      drawItem(ctx, p.crop, G.cfg.crops[p.crop], sg.x, sg.y, 0.6, 0);
-    });
-  }
+      [x - 0.42, x + 0.36].forEach(function (rx) {
+        for (var j = 0; j <= 2; j++) { var yy = y0 + (y1 - y0) * (0.1 + 0.4 * j); box(ctx, rx, yy - 0.03, 0.06, 0.06, 3 + 7 * Math.sin(Math.PI * (0.1 + 0.4 * j)), 9, '#8d6e4a', '#6d5236', '#7a5c3e'); }
+        var ra = ws(rx + 0.03, y0 + (y1 - y0) * 0.1, 3 + 7 * Math.sin(Math.PI * 0.1) + 9), rm = ws(rx + 0.03, (y0 + y1) / 2, 19), rb2 = ws(rx + 0.03, y0 + (y1 - y0) * 0.9, 3 + 7 * Math.sin(Math.PI * 0.9) + 9);
+        ctx.strokeStyle = '#6d5236'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ra.x, ra.y); ctx.quadraticCurveTo(rm.x, rm.y - 4, rb2.x, rb2.y); ctx.stroke();
+      });
+    }
+  };
 
   function crate(ctx, x, y, z, k) {
     box(ctx, x, y, 0.62 * k, 0.62 * k, z, 12 * k, '#d9a066', '#9c6532', '#b77a40');
@@ -11352,7 +11450,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         fx.sound.tick(G.item.pitch(e.crop) - 4, 0, 0.3);
       } else if (e.type === 'belt') {
         var bp = field.plotById[e.plotId];
-        if (bp) { bp.beltT = G.time; bp.beltCrop = e.crop; }
+        if (bp) { bp.beltT = G.time; bp.beltCrop = e.crop; (bp.rides = bp.rides || []).push({ t: G.time, crop: e.crop, n: e.n }); if (bp.rides.length > 12) bp.rides.shift(); }
         G.barn.bump = 1;
         fx.sound.tick(G.item.pitch(e.crop) - 4, 0, 0.2);
       } else if (e.type === 'bulk') {
