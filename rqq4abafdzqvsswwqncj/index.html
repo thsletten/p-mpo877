@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v104)</p>
+    <p class="ver">Crop Rush 1.0 (v105)</p>
   </div>
 </div>
 
@@ -1399,9 +1399,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // you have sold afterSold items (the old order board's rule).
     contracts: {
       afterSold: 200, every: 20, minItems: 20,
-      mat: { x: 42.3, y: 34.3, w: 2.2, h: 1.2 },   // LOAD mat, below the bulk truck
-      truck: { x: 45.4, y: 34.9 },                 // where the contract truck parks
-      board: { x: 45.9, y: 32.7 },                 // the CONTRACTS signboard
+      // v105 (Tom 20:27 'move the contract truck next to the industry
+      // area'): the dock is on the sand between the district's two gates,
+      // the truck parked nose up the district's edge, its LOAD mat beside it.
+      mat: { x: 27.3, y: 43.4, w: 1.4, h: 2.6 },     // LOAD mat, right of the truck
+      truck: { x: 26.2, y: 45.2 },                 // where the contract truck parks (nose up)
+      board: { x: 28.2, y: 42.4 },                 // the CONTRACTS signboard
       sizes: [
         { time: 180, share: 1.0, bonus: 0.3, truck: 'pickup', name: 'Small' },
         { time: 300, share: 1.25, bonus: 0.5, truck: 'lorry', name: 'Medium' },
@@ -6964,13 +6967,20 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   }
   function drawContractTruck(ctx, G, it, time) {
     var V = CR.vehicles, c = it.c, tq = G.cfg.contracts.truck, s = c.truck;
-    var fill = Math.min(1, c.loaded / Math.max(1, c.n)), look = G.item.show(c.item), col = (G.cfg.crops[look] && G.cfg.crops[look].color) || '#c49a6c';
-    var sc = s === 'pickup' ? 0.7 : s === 'lorry' ? 0.95 : 1.2, cab = s === 'pickup' ? '#43a047' : s === 'lorry' ? '#fb8c00' : '#c62828';
-    var x = tq.x, y = tq.y;
-    if (it.leave != null) x += it.leave * it.leave * 2.2; // drives off to the right
-    if (it.arrive != null) x += (1 - it.arrive) * (1 - it.arrive) * 8;
-    V.render(ctx, V.lorry({ cab: cab, box: 'tipper', body: s === 'roadTrain' ? '#6d4c41' : '#8d6e63', stripe: '#f4c430', fill: Math.max(0.05, fill), load: col }),
-      x, y, 1, 0, { scale: sc, shadow: [-1.55, 1.6, -0.5, 0.5] });
+    var fill = Math.min(1, c.loaded / Math.max(1, c.n));
+    // v105 (Tom 20:27 'make the truck different from the farmer trucks'):
+    // a navy freight truck with a closed container and a gold stripe, not
+    // a farm tipper; bigger contracts send a bigger one.
+    var sc = s === 'pickup' ? 0.75 : s === 'lorry' ? 0.95 : 1.2;
+    var x = tq.x, y = tq.y, fy = -1;
+    if (it.arrive != null) y += (1 - it.arrive) * (1 - it.arrive) * 9; // drives up from the road
+    if (it.leave != null) { y += it.leave * it.leave * 9; fy = 1; }     // and back down to it
+    var P = V.lorry({ cab: '#eceff1', box: 'container', body: s === 'roadTrain' ? '#1a237e' : s === 'lorry' ? '#283593' : '#3949ab' });
+    [0.47, -0.48].forEach(function (b) { // gold bands down both sides
+      P.push({ a0: -1.46, a1: 0.74, b0: b, b1: b + 0.01, z0: 0.86, z1: 1.02, c: '#f4c430', bias: 0.03, noTop: true });
+    });
+    P.push({ a0: -1.52, a1: 0.8, b0: -0.12, b1: 0.12, z0: 1.3, z1: 1.32, c: '#f4c430', bias: 0.03 }); // and one on the roof
+    V.render(ctx, P, x, y, 0, fy, { scale: sc, shadow: [-1.55, 1.6, -0.5, 0.5] });
     if (it.leave != null) return;
     // Fill bar and clock over it.
     var p = ws(x, y, 95 * sc), w = 96, h = 13;
