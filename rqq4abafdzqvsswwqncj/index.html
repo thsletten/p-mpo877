@@ -561,7 +561,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     <canvas id="nextIcon" width="48" height="48"></canvas>
     <div class="nextBar"><div id="nextFill"></div><span id="nextText"></span></div>
   </div>
-  <div class="rush" id="rush" hidden><b id="rushMult">7x</b><span>Golden rush</span><b id="rushTime"></b></div>
+  <div class="rush" id="rush" hidden><b id="rushMult">7x</b><span id="rushName">Golden rush</span><b id="rushTime"></b></div>
   <div class="order" id="order" hidden>
     <canvas id="orderIcon" width="56" height="56"></canvas>
     <div class="orderBar"><div id="orderFill"></div><span id="orderText"></span></div>
@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v101)</p>
+    <p class="ver">Crop Rush 1.0 (v102)</p>
   </div>
 </div>
 
@@ -830,19 +830,22 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // v99 (Tom 2026-09-28 16:05, 'expanding is too expensive on a lot of
       // crops after corn'): since v93 every field starts at length0 8 (was
       // x1.8 per field), so from corn on the first grow costs 2x the field
-      // (was 5-8x).
-      { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 150, costGrowth: 2.4 } },
-      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1550, costGrowth: 2.4 } },
-      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1e4, /* v99: 2x the field (was 37500) */ costGrowth: 2.4 } },
-      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4e4, /* v99: 2x the field (was 125000) */ costGrowth: 2.4 } },
-      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.8e5, /* v99: 2x the field (was 1.25e6) */ costGrowth: 2.4 } },
-      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.6e5, /* v99: 2x the field (was 2.4e6) */ costGrowth: 2.4 } },
-      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.4e6, /* v99: 2x the field (was 2.45e7) */ costGrowth: 2.4 } },
-      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.2e7, /* v99: 2x the field (was 9.0e7) */ costGrowth: 2.4 } },
-      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.2e7, /* v99: 2x the field (was 2.4e8) */ costGrowth: 2.4 } },
-      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.6e8, /* v99: 2x the field (was 9.0e8) */ costGrowth: 2.4 } },
-      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7.2e8, /* v99: 2x the field (was 2.1e9) */ costGrowth: 2.4 } },
-      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e9, /* v99: 2x the field (was 6.5e9) */ costGrowth: 2.4 } }
+      // (was 5-8x). v102 (Tom 19:43 'plot size upgrade is too expensive'):
+      // Tom 19:47 'starts a bit cheaper and upgrades 2x in price': the first
+      // grow costs 1.5x the field from corn on (carrots 120, tomatoes 1,200;
+      // was 2x, 150, 1,550) and each grow 2x the last (was 2.4x).
+      { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 120, costGrowth: 2 } },
+      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1200, costGrowth: 2 } },
+      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7500, costGrowth: 2 } },
+      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3e4, costGrowth: 2 } },
+      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 3.6e5, costGrowth: 2 } },
+      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 7.2e5, costGrowth: 2 } },
+      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.8e6, costGrowth: 2 } },
+      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e7, costGrowth: 2 } },
+      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 4.65e7, costGrowth: 2 } },
+      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.95e8, costGrowth: 2 } },
+      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 5.4e8, costGrowth: 2 } },
+      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.8e9, costGrowth: 2 } }
     ],
 
     // Factories turn any crop you drop in their hopper into jars worth more,
@@ -1328,7 +1331,19 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // one coming"): Lucky charm, each level makes the wait for the next
       // golden crop charmSpeed shorter-running (1 + charmSpeed x level
       // faster: 2.2x at level 10). For sale once you have found one.
-      charm: { baseCost: 2500, costGrowth: 3.2, maxLevel: 10, speed: 0.12 }, rushCapSeconds: 0, luckySeconds: 180, luckyCap: 0, luckyMin: 5, rushWait: 60 }, // Tom 2026-09-26: "no limit in earnings on golden crop" (rush cap was 120 s of income, lucky cap 0.5 of earnings)
+      charm: { baseCost: 2500, costGrowth: 3.2, maxLevel: 10, speed: 0.12 },
+      // v102 (Tom 2026-09-28 19:38 picked C, D, E, F): half of all golden
+      // crops are one of these instead of a rush or lucky harvest (main.js
+      // goldenSpecial). bus: n customers step off a golden bus and buy take
+      // x as much for time s; tractor: time s at speed x and wide x reach;
+      // frenzy: every factory mult x fast for time s (only with a factory);
+      // chain: n more golden plants for life s, each paying eachSeconds of
+      // income, all of them comboSeconds more.
+      specialChance: 0.5,
+      bus: { n: 20, take: 3, time: 30 },
+      tractor: { time: 20, speed: 2, wide: 2 },
+      frenzy: { time: 30, mult: 10 },
+      chain: { n: 3, life: 15, eachSeconds: 20, comboSeconds: 150 }, rushCapSeconds: 0, luckySeconds: 180, luckyCap: 0, luckyMin: 5, rushWait: 60 }, // Tom 2026-09-26: "no limit in earnings on golden crop" (rush cap was 120 s of income, lucky cap 0.5 of earnings)
 
     // Big goals (goals.js): the road through the whole game, kept across
     // farms. `kind` is what is measured (see goals.bigGoalValue) and `need`
@@ -1815,7 +1830,13 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   // Returns [{ x, y, crop, plot }] for the tiles cut this call.
   function isGolden(field, tx, ty) {
     var g = field.golden;
-    return !!g && g.x === tx && g.y === ty;
+    return (!!g && g.x === tx && g.y === ty) || chainAt(field, tx, ty) >= 0;
+  }
+  // v102 Chain of gold: field.goldChain = [{ x, y }] more golden plants.
+  function chainAt(field, tx, ty) {
+    var l = field.goldChain || [];
+    for (var i = 0; i < l.length; i++) if (l[i].x === tx && l[i].y === ty) return i;
+    return -1;
   }
 
   // A ripe tile for a golden plant within `radius` tiles of (x, y), tried
@@ -1838,7 +1859,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // "gave nothing" when you walked over it full); it gives its reward
     // but no crops then.
     var room = carry.limit - carry.items.length;
-    if (room <= 0 && (farmer || !field.golden)) return [];
+    var anyGold = field.golden || (field.goldChain && field.goldChain.length);
+    if (room <= 0 && (farmer || !anyGold)) return [];
     var tol = field.reachTolerance == null ? 0.5 : field.reachTolerance;
     var r = Math.ceil((tool.arc ? tool.reach + tol : 0) + 1);
     var cx = Math.floor(player.x), cy = Math.floor(player.y);
@@ -1858,7 +1880,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // plant cut may overfill the carry a little rather than waste any.
     var out = [], got = 0;
     for (var i = 0; i < hits.length; i++) {
-      if (got >= room && !(field.golden && isGolden(field, hits[i].x, hits[i].y))) continue;
+      if (got >= room && !(anyGold && isGolden(field, hits[i].x, hits[i].y))) continue;
       // Never past the carry's limit (playtest 2: 17/16 baskets): the last
       // plant gives only what fits, a golden one with a full carry none.
       var h = hits[i], n = Math.min((field.yields && field.yields[h.plot.crop]) || 1, Math.max(0, room - got));
@@ -1867,7 +1889,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       for (var k = 0; k < n; k++) carry.items.push(h.plot.crop);
       got += n;
       var c = { x: h.x, y: h.y, crop: h.plot.crop, plot: h.plot.id, n: n };
-      if (isGolden(field, h.x, h.y)) { c.golden = true; field.golden = null; }
+      if (isGolden(field, h.x, h.y)) {
+        var ci = chainAt(field, h.x, h.y);
+        if (ci >= 0) { c.golden = true; c.chain = true; field.goldChain.splice(ci, 1); }
+        else { c.golden = true; field.golden = null; }
+      }
       out.push(c);
     }
     return out;
@@ -2135,6 +2161,24 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // Milestones bring more customers for their crop or product (Tom
     // 2026-09-25 13:05); see demandOf.
     var dm = demandOf(stand), every = dm.every;
+    // v102 Bus of buyers (a golden crop): stand.bus = { queue, take, left }:
+    // queue customers step off one every 0.15 s, over the usual cap, and
+    // everyone buys take x as much while left > 0.
+    var bus = stand.bus;
+    if (bus) {
+      bus.left -= dt; bus.t = (bus.t || 0) - dt;
+      var openB = Object.keys(stand.shelves);
+      while (bus.queue > 0 && bus.t <= 0 && openB.length) {
+        bus.t += 0.15; bus.queue--;
+        var wantB = pickShelf(stand, openB, rand);
+        var cuB = { id: stand.nextId++, phase: 'walk', t: 0, want: wantB, crop: null, n: 0, spent: 0, waited: 0, bus: true,
+          walkUp: walkSecs ? walkSecs(wantB) : c.walkTime };
+        stand.customers.push(cuB);
+        events.push({ type: 'arrive', id: cuB.id, want: wantB, walkTime: cuB.walkUp, bus: true });
+      }
+      if (bus.left <= 0 && bus.queue <= 0) stand.bus = bus = null;
+    }
+    var busTake = bus && bus.left > 0 ? bus.take : 1;
     stand.spawnTimer += dt;
     while (stand.spawnTimer >= every - EPS) {
       stand.spawnTimer -= every;
@@ -2159,7 +2203,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       if (cu.phase !== 'shop') return;
       var crop = cu.want;
       if (stand.shelves[crop] > 0) {
-        var n = Math.min(Math.max(1, Math.round(CR.rng.int(rand, c.takeMin, c.takeMax) * bulk(stand) * dm.take)), stand.shelves[crop]);
+        var n = Math.min(Math.max(1, Math.round(CR.rng.int(rand, c.takeMin, c.takeMax) * bulk(stand) * dm.take * busTake)), stand.shelves[crop]);
         var got = takeFrom(stand, crop, n);
         cu.crop = crop; cu.n = n; cu.items = got.items;
         cu.spent = got.spent;
@@ -2458,7 +2502,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     state.factories.forEach(function (f) {
       if (!f.unlocked) return;
       var on = onMat != null && onMat === f.id;
-      f.boost = on ? B.mult : 1;
+      f.boost = (on ? B.mult : 1) * (state.frenzy || 1); // v102 Factory frenzy (a golden crop)
       var cap = outCap(state, f), t = makeTime(state, f), size = batchSize(state, f), ls = lines(f);
       if (!f.timers) f.timers = [];
       // Newest (dearest) line first, so it wins crops two lines share.
@@ -5623,6 +5667,13 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     var moving = p.moving;
 
     ellipse(ctx, sx, sy, 13, 6, 'rgba(0,0,0,0.22)');
+    // v102 Golden tractor: a gold glow and sparkles around you.
+    if (G.goldFx && G.goldFx.kind === 'tractor') {
+      var gp = 0.5 + 0.5 * Math.sin(time * 8), gr = 22 + (G.cfg.tools[G.tier].vehicle ? 18 : 0);
+      ctx.globalAlpha = 0.35 + 0.25 * gp; ellipse(ctx, sx, sy, gr + 6 * gp, (gr + 6 * gp) / 2, '#ffd740'); ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff8c4';
+      for (var gi = 0; gi < 6; gi++) { var ga = time * 3 + gi * TAU / 6, grise = (time * 40 + gi * 11) % 45; sparkle(ctx, sx + Math.cos(ga) * gr, sy - 8 - grise + Math.sin(ga) * gr * 0.4, 2 + 2.5 * (1 - grise / 45)); }
+    }
     var riding = G.cfg.tools[G.tier].vehicle;
     // In the Sky harvester you sit in its dome and the crops go in its hold.
     if (G.cfg.tools[G.tier].flying) { drawVehicle(ctx, G, sx, sy, f, time); return; }
@@ -6154,9 +6205,22 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.quadraticCurveTo(x, y, x, y + r);
     ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r); ctx.fill();
   }
+  function drawBus(ctx, G, it, time) {
+    var V = CR.vehicles;
+    var P = V.lorry({ cab: '#ffc400', box: 'van', body: '#ffd54a', stripe: '#f5b800' });
+    // Bus windows down both sides.
+    for (var k = -1.35; k < 0.7; k += 0.42) [[0.48, 0.49], [-0.49, -0.48]].forEach(function (b) { P.push({ a0: k, a1: k + 0.3, b0: b[0], b1: b[1], z0: 0.95, z1: 1.3, c: '#b3e5fc', bias: 0.03, noTop: true }); });
+    V.render(ctx, P, it.x, it.y, 1, 0, { scale: 1.15, shadow: [-1.55, 1.6, -0.5, 0.5] });
+    var s = ws(it.x, it.y, 70);
+    ctx.fillStyle = '#fff8c4';
+    for (var i = 0; i < 5; i++) { var a = time * 2 + i * TAU / 5, r = (time * 30 + i * 9) % 40; sparkle(ctx, s.x + Math.cos(a) * 50, s.y - r + Math.sin(a) * 10, 2 + 2 * (1 - r / 40)); }
+  }
   function drawGolden(ctx, G, time) {
-    var g = G.field.golden;
-    if (!g) return;
+    if (G.field.golden) drawGoldBeam(ctx, G.field.golden, time);
+    // v102 Chain of gold: a beam over each of the others too.
+    (G.field.goldChain || []).forEach(function (q) { drawGoldBeam(ctx, q, time); });
+  }
+  function drawGoldBeam(ctx, g, time) {
     var s = ws(g.x + 0.5, g.y + 0.5), p = 0.5 + 0.5 * Math.sin(time * 5), H = 150;
     var grd = ctx.createLinearGradient(0, s.y - H, 0, s.y);
     grd.addColorStop(0, 'rgba(255,215,64,0)'); grd.addColorStop(1, 'rgba(255,215,64,' + (0.35 + 0.2 * p) + ')');
@@ -6225,6 +6289,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // A golden crop is out: point at it (playtest 10: nobody saw one).
     if (asked) drawArrowTo(ctx, G, time, G.guide.x, G.guide.y);
     else if (G.field.golden) drawArrowTo(ctx, G, time, G.field.golden.x + 0.5, G.field.golden.y + 0.5);
+    else if (G.field.goldChain && G.field.goldChain.length) drawArrowTo(ctx, G, time, G.field.goldChain[0].x + 0.5, G.field.goldChain[0].y + 0.5);
     else if (G.tutArrow) drawArrowTo(ctx, G, time, G.tutArrow.x, G.tutArrow.y);
     else if (G.serveArrow && G.serveArrow.until > G.time) drawArrowTo(ctx, G, time, G.serveArrow.x, G.serveArrow.y);
     else if (G.homeArrow && !G.full) drawArrowTo(ctx, G, time, G.homeArrow.x, G.homeArrow.y);
@@ -6310,6 +6375,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (G.cfg.district && !G.district.open) { var dsp = G.districtSpot(); list.push({ x: dsp.x, y: dsp.y, h: 1, fn: S.drawDistrictSign }); }
     if (G.cfg.district && G.district.open) G.cfg.district.streets.forEach(function (sy) { list.push({ x: G.cfg.district.gateX + 0.15, y: sy + G.cfg.district.streetH / 2 + 0.2, h: 1, fn: S.drawDistrictGate, sy: sy }); });
     list.push({ x: G.truck.x + 0.3, y: G.truck.y, h: 1, fn: S.drawTruck });
+    // v102 Bus of buyers: a golden bus by the gate while its customers shop.
+    if (G.stand.bus) { var ent = G.cfg.stand.entrance; list.push({ x: ent.x - 3, y: ent.y + 0.9, h: 1, fn: drawBus }); }
     G.customers.order.forEach(function (c) { list.push({ x: c.x, y: c.y, h: 1, fn: S.drawCustomer, c: c }); });
     G.farmers.list.forEach(function (fm) { list.push({ x: fm.x, y: fm.y, h: 1, fn: S.drawFarmer, fm: fm }); });
     CR.barnView.farmRoadProps(G, list);
@@ -6339,7 +6406,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         var pop = G.ripePop.size ? G.ripePop.get(it.tx + ',' + it.ty) : 0;
         var bounce = 1;
         if (pop > 0) bounce = 1 + 0.35 * Math.sin((1 - pop) * Math.PI * 3) * pop;
-        if (f.golden && f.golden.x === it.tx && f.golden.y === it.ty) {
+        if ((f.golden && f.golden.x === it.tx && f.golden.y === it.ty) || (f.goldChain && f.goldChain.length && CR.field.isGolden(f, it.tx, it.ty))) {
           var gp = 0.5 + 0.5 * Math.sin(time * 7);
           ctx.globalAlpha = 0.45 + 0.3 * gp;
           ellipse(ctx, it.sx, it.sy + 4, 16 + 4 * gp, 8 + 2 * gp, '#ffd740');
@@ -9223,7 +9290,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     events.forEach(function (e) {
       var c = C.list[e.id];
       if (e.type === 'arrive') {
-        var from = { x: st.entrance.x - 0.8 + (rand() - 0.5) * 4, y: st.entrance.y };
+        var from = e.bus ? { x: st.entrance.x - 2.2 + (rand() - 0.5) * 0.6, y: st.entrance.y + 0.2 } : { x: st.entrance.x - 0.8 + (rand() - 0.5) * 4, y: st.entrance.y }; // v102: off the golden bus
         // Walk up to the shelf with the crop they came for.
         var ws0 = e.want && shelfFor(e.want);
         var to = ws0 ? G.shelfFront(ws0, rand(), rand()) : spot(G, rand);
@@ -9585,7 +9652,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       goals: $('goals'), goalCards: $('goalCards'), goalsDot: $('goalsDot'),
       order: $('order'), orderFill: $('orderFill'), orderText: $('orderText'), orderTime: $('orderTime'),
       next: $('next'), nextFill: $('nextFill'), nextText: $('nextText'), nextT: 0,
-      rush: $('rush'), rushMult: $('rushMult'), rushTime: $('rushTime'),
+      rush: $('rush'), rushMult: $('rushMult'), rushTime: $('rushTime'), rushName: $('rushName'),
       toasts: $('toasts'), toastQ: [], toastT: 0, goalsT: 0,
       last: {}, tab: 'gear', dotT: 0,
       // The field and factory chips picked in their tabs; the order the
@@ -10961,11 +11028,16 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
           }
         }
       }
-      var gs = G.golden;
-      ui.rush.hidden = !(gs && gs.rushLeft > 0);
-      if (!ui.rush.hidden) {
+      var gs = G.golden, gf = G.goldFx, rushOn = !!(gs && gs.rushLeft > 0);
+      // v102: the same banner shows a golden special (bus, tractor, frenzy,
+      // chain) when no rush runs.
+      ui.rush.hidden = !rushOn && !gf;
+      if (rushOn) {
         var rk = gs.rush + ':' + Math.ceil(gs.rushLeft) + (gs.waiting ? 'w' : '');
-        if (L.rush !== rk) { ui.rushMult.textContent = gs.rush + 'x'; ui.rushTime.textContent = gs.waiting ? 'sell at the stall' : clock(gs.rushLeft); L.rush = rk; }
+        if (L.rush !== rk) { ui.rushMult.textContent = gs.rush + 'x'; ui.rushName.textContent = 'Golden rush'; ui.rushTime.textContent = gs.waiting ? 'sell at the stall' : clock(gs.rushLeft); L.rush = rk; }
+      } else if (gf) {
+        var fk = gf.kind + ':' + gf.tag + ':' + Math.ceil(gf.left);
+        if (L.rush !== fk) { ui.rushMult.textContent = gf.tag; ui.rushName.textContent = gf.name; ui.rushTime.textContent = clock(Math.max(0, gf.left)); L.rush = fk; }
       }
       var a = G.board.active, orr = !a && G.orderResult && G.time < G.orderResult.until ? G.orderResult : null;
       ui.order.hidden = !a && !orr;
@@ -12424,6 +12496,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     var d = CR.input.dir(G.input);
     var wd = iso.screenDirToWorld(d.x, d.y);
     var speed = E.moveSpeed(G.tier, G.boots, G.engine);
+    if (G.goldFx && G.goldFx.kind === 'tractor') speed *= cfg.golden.tractor.speed; // v102 Golden tractor
     G.moveMax = speed;
     // Slower on a SERVE mat while its customers wait, so you stop on it.
     var sv = G.stand.serving;
@@ -12483,7 +12556,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // Carrying factory goods no longer stops harvesting (Tom 2026-09-27
     // 19:58: "you can't harvest when having canned food. Fix"); the crops
     // go on top of the goods and both unload at the stall.
-    var cuts = onFactoryLot(p) || dropSpot ? [] : CR.field.cut(field, p, G.tool, G.carry);
+    var cuts = onFactoryLot(p) || dropSpot ? [] : CR.field.cut(field, p, goldTool(), G.carry);
     // Standing in a bare patch: say the crops come back (playtest 9: new
     // players wandered for a minute before seeing that they regrow).
     var bare = !cuts.length && !dropSpot && !CR.field.isFull(G.carry) && G.stats.cut < 3000;
@@ -12530,6 +12603,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     factoryStep(dt);
     goalsStep(dt);
     goldenStep(dt);
+    goldFxStep(dt);
     if (cfg.harvestPay.share > 0) pickPayStep(dt);
     saveStep(dt);
     G.stackVisible = Math.max(0, G.carry.items.length - fx.countFlying('stack'));
@@ -12782,7 +12856,104 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     }
   }
 
+  // ---- v102 golden specials (Tom 2026-09-28 19:38 picked C, D, E, F) ----
+  // G.goldFx = { kind, name, left, time, tag }: the special running now.
+  G.goldFx = null;
+  function goldenSpecial() {
+    var g = cfg.golden, kinds = ['bus', 'tractor', 'chain'];
+    if (!(g.specialChance > 0) || G.rand() >= g.specialChance) return null;
+    if (G.factories.factories.some(function (f) { return f.unlocked; })) kinds.push('frenzy');
+    return kinds[Math.floor(G.rand() * kinds.length)];
+  }
+  // Your tool while the Golden tractor runs: wide x the reach.
+  function goldTool() {
+    if (!(G.goldFx && G.goldFx.kind === 'tractor')) return G.tool;
+    var t = {}, k;
+    for (k in G.tool) t[k] = G.tool[k];
+    t.reach = Math.max(1, G.tool.reach * cfg.golden.tractor.wide);
+    if (!t.arc) t.arc = 360;
+    return t;
+  }
+  G.goldTool = goldTool;
+  function endGoldFx() {
+    var fxk = G.goldFx && G.goldFx.kind;
+    if (fxk === 'frenzy') G.factories.frenzy = 1;
+    if (fxk === 'chain') field.goldChain = [];
+    if (fxk === 'bus' && G.stand.bus) G.stand.bus.left = 0;
+    G.goldFx = null;
+  }
+  function goldFxStep(dt) {
+    var gf = G.goldFx;
+    if (!gf) return;
+    if (!(ui.menuOpen && ui.menuOpen())) gf.left -= dt;
+    if (gf.kind === 'chain') gf.tag = gf.got + '/' + gf.n;
+    if (gf.left <= 0) {
+      if (gf.kind === 'chain' && gf.got < gf.n) {
+        var ms = iso.toScreen(G.player.x, G.player.y, 30);
+        fx.text(ms.x, ms.y - 110, 'Chain broken: ' + gf.got + ' of ' + gf.n, { color: '#ffe082', size: 18, max: 1.6, rise: 14 });
+      }
+      endGoldFx();
+    }
+  }
+  function startSpecial(kind, c) {
+    var g = cfg.golden, s = tileScreen(c.x, c.y), line;
+    endGoldFx();
+    fx.burst(s.x, s.y, ['#ffd700', '#fff59d', '#ffffff', '#ffb300'], 44, 1.6);
+    fx.ring(s.x, s.y, 'rgba(255,215,0,0.95)');
+    fx.shake(6); fx.sound.done(); fx.sound.tick(19, 0.12); fx.sound.tick(24, 0.24); fx.vibrate(cfg.feel.vibrateUnlock, 0);
+    if (kind === 'bus') {
+      G.stand.bus = { queue: g.bus.n, take: g.bus.take, left: g.bus.time, t: 0 };
+      G.goldFx = { kind: kind, name: 'Bus of buyers', tag: g.bus.take + 'x', left: g.bus.time, time: g.bus.time };
+      line = 'BUS OF BUYERS!<br>' + g.bus.n + ' customers buy ' + g.bus.take + 'x as much for ' + g.bus.time + ' s';
+    } else if (kind === 'tractor') {
+      var veh = !!cfg.tools[G.tier].vehicle;
+      G.goldFx = { kind: kind, name: veh ? 'Golden tractor' : 'Golden harvest', tag: g.tractor.speed + 'x', left: g.tractor.time, time: g.tractor.time };
+      line = (veh ? 'GOLDEN TRACTOR!' : 'GOLDEN HARVEST!') + '<br>' + g.tractor.speed + 'x fast, ' + g.tractor.wide + 'x wide for ' + g.tractor.time + ' s';
+    } else if (kind === 'frenzy') {
+      G.factories.frenzy = g.frenzy.mult;
+      G.goldFx = { kind: kind, name: 'Factory frenzy', tag: g.frenzy.mult + 'x', left: g.frenzy.time, time: g.frenzy.time };
+      line = 'FACTORY FRENZY!<br>Every factory runs ' + g.frenzy.mult + 'x fast for ' + g.frenzy.time + ' s';
+    } else {
+      var list = [], tries = 0;
+      while (list.length < g.chain.n && tries++ < 12) {
+        var t = CR.field.pickGolden(field, c.x + 0.5, c.y + 0.5, 6, G.rand, 60, function (tx, ty) {
+          return !(tx === c.x && ty === c.y) && !list.some(function (q) { return q.x === tx && q.y === ty; });
+        });
+        if (t) list.push({ x: t.x, y: t.y });
+      }
+      if (!list.length) { startSpecial('bus', c); return; }
+      field.goldChain = list;
+      G.goldFx = { kind: 'chain', name: 'Chain of gold', tag: '0/' + list.length, left: g.chain.life, time: g.chain.life, got: 0, n: list.length };
+      list.forEach(function (q) { var qs = tileScreen(q.x, q.y); fx.burst(qs.x, qs.y, ['#ffd700', '#fff59d', '#ffffff'], 14, 1); });
+      line = 'CHAIN OF GOLD!<br>Cut the ' + list.length + ' golden plants in ' + g.chain.life + ' s';
+    }
+    celebrate(null, true);
+    ui.showHint(line);
+    setTimeout(function () { ui.hideHint(); }, 3500);
+  }
+  G.startGolden = function (kind, tx, ty) { startSpecial(kind, { x: tx, y: ty }); }; // tests
+  function chainCut(c) {
+    var gf = G.goldFx, g = cfg.golden, s = tileScreen(c.x, c.y);
+    if (!gf || gf.kind !== 'chain') return;
+    gf.got++;
+    var pay = Math.max(g.luckyMin, Math.round(G.rates.money * g.chain.eachSeconds));
+    var done = gf.got >= gf.n;
+    if (done) pay += Math.max(g.luckyMin, Math.round(G.rates.money * g.chain.comboSeconds));
+    G.money += pay; G.windfall += pay; ui.bumpMoney();
+    fx.burst(s.x, s.y, ['#ffd700', '#fff59d', '#ffffff', '#ffb300'], done ? 44 : 24, done ? 1.6 : 1.1);
+    for (var i = 0; i < (done ? 14 : 6); i++) fx.fly('coin', s.x + (Math.random() - 0.5) * 60, s.y - Math.random() * 40, function () { return iso.toScreen(G.player.x, G.player.y, 30); }, { dur: 0.45 + i * 0.03, arc: 60, kind: 'pay' });
+    fx.sound.tick(14 + gf.got * 3);
+    if (done) {
+      celebrate('Chain of gold! +' + E.fmt(pay), true);
+      fx.sound.done();
+      G.goldFx = null; field.goldChain = [];
+    } else fx.text(s.x, s.y - 50, gf.got + '/' + gf.n + '  +' + E.fmt(pay), { color: '#ffe082', size: 18, max: 1.2 });
+  }
+
   function goldenCut(c) {
+    if (c.chain) { chainCut(c); return; }
+    var sp = goldenSpecial();
+    if (sp) { G.golden.found++; startSpecial(sp, c); return; }
     var r = CR.goals.goldenReward(G.golden, cfg, G.rand, G.rates.money, G.runEarned);
     var s = tileScreen(c.x, c.y);
     fx.burst(s.x, s.y, ['#ffd700', '#fff59d', '#ffffff', '#ffb300'], 44, 1.6);
