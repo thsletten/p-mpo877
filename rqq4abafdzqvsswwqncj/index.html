@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v99)</p>
+    <p class="ver">Crop Rush 1.0 (v100)</p>
   </div>
 </div>
 
@@ -1323,7 +1323,12 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // finding (Tom 2026-09-25 12:18), so a lucky harvest is 3 min of income,
     // but rarer: they came every 50-100 s (Tom 12:48 "appear too often").
     golden: { first: 120, every: [180, 360], life: 14, radius: 10,
-      rushChance: 0.5, rush: { mult: 7, time: 30 }, rushCapSeconds: 0, luckySeconds: 180, luckyCap: 0, luckyMin: 5, rushWait: 60 }, // Tom 2026-09-26: "no limit in earnings on golden crop" (rush cap was 120 s of income, lucky cap 0.5 of earnings)
+      rushChance: 0.5, rush: { mult: 7, time: 30 },
+      // v100 (Tom 2026-09-28 19:17: "an upgrade that increases the chance of
+      // one coming"): Lucky charm, each level makes the wait for the next
+      // golden crop charmSpeed shorter-running (1 + charmSpeed x level
+      // faster: 2.2x at level 10). For sale once you have found one.
+      charm: { baseCost: 2500, costGrowth: 3.2, maxLevel: 10, speed: 0.12 }, rushCapSeconds: 0, luckySeconds: 180, luckyCap: 0, luckyMin: 5, rushWait: 60 }, // Tom 2026-09-26: "no limit in earnings on golden crop" (rush cap was 120 s of income, lucky cap 0.5 of earnings)
 
     // Big goals (goals.js): the road through the whole game, kept across
     // farms. `kind` is what is measured (see goals.bigGoalValue) and `need`
@@ -1354,12 +1359,17 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // can be done with its shelf kept stocked (playtest 5).
       // The first order asks firstShare as much; a bonus is at least
       // incomeShare x bonus of your income over its time (playtest 9).
-      slots: 3, every: 45, reroll: 60, afterSold: 200, minItems: 10, firstShare: 0.4, incomeShare: 0.3, incomeCap: 3,
+      // v100 (Tom 2026-09-28 19:17, "orders are now way too OP"): a 5:00
+      // order paid up to 4.8x its goods on top of selling them, about 100 s
+      // of income, and the board kept one going all the time. Now it pays
+      // at most 1.2x its goods (was incomeShare 0.3, incomeCap 3, bonus
+      // 0.5/0.8/1.2).
+      slots: 3, every: 45, reroll: 60, afterSold: 200, minItems: 10, firstShare: 0.4, incomeShare: 0.1, incomeCap: 1,
       sizes: [
         // Shares cut (playtest 10: 200 carrots in 5:00 was out of reach).
-        { time: 90, share: 0.4, bonus: 0.5 },
-        { time: 180, share: 0.45, bonus: 0.8 },
-        { time: 300, share: 0.5, bonus: 1.2 }
+        { time: 90, share: 0.4, bonus: 0.3 },
+        { time: 180, share: 0.45, bonus: 0.45 },
+        { time: 300, share: 0.5, bonus: 0.6 }
       ]
     },
     // Away earnings: `share` of what your helpers made a second lately, for
@@ -1508,6 +1518,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     return config.player.speed * (1 + config.boots.speedBonus * Math.min(bootsLevel, config.boots.maxLevel));
   }
 
+  function charmCost(config, level) {
+    var c = config.golden.charm;
+    return level >= c.maxLevel ? Infinity : cost(c.baseCost, c.costGrowth, level);
+  }
+
   function bootsCost(config, level) {
     return level >= config.boots.maxLevel ? Infinity : cost(config.boots.baseCost, config.boots.costGrowth, level);
   }
@@ -1608,7 +1623,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     carryLimit: carryLimit,
     carryCost: carryCost,
     walkSpeed: walkSpeed,
-    bootsCost: bootsCost,
+    bootsCost: bootsCost, charmCost: charmCost,
     moveSpeed: moveSpeed,
     engineCost: engineCost,
     swathWidth: swathWidth,
@@ -4049,7 +4064,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     return {
       v: VERSION,
       money: 0,
-      tier: 0, toolLevel: 0, carryLevel: 0, boots: 0, engine: 0,
+      tier: 0, toolLevel: 0, carryLevel: 0, boots: 0, engine: 0, charm: 0,
       seeds: { carrot: true },
       seedLv: {},                   // crop -> better-seed level
       carry: {},                    // item -> how many you carry
@@ -7963,6 +7978,13 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         drawItem(ctx, 'tomato', G.cfg.crops.tomato, 3, cy - 4.5, 0.75, 0);
         ctx.restore();
       }
+    } else if (kind === 'clover') {
+      // Lucky charm (v100): a four-leaf clover, gold from level 5.
+      var leaf = arg >= 5 ? '#ffd54a' : '#43a047', edge = arg >= 5 ? '#f5b800' : '#2e7d32';
+      stroke(ctx, edge, 3, 0, 4, 6, 20);
+      [[-7, -7], [7, -7], [-7, 7], [7, 7]].forEach(function (d) { ellipse(ctx, d[0] * 0.95, d[1] * 0.95 - 2, 8, 8, edge); ellipse(ctx, d[0], d[1] - 2, 6.6, 6.6, leaf); });
+      ellipse(ctx, 0, -2, 3, 3, arg >= 5 ? '#fff59d' : '#81c784');
+      if (arg >= 10) { ctx.fillStyle = '#fff'; ctx.fillRect(12, -20, 3, 9); ctx.fillRect(9, -17, 9, 3); }
     } else if (kind === 'boots') {
       var col = BOOTS[arg >= 10 ? 4 : arg >= 7 ? 3 : arg >= 4 ? 2 : arg >= 1 ? 1 : 0];
       ctx.fillStyle = col;
@@ -9786,6 +9808,11 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
         list.push({ key: 'carry', icon: ['basket', cNext], title: cfg.carry.names[cMore ? cNext : cl],
           sub: cMore ? 'Carry ' + G.fmt(G.carry.limit) + ' → ' + G.fmt(cThen) : 'Carry ' + G.fmt(G.carry.limit) + '. The biggest there is',
           level: cl, max: cTop, price: P.carry(), done: !cMore, act: actions.carry });
+        // v100 Lucky charm (Tom 2026-09-28): golden crops come more often.
+        var ch = G.charm || 0, CH = cfg.golden.charm, chx = function (l) { return '+' + Math.round(CH.speed * l * 100) + '%'; };
+        list.push({ key: 'charm', icon: ['clover', ch], title: 'Lucky charm',
+          sub: !G.golden.found ? 'Find a golden crop first' : 'More golden crops ' + chx(ch) + (ch < CH.maxLevel ? ' → ' + chx(ch + 1) : ''),
+          level: ch, max: CH.maxLevel, price: P.charm(), locked: !G.golden.found, done: ch >= CH.maxLevel, act: actions.charm });
         var bs = function (l) { return '+' + Math.round(cfg.boots.speedBonus * 100 * l) + '%'; };
         list.push({ key: 'boots', icon: ['boots', G.boots], title: 'Boots',
           sub: 'Walk speed ' + bs(G.boots) + (G.boots < cfg.boots.maxLevel ? ' → ' + bs(G.boots + 1) : ''),
@@ -11123,7 +11150,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   var G = {
     cfg: cfg,
     field: field,
-    tier: 0, toolLevel: 0, carryLevel: 0, boots: 0, engine: 0,
+    tier: 0, toolLevel: 0, carryLevel: 0, boots: 0, engine: 0, charm: 0,
     lastPlot: 1,
     seeds: { carrot: true }, // crops you grow: one per open field (Tom 2026-09-25)
     seedLv: {},              // crop -> better-seed level: more crops per plant
@@ -12694,7 +12721,8 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // field near you, so you go and harvest it (the reward for harvesting,
     // Tom 12:18), with arrows pointing at it.
     var mdt = ui.menuOpen && ui.menuOpen() ? 0 : dt;
-    var ev = CR.goals.goldenTick(G.golden, cfg, G.rand, mdt, !!gt);
+    // Lucky charm (v100): the wait runs faster.
+    var ev = CR.goals.goldenTick(G.golden, cfg, G.rand, mdt, !!gt, mdt * (1 + cfg.golden.charm.speed * (G.charm || 0)));
     if (ev === 'spawn') {
       var t = CR.field.pickGolden(field, G.player.x, G.player.y, cfg.golden.radius, G.rand, 60, function (tx, ty) {
         // Well inside the screen, clear of the HUD at the top.
@@ -12920,7 +12948,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   function snapshot() {
     var St = CR.state, S = St.create(cfg);
     S.money = G.money; S.tier = G.tier; S.toolLevel = G.toolLevel; S.carryLevel = G.carryLevel;
-    S.boots = G.boots; S.engine = G.engine;
+    S.boots = G.boots; S.engine = G.engine; S.charm = G.charm;
     S.seeds = JSON.parse(JSON.stringify(G.seeds));
     S.seedLv = JSON.parse(JSON.stringify(G.seedLv));
     S.carry = St.countItems(G.carry.items);
@@ -12965,7 +12993,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     G.money = Math.max(0, S.money);
     G.tier = num(S.tier, 0, cfg.tools.length - 1);
     G.toolLevel = num(S.toolLevel, 0, cfg.tools[G.tier].levels);
-    G.carryLevel = Math.max(0, Math.min(cfg.carry.limits.length - 1, S.carryLevel | 0)); G.boots = num(S.boots, 0, cfg.boots.maxLevel); G.engine = num(S.engine, 0, cfg.engine.maxLevel);
+    G.carryLevel = Math.max(0, Math.min(cfg.carry.limits.length - 1, S.carryLevel | 0)); G.boots = num(S.boots, 0, cfg.boots.maxLevel); G.engine = num(S.engine, 0, cfg.engine.maxLevel); G.charm = num(S.charm, 0, cfg.golden.charm.maxLevel);
     Object.keys(S.seeds).forEach(function (c) { if (cfg.crops[c] && S.seeds[c]) G.seeds[c] = true; });
     Object.keys(S.seedLv).forEach(function (c) { if (cfg.crops[c]) G.seedLv[c] = num(S.seedLv[c], 0, cfg.seedUpgrade.yields.length - 1); });
     applySeeds();
@@ -13365,6 +13393,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       next: function () { var n = cfg.tools[G.tier + 1]; return n ? n.cost : Infinity; },
       carry: function () { return ECON.carryCost(cfg, G.carryLevel); },
       boots: function () { return ECON.bootsCost(cfg, G.boots); },
+      charm: function () { return ECON.charmCost(cfg, G.charm || 0); },
       engine: function () { return ECON.engineCost(cfg, G.engine); },
       grow: function (id) { var pl = field.plotById[id || G.lastPlot]; return ECON.plotGrowCost(cfg, pl.id, pl.level); },
       stand: function (k) { return CR.stand.upgradeCost(cfg, k, G.standLv[k]); },
@@ -13578,6 +13607,14 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // v72: say the new tier's name; a big cheer when the kind changes
       // (a basket, a crate, a wheelbarrow).
       celebrate(cfg.carry.names[G.carryLevel] + '! Carry ' + E.fmt(G.carry.limit), G.carryLevel === 1 || G.carryLevel === 4 || G.carryLevel === 7);
+    },
+    charm: function () {
+      if (!G.golden.found || (G.charm || 0) >= cfg.golden.charm.maxLevel || !pay(actions.prices.charm())) return;
+      G.charm = (G.charm || 0) + 1; bought();
+      var s = iso.toScreen(G.player.x, G.player.y);
+      fx.burst(s.x, s.y, ['#ffd700', '#fff59d', '#66bb6a'], 22, 1.2);
+      fx.text(s.x, s.y - 84, 'Luckier! +' + Math.round(cfg.golden.charm.speed * G.charm * 100) + '% golden crops', { color: '#ffe082', size: 20, max: 1 });
+      fx.sound.tick(14); fx.sound.tick(19, 0.06); fx.sound.tick(24, 0.12);
     },
     boots: function () {
       if (G.boots >= cfg.boots.maxLevel || !pay(actions.prices.boots())) return;
