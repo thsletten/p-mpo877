@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v84)</p>
+    <p class="ver">Crop Rush 1.0 (v85)</p>
   </div>
 </div>
 
@@ -914,7 +914,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // v79 (Tom 14:53): "closer, and then move apart when additional tills
       // are added". Each arm stands tillPad tiles out from the ends of the
       // tills you have; left and right are where they end up with all four.
-      u: { left: 31, right: 42, tillPad: 1.5, top: 36, armStart: 37.8, pitch: 1.6, mat: 1.2, spots: 16 },
+      u: { left: 31, right: 42, tillPad: 1.8, top: 36, armStart: 37.8, pitch: 1.8, mat: 1.2, spots: 16 },
       area: { x: 31, y: 36, w: 12, h: 14 },
       // Where the till and the coin pile stand, and where customers come from.
       // Tills in a row from the end of the stand (Tom: buy more tills and
@@ -955,8 +955,14 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // extra shelf you open (shelfBonus each) and Advertising levels.
       spawnInterval: 4,
       shelfBonus: 0.15,
-      fameBonus: 0.06, // v70: was 0.03; you buy about 2/3 as many things, each dearer (v69 had 0.0625)
+      fameBonus: 0.03, // v85 (Tom 2026-09-28): "3% more instead of 6%" (v70-v84 0.06)
       minSpawnInterval: 0.5,
+      // v85 (Tom 2026-09-28, too crowded early): each shop stage lets a
+      // customer come at most once every stageEvery[stage] s (Roadside
+      // stall .. Spaceport). Past that they come as bigger buyers, but only
+      // a little: x (capped / uncapped interval) ^ overflowPow.
+      stageEvery: [2, 1.4, 1, 0.75, 0.6, 0.5],
+      overflowPow: 0.35,
       tillTime: 1.0,       // seconds you stand at the till per customer
       // A seller earns the same as you; the only difference is time (Tom
       // 2026-09-25 12:48): serving takes a seller 2x as long.
@@ -1946,22 +1952,34 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   // Seconds between customers: the Advertising interval, shortened by
   // shelfBonus for each open shelf past the first and fameBonus for each
   // upgrade bought (stand.fame, set by the game), never below the minimum.
-  function spawnEvery(stand) {
+  function rawEvery(stand) {
     var c = stand.cfg, open = Object.keys(stand.shelves).length;
     var boost = 1 + c.shelfBonus * Math.max(0, open - 1) + c.fameBonus * (stand.fame || 0);
     return Math.max(c.minSpawnInterval, stand.spawnInterval / boost);
   }
+  // Each shop stage lets customers come at most once every stand.stageEvery
+  // s (v85, Tom 2026-09-28: "feels to crowded so early"; set from
+  // cfg.stageEvery by applyUpgrades).
+  function spawnEvery(stand) {
+    return Math.max(stand.stageEvery || stand.cfg.minSpawnInterval, rawEvery(stand));
+  }
+  // Past that cap the customers you would have had come as bigger buyers
+  // instead, but only a little bigger (Tom: "a tiny adjustment for bigger
+  // buyers"): x (capped / uncapped interval) ^ overflowPow.
+  function overflow(stand) {
+    return Math.pow(spawnEvery(stand) / rawEvery(stand), stand.cfg.overflowPow || 0);
+  }
 
   // stand.demand = { shelf id: x } from milestones (goals.boosts): x times
   // the customers for that shelf. They come more often, and once arrivals
-  // are at minSpawnInterval each one buys more instead (take), so a shelf's
+  // are at the stage's cap each one buys more instead (take), so a shelf's
   // demand is always x times its share.
   function demandOf(stand) {
     var c = stand.cfg, open = Object.keys(stand.shelves), d = stand.demand || {}, sum = 0;
     open.forEach(function (id) { sum += d[id] || 1; });
     var mean = open.length ? sum / open.length : 1, base = spawnEvery(stand);
-    var every = Math.max(Math.min(base, c.minSpawnInterval), base / mean);
-    return { every: every, take: mean * every / base, mean: mean };
+    var every = Math.max(Math.min(base, stand.stageEvery || c.minSpawnInterval), base / mean);
+    return { every: every, take: mean * every / base * overflow(stand), mean: mean };
   }
   function pickShelf(stand, open, rand) {
     var d = stand.demand || {}, sum = 0, i;
@@ -2142,12 +2160,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var s = config.stand, u = s.upgrades;
     stand.capacity = capacityAt(config, levels.shelves);
     stand.spawnInterval = Math.max(s.minSpawnInterval, s.spawnInterval * Math.pow(u.signboard.mult, levels.signboard));
+    stand.stageEvery = s.stageEvery ? Math.max(s.minSpawnInterval, s.stageEvery[stage(config, levels.shelves)]) : s.minSpawnInterval;
     stand.tillTime = s.tillTime * Math.pow(u.till.mult, levels.till);
     stand.priceMultiplier = s.priceMultiplier + u.prices.add * levels.prices;
   }
 
   CR.stand = {
-    maxLevel: maxLevel, upgradeCost: upgradeCost, stage: stage, tierSpan: tierSpan,
+    maxLevel: maxLevel, upgradeCost: upgradeCost, stage: stage, tierSpan: tierSpan, rawEvery: rawEvery, overflow: overflow,
     create: create,
     openShelf: openShelf,
     stock: stock,
