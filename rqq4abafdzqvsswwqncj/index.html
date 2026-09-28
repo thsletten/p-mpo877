@@ -626,7 +626,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v85)</p>
+    <p class="ver">Crop Rush 1.0 (v86)</p>
   </div>
 </div>
 
@@ -914,7 +914,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // v79 (Tom 14:53): "closer, and then move apart when additional tills
       // are added". Each arm stands tillPad tiles out from the ends of the
       // tills you have; left and right are where they end up with all four.
-      u: { left: 31, right: 42, tillPad: 1.8, top: 36, armStart: 37.8, pitch: 1.8, mat: 1.2, spots: 16 },
+      u: { left: 31, right: 42, tillPad: 1.8, top: 36, armStart: 37.8, pitch: 1.8, mat: 1.2, dock: 1.4, spots: 16 },
       area: { x: 31, y: 36, w: 12, h: 14 },
       // Where the till and the coin pile stand, and where customers come from.
       // Tills in a row from the end of the stand (Tom: buy more tills and
@@ -6415,6 +6415,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     // A mat along the outside of each arm of the U (v76).
     var glow = G.carry.items.length ? 0.55 + 0.35 * Math.sin(time * 6) : 0.3;
     G.stallMats.forEach(function (m) {
+      if (m.dock) { drawDock(ctx, m, glow, time, G.carry.items.length > 0); return; }
       ctx.globalAlpha = glow;
       ctx.fillStyle = '#7ed957';
       quadPath(ctx, m.x + 0.15, m.y + 0.1, m.w - 0.3, m.h - 0.2, 1); ctx.fill();
@@ -6439,6 +6440,57 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
         ctx.beginPath(); ctx.ellipse(ps.x, ps.y, 26, 13, 0, -Math.PI / 2, -Math.PI / 2 + TAU * f); ctx.stroke();
       }
     });
+  }
+
+  // A loading dock at an end of the till row (v86): a concrete slab with a
+  // hazard-striped edge, a wooden pallet on top and a green arrow that
+  // bounces over it while you carry something.
+  function drawDock(ctx, m, glow, time, carrying) {
+    var x = m.x, y = m.y, w = m.w, h = m.h, t = 0.17;
+    box(ctx, x, y, w, h, 0, 3, '#c9c3b8', '#8f897e', '#a8a296');
+    // Yellow and black stripes round the edge.
+    function edge(x0, y0, dx, dy, ox, oy, len) {
+      var n = Math.max(4, Math.round(len / 0.25));
+      for (var i = 0; i < n; i++) {
+        var a = i / n, b = (i + 1) / n;
+        var p1 = ws(x0 + dx * a, y0 + dy * a, 3), p2 = ws(x0 + dx * b, y0 + dy * b, 3);
+        var p3 = ws(x0 + dx * b + ox, y0 + dy * b + oy, 3), p4 = ws(x0 + dx * a + ox, y0 + dy * a + oy, 3);
+        ctx.fillStyle = i % 2 ? '#2b2b2b' : '#ffc928';
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.lineTo(p3.x, p3.y); ctx.lineTo(p4.x, p4.y); ctx.closePath(); ctx.fill();
+      }
+    }
+    edge(x, y, w, 0, 0, t, w); edge(x, y + h - t, w, 0, 0, t, w);
+    edge(x, y + t, 0, h - 2 * t, t, 0, h); edge(x + w - t, y + t, 0, h - 2 * t, t, 0, h);
+    // Glows green under the pallet while you carry.
+    if (carrying) {
+      ctx.globalAlpha = glow; ctx.fillStyle = '#7ed957';
+      quadPath(ctx, x + t, y + t, w - 2 * t, h - 2 * t, 3); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    // The pallet: three runners and planks across them.
+    var px = x + 0.32, py = y + 0.32, pw = w - 0.64, ph = h - 0.64, i;
+    for (i = 0; i < 3; i++) box(ctx, px + i * (pw - 0.18) / 2, py, 0.18, ph, 3, 4, '#a8733d', '#6e4620', '#8a5a2b');
+    for (i = 0; i < 4; i++) {
+      var q = py + i * ph / 4 + 0.03;
+      box(ctx, px, q, pw, ph / 4 - 0.08, 7, 2, i % 2 ? '#d9a466' : '#e2b073', '#8a5a2b', '#a06a35');
+    }
+    // DROP painted on the planks.
+    var c = ws(x + w / 2, y + h / 2, 9);
+    ctx.save();
+    ctx.translate(c.x, c.y); ctx.scale(1, 0.55);
+    ctx.fillStyle = 'rgba(90,50,15,0.8)'; ctx.font = '700 12px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('DROP', 0, 0);
+    ctx.restore();
+    // The arrow: bouncing and bright while you carry, faint otherwise.
+    var bob = carrying ? Math.abs(Math.sin(time * 5)) * 9 : 0, ay = c.y - 26 - bob;
+    ctx.globalAlpha = carrying ? 1 : 0.45;
+    ctx.beginPath();
+    ctx.moveTo(c.x - 6, ay - 12); ctx.lineTo(c.x + 6, ay - 12); ctx.lineTo(c.x + 6, ay - 2);
+    ctx.lineTo(c.x + 12, ay - 2); ctx.lineTo(c.x, ay + 10); ctx.lineTo(c.x - 12, ay - 2); ctx.lineTo(c.x - 6, ay - 2);
+    ctx.closePath();
+    ctx.fillStyle = carrying ? '#7ed957' : '#ffffff'; ctx.fill();
+    ctx.strokeStyle = carrying ? '#2e7d32' : 'rgba(0,0,0,0.35)'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   // A floor mat with a dashed edge and a word on it.
@@ -10074,13 +10126,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       }
       var n = G.carry.items.length, lim = G.carry.limit;
       if (L.n !== n || L.lim !== lim) {
-        // Goods ride on top of a full basket; count them apart (playtest 9:
-        // "31 / 25" read as a bug).
-        var ci = G.carry.items, g = 0;
-        for (var gi = ci.length - 1; gi >= 0 && ci[gi].indexOf(':') >= 0; gi--) g++;
-        var gf = g && CR.factory.byId(G.factories, G.item.shelf(ci[ci.length - 1]));
-        var cn = n - g;
-        ui.carryText.textContent = G.fmt(cn) + ' / ' + G.fmt(lim) + (g ? ' + ' + G.fmt(g) + ' ' + (gf ? gf.cfg.goods : 'goods') : '');
+        // Crops and goods fill the same bar (Tom 2026-09-28).
+        var cn = n;
+        ui.carryText.textContent = G.fmt(cn) + ' / ' + G.fmt(lim);
         ui.carryFill.style.width = Math.min(100, cn / lim * 100) + '%';
         ui.carryBox.classList.toggle('full', cn >= lim);
         L.n = n; L.lim = lim;
@@ -10309,7 +10357,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     shelfBump: {},
     // You drop on the mat along the outside of either arm; unloadMat and
     // unloadZone are whichever of the two is nearer you (pickMat).
-    stallMats: [{ x: 0, y: 0, w: 0, h: 0 }, { x: 0, y: 0, w: 0, h: 0 }],
+    // v86 (Tom 2026-09-28): plus a loading dock at each end of the till row.
+    stallMats: [{ x: 0, y: 0, w: 0, h: 0 }, { x: 0, y: 0, w: 0, h: 0 },
+      { x: 0, y: 0, w: 0, h: 0, dock: true }, { x: 0, y: 0, w: 0, h: 0, dock: true }],
     unloadMat: { x: 0, y: 0, w: 0, h: 0 },
     // Forgiving: a little past the mat counts too.
     unloadZone: { x: 0, y: 0, w: 0, h: 0 },
@@ -10395,6 +10445,10 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
     var mL = G.stallMats[0], mR = G.stallMats[1];
     mL.x = U.left - U.mat; mL.y = U.armStart; mL.w = U.mat; mL.h = (L - 1) * U.pitch + 1;
     mR.x = U.right + 1; mR.y = U.armStart; mR.w = U.mat; mR.h = (R - 1) * U.pitch + 1;
+    // The docks: in line with the tills, just above the top of each arm.
+    var dL = G.stallMats[2], dR = G.stallMats[3], D = U.dock;
+    dL.x = U.left - 0.2; dR.x = U.right - 0.2;
+    dL.y = dR.y = U.top - 0.3; dL.w = dL.h = dR.w = dR.h = D;
     pickMat();
   }
   // unloadMat / unloadZone: the arm's mat nearer the player.
@@ -10795,12 +10849,13 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       var z = G.cashierZones[ti];
       if (z && tl.queue.length && !tl.keeper && !drop) consider(z.x + z.w / 2, z.y + z.h / 2, pc.serve);
     });
-    // Goods ride on top of a full basket now (v49), and a DROP pad pulls you
-    // in when you carry what it takes (playtest 9: stood just off it).
+    // The pallet pulls you in while you have room for its goods (they share
+    // your carry since v86), and a DROP pad when you carry what it takes
+    // (playtest 9: stood just off it).
     G.factories.factories.forEach(function (f) {
       if (!f.unlocked) return;
       var z = f.cfg.pickup, h = f.cfg.hopper, ins = CR.factory.inputsOf(f);
-      if (f.out.length) consider(z.x + z.w / 2, z.y + z.h / 2, pc.pallet);
+      if (f.out.length && !CR.field.isFull(G.carry)) consider(z.x + z.w / 2, z.y + z.h / 2, pc.pallet);
       if (Math.hypot(h.x + h.w / 2 - p.x, h.y + h.h / 2 - p.y) < pc.pallet && G.carry.items.some(function (it) { return ins[it]; })) consider(h.x + h.w / 2, h.y + h.h / 2, pc.pallet);
     });
     if (!best || bd < 0.06) return;
@@ -11174,11 +11229,9 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
   function pickupStep(f, dt) {
     var p = G.player, z = f.cfg.pickup;
     var inp = CR.factory.inputsOf(f);
-    // Goods ride on top of your crops, up to a basketful of goods however
-    // full the basket is (playtest 8: walking past the fields refilled the
-    // basket and the pad refused it, so jars were a fight to collect).
-    // Goods sit on top, so count down from the top (stacks run to 100K+).
-    var goods = function () { var n = 0, a = G.carry.items; for (var i = a.length - 1; i >= 0 && a[i].indexOf(':') >= 0; i--) n++; return n; };
+    // Goods and crops share one carry (Tom 2026-09-28: "products should
+    // also fill the same bar as crops"): goods come only while there is room.
+    var goods = function () { return G.carry.items.length; };
     // No swapping first: the goods come at once, whatever you carry
     // (playtest 10: carrots went into the hopper first, and a tester who
     // stepped off early "left with carrots" and never found out how).
@@ -11195,7 +11248,7 @@ details.testing summary { cursor: pointer; font-size: 14px; font-weight: 700; co
       // jars share the basket).
       if (!G.jarTaught) {
         G.jarTaught = true; G.jarArrow = null;
-        ui.showHint(cap(f.cfg.goods) + ' ride on top of your basket.<br>Take them to the stall: they sell for ' + f.cfg.valueMult + 'x.');
+        ui.showHint(cap(f.cfg.goods) + ' share your basket with crops.<br>Take them to the stall: they sell for ' + f.cfg.valueMult + 'x.');
         setTimeout(function () { ui.hideHint(); }, 5000);
       }
       flyOrLand(item, from, function () { return CR.render.stackTop(G); }, { dur: 0.28, arc: 50, kind: 'stack' },
