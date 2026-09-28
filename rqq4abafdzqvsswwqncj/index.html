@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v92)</p>
+    <p class="ver">Crop Rush 1.0 (v93)</p>
   </div>
 </div>
 
@@ -823,20 +823,22 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     // twelve fields, alternating arms, each growing its own crop; a field
     // costs what that crop's seeds did (crops[c].seed). Later fields start
     // longer (length0 x1.8 per field) and later crops sell for 3x what
-    // they did when every field could grow the best crop.
+    // they did when every field could grow the best crop. Every field starts
+    // at length 8 (Tom 2026-09-28 12:13: "all starting plots should be the
+    // same size"; they were 8, 14, 26 .. x1.8 per field).
     plots: [
       { id: 1, arm: 'right', slot: 0, crop: 'carrot', cost: 0, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 150, costGrowth: 2.4 } },
-      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 14, growth: 1.35, maxLevel: 40, costBase: 1550, costGrowth: 2.4 } },
-      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 26, growth: 1.35, maxLevel: 40, costBase: 37500, costGrowth: 2.4 } },
-      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 47, growth: 1.35, maxLevel: 40, costBase: 125000, costGrowth: 2.4 } },
-      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 84, growth: 1.35, maxLevel: 40, costBase: 1.25e6, costGrowth: 2.4 } },
-      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 151, growth: 1.35, maxLevel: 40, costBase: 2.4e6, costGrowth: 2.4 } },
-      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 272, growth: 1.35, maxLevel: 40, costBase: 2.45e7, costGrowth: 2.4 } },
-      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 490, growth: 1.35, maxLevel: 40, costBase: 9.0e7, costGrowth: 2.4 } },
-      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 882, growth: 1.35, maxLevel: 40, costBase: 2.4e8, costGrowth: 2.4 } },
-      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 1587, growth: 1.35, maxLevel: 40, costBase: 9.0e8, costGrowth: 2.4 } },
-      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 2856, growth: 1.35, maxLevel: 40, costBase: 2.1e9, costGrowth: 2.4 } },
-      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 5141, growth: 1.35, maxLevel: 40, costBase: 6.5e9, costGrowth: 2.4 } }
+      { id: 2, arm: 'right', slot: 1, crop: 'tomato', cost: 250, /* Tom 2026-09-26 (was 60, v54; 100 before) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1550, costGrowth: 2.4 } },
+      { id: 3, arm: 'right', slot: 2, crop: 'corn', cost: 5000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 37500, costGrowth: 2.4 } },
+      { id: 4, arm: 'right', slot: 3, crop: 'pumpkin', cost: 20000, /* was 15,000 (playtest 13: a gap from 1.5K) */ grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 125000, costGrowth: 2.4 } },
+      { id: 5, arm: 'right', slot: 4, crop: 'sunflower', cost: 240000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 1.25e6, costGrowth: 2.4 } },
+      { id: 6, arm: 'right', slot: 5, crop: 'wheat', cost: 480000, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e6, costGrowth: 2.4 } },
+      { id: 7, arm: 'right', slot: 6, crop: 'berry', cost: 3.2e6, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.45e7, costGrowth: 2.4 } },
+      { id: 8, arm: 'right', slot: 7, crop: 'melon', cost: 1.6e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.0e7, costGrowth: 2.4 } },
+      { id: 9, arm: 'right', slot: 8, crop: 'grape', cost: 3.1e7, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.4e8, costGrowth: 2.4 } },
+      { id: 10, arm: 'right', slot: 9, crop: 'cocoa', cost: 1.3e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 9.0e8, costGrowth: 2.4 } },
+      { id: 11, arm: 'right', slot: 10, crop: 'coffee', cost: 3.6e8, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 2.1e9, costGrowth: 2.4 } },
+      { id: 12, arm: 'right', slot: 11, crop: 'apple', cost: 1.2e9, grow: { length0: 8, growth: 1.35, maxLevel: 40, costBase: 6.5e9, costGrowth: 2.4 } }
     ],
 
     // Factories turn any crop you drop in their hopper into jars worth more,
@@ -6161,7 +6163,9 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     var f = G.field, i;
     f.plots.forEach(function (plot) { if (boxHits(plot, box)) drawPlotGround(ctx, G, plot, box, far); });
     S.drawFactoryYard(ctx, G, time);
-    G.factories.factories.forEach(function (fa) { S.drawFactoryGround(ctx, G, fa, time); });
+    // Shut, the district is just grass (Tom 2026-09-28 12:11: subtle until
+    // it is unlocked, only a small sign hinting at an expansion).
+    if (G.district.open) G.factories.factories.forEach(function (fa) { S.drawFactoryGround(ctx, G, fa, time); });
     CR.barnView.drawBarnGround(ctx, G, time);
     CR.barnView.drawBelts(ctx, G, time);
     CR.barnView.drawFarmRoad(ctx, G, time);
@@ -6263,12 +6267,13 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     });
     G.factories.factories.forEach(function (fa) {
       var c = fa.cfg;
+      if (!G.district.open) return;
       var bd = CR.factory.body(G.cfg, fa);
       list.push({ x: bd.x + bd.w / 2, y: bd.y + bd.h / 2, h: 1, fn: S.drawFactory, f: fa });
       if (fa.unlocked) list.push({ x: c.pickup.x + 0.2, y: c.pickup.y - 0.6, h: 1, fn: S.drawJarPallet, f: fa });
     });
     if (G.cfg.district && !G.district.open) { var dsp = G.districtSpot(); list.push({ x: dsp.x, y: dsp.y, h: 1, fn: S.drawDistrictSign }); }
-    if (G.cfg.district) G.cfg.district.streets.forEach(function (sy) { list.push({ x: G.cfg.district.gateX + 0.15, y: sy + G.cfg.district.streetH / 2 + 0.2, h: 1, fn: S.drawDistrictGate, sy: sy }); });
+    if (G.cfg.district && G.district.open) G.cfg.district.streets.forEach(function (sy) { list.push({ x: G.cfg.district.gateX + 0.15, y: sy + G.cfg.district.streetH / 2 + 0.2, h: 1, fn: S.drawDistrictGate, sy: sy }); });
     list.push({ x: G.truck.x + 0.3, y: G.truck.y, h: 1, fn: S.drawTruck });
     G.customers.order.forEach(function (c) { list.push({ x: c.x, y: c.y, h: 1, fn: S.drawCustomer, c: c }); });
     G.farmers.list.forEach(function (fm) { list.push({ x: fm.x, y: fm.y, h: 1, fn: S.drawFarmer, fm: fm }); });
@@ -7294,6 +7299,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   function drawFactoryYard(ctx, G, time) {
     init();
     var D = G.cfg.district, yx = G.cfg.yard.x;
+    if (!G.district.open) return;
     if (D) {
       ctx.fillStyle = '#8f9396'; quadPath(ctx, D.x - 0.2, D.y - 0.2, yx - D.x + 0.2, D.h + 0.4, 0); ctx.fill();
       ctx.fillStyle = '#a7abae'; quadPath(ctx, D.x, D.y, yx - D.x, D.h, 0); ctx.fill();
@@ -7349,34 +7355,23 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     ctx.fillText('FACTORY DISTRICT', 0, 0); ctx.restore();
   }
   // The closed district's sign at its first gate (v92): what it still
-  // needs, then a sign you pay on like a field's.
+  // needs; it opens by itself when every line is ticked.
   function drawDistrictSign(ctx, G) {
     if (G.district.open) return;
+    // Tom 2026-09-28 12:11: no list of what's needed, only a small sign
+    // hinting at an expansion: a stake with a board and an arrow.
     var s = G.districtSpot(), sc = ws(s.x, s.y), fc = G.cfg.factories[0];
-    if (G.districtReady()) {
-      drawSignBoard(ctx, G, sc.x, sc.y, 'Factory district', G.district.cost, G.district.paid, function (x, y) { factoryIcon(ctx, x, y, 0.28, fc); },
-        'Opens the district: build factories that turn crops into goods');
-      return;
-    }
-    var needs = G.districtNeeds();
-    stroke(ctx, '#6b3f18', 4, sc.x - 30, sc.y, sc.x - 30, sc.y - 30);
-    stroke(ctx, '#6b3f18', 4, sc.x + 30, sc.y, sc.x + 30, sc.y - 30);
-    shadow(ctx, sc.x, sc.y + 2, 34, 8);
-    var bw = 150, bh = 22 + needs.length * 16, left = sc.x - bw / 2, top = sc.y - 26 - bh;
-    ctx.fillStyle = '#7d4a1f'; roundRect(ctx, left - 3, top - 3, bw + 6, bh + 6, 9); ctx.fill();
-    ctx.fillStyle = '#f7dca4'; roundRect(ctx, left, top, bw, bh, 7); ctx.fill();
-    ctx.font = '700 12px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#4a2c12'; ctx.fillText('FACTORY DISTRICT OPENS WITH', sc.x, top + 11);
-    ctx.textAlign = 'left';
-    needs.forEach(function (n, i) {
-      var y = top + 27 + i * 16;
-      ctx.fillStyle = n.ok ? '#43a047' : '#bdbdbd'; ctx.beginPath(); ctx.arc(left + 14, y, 6, 0, TAU); ctx.fill();
-      if (n.ok) { ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(left + 11, y); ctx.lineTo(left + 13.5, y + 2.5); ctx.lineTo(left + 17.5, y - 2.5); ctx.stroke(); }
-      ctx.fillStyle = n.ok ? '#2e7d32' : '#4a2c12'; ctx.fillText(n.name, left + 26, y + 0.5);
-    });
-    coin(ctx, left + bw - 44, top + 27, 0.7);
-    ctx.fillStyle = '#4a2c12'; ctx.fillText(G.fmt(G.district.cost), left + bw - 36, top + 27.5);
+    stroke(ctx, '#6b3f18', 3, sc.x, sc.y, sc.x, sc.y - 30);
+    shadow(ctx, sc.x, sc.y + 1, 12, 4);
+    var bw = 66, bh = 22, left = sc.x - bw / 2, top = sc.y - 48;
+    ctx.fillStyle = '#7d4a1f'; roundRect(ctx, left - 2, top - 2, bw + 4, bh + 4, 6); ctx.fill();
+    ctx.fillStyle = '#f7dca4'; roundRect(ctx, left, top, bw, bh, 5); ctx.fill();
+    factoryIcon(ctx, left + 12, top + 11, 0.2, fc);
+    ctx.fillStyle = '#4a2c12'; ctx.font = '700 10px Fredoka, system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText('SOON', left + 24, top + 11.5);
+    ctx.fillStyle = '#7d4a1f'; ctx.beginPath(); ctx.moveTo(left + bw - 4, top + 6); ctx.lineTo(left + bw - 12, top + 11); ctx.lineTo(left + bw - 4, top + 16); ctx.closePath(); ctx.fill();
   }
+
 
   function lampPost(ctx, x, y, time, glow, pole) {
     var b = ws(x, y, 0), t = ws(x, y, 44);
@@ -9448,10 +9443,20 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     { id: 'crops', label: 'More crops',
       text: function (G) {
         var s = next(G);
+        if (s && G.money >= s.left) return 'You can buy the ' + s.name + ' now: follow the arrows to its sign';
         return s ? 'New crops sell for more: save up for the ' + s.name + ' (' + G.fmt(Math.min(G.money, s.left)) + '/' + G.fmt(s.left) + ')'
           : 'New crops sell for more';
       },
       target: function (G) { var s = next(G); return s && G.money >= s.left ? s : null; },
+      // Tom 2026-09-28 12:10: "this message don't need to be there all the
+      // time, make it disappear after 15 sec". It comes back for 15 s once
+      // you can pay for the field, with the arrows.
+      shown: function (G, t) {
+        var s = next(G), can = !!(s && G.money >= s.left);
+        if (can && G.tutCanAt == null) G.tutCanAt = t;
+        if (!can) G.tutCanAt = null;
+        return t < 15 || (G.tutCanAt != null && t - G.tutCanAt < 15);
+      },
       done: function (G) { return G.field.plots.filter(function (pl) { return pl.unlocked; }).length > 1; } }
   ];
   // The next field you can buy, as its sign.
@@ -9480,6 +9485,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       return;
     }
     G.tutArrow = st.target(G);
+    if (st.shown && !st.shown(G, G.tutT)) { ui.tutCard(null); return; }
     ui.tutCard({ n: G.tut + 1, of: STEPS.length, label: st.label, text: st.text(G) });
   }
 
@@ -12467,7 +12473,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     truckStep(dt);
     farmerStep(dt);
     barnStep(dt);
-    districtStep(dt);
+    districtStep();
     workerStep(dt);
     standStep(dt);
     factoryStep(dt);
@@ -12784,7 +12790,6 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       // farmers, and the first came at 7-11 min for two testers).
       else if (!(G.farmers.count[pl.id] > 0)) offer({ name: cfg.crops[pl.crop].name + ' farmer', price: actions.prices.farmer(pl.id), paid: 0, tab: 'farmers', icon: ['farmer', pl.crop], buy: function () { actions.hireFarmer(pl.id); } });
     });
-    if (!G.district.open && G.districtReady()) offer({ name: 'Factory district', price: G.district.cost, paid: G.district.paid, sign: 'district', icon: ['factory', cfg.factories[0].id] });
     // The first seller.
     if (!G.stand.tills.some(function (t) { return t.keeper; })) offer({ name: 'Seller', price: actions.prices.keeper(), paid: 0, tab: 'stand', icon: ['seller', 0], buy: function () { actions.hireKeeper(); } });
     G.factories.factories.forEach(function (f) {
@@ -12814,11 +12819,6 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       if (!pl || pl.unlocked) return null;
       var pt = CR.field.plotPoint(pl, Math.min(pl.length / 2, 5), pl.width / 2);
       return { x: pt.x, y: pt.y, name: cfg.crops[pl.crop].name + ' field', left: pl.cost - pl.paid, icon: ['crop', pl.crop] };
-    }
-    if (key === 'district') {
-      var ds = G.districtSpot();
-      return G.district.open || !G.districtReady() ? null
-        : { x: ds.x, y: ds.y, name: 'Factory district', left: G.district.cost - G.district.paid, icon: ['factory', cfg.factories[0].id] };
     }
     var f = G.factories.factories.filter(function (q) { return 'fac' + q.id === key; })[0];
     if (!f || f.unlocked || !G.district.open) return null;
@@ -12878,7 +12878,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (!g) {
       G.guideKey = null;
       [].concat(field.plots.map(function (pl) { return 'plot' + pl.id; }),
-        G.factories.factories.map(function (f) { return 'fac' + f.id; }), ['barn', 'district']).forEach(function (k) {
+        G.factories.factories.map(function (f) { return 'fac' + f.id; }), ['barn']).forEach(function (k) {
         var s = G.signAt(k);
         if (s && G.money >= s.left && (!g || s.left < g.left)) { g = s; g.key = k; }
       });
@@ -13128,38 +13128,26 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       { name: o.farmers > 1 ? o.farmers + ' farmers' : 'A farmer', ok: G.farmers.list.length >= o.farmers }
     ];
   };
+  G.districtNeedsAll = function () {
+    return G.districtNeeds().concat([{ name: E.fmt(G.district.cost) + ' coins', ok: G.money >= G.district.cost }]);
+  };
   G.districtReady = function () { return G.districtNeeds().every(function (n) { return n.ok; }); };
   G.districtSpot = function () { var D = cfg.district; return { x: D.gateX + 3.2, y: D.streets[0] + 0.3 }; };
-  function districtStep(dt) {
+  // Tom 2026-09-28 12:09 picked "just have 1,000": it opens by itself,
+  // with nothing paid, once the list is done and you hold the coins.
+  function districtStep() {
     var d = G.district;
-    if (d.open) return;
-    var p = G.player, s = G.districtSpot();
-    if (Math.hypot(p.x - s.x, p.y - s.y) > cfg.economy.signReach) return;
-    if (!G.districtReady() && !G.free) {
-      if (G.time - (d.saidNeed || -9) > 2.5) {
-        d.saidNeed = G.time;
-        var miss = G.districtNeeds().filter(function (n) { return !n.ok; }).map(function (n) { return n.name.toLowerCase(); });
-        var sn = iso.toScreen(p.x, p.y, 30);
-        fx.text(sn.x, sn.y - 150, 'First get: ' + miss.join(', '), { color: '#ffcdd2', size: 16, max: 2.2, rise: 8 });
-      }
-      return;
-    }
-    var spent = G.free ? d.cost - d.paid : payIn(d, dt);
-    if (G.free) d.paid = d.cost; else G.money -= spent;
-    if (spent > 0 && Math.random() < dt * 14) {
-      var sp = iso.toScreen(p.x, p.y, 30), sm = iso.toScreen(cfg.district.gateX, s.y, 40);
-      fx.fly('coin', sp.x, sp.y, function () { return sm; }, { dur: 0.3, arc: 40, kind: 'pay' });
-      fx.sound.coin(-5);
-    }
-    if (d.paid >= d.cost - 1e-9) {
-      d.open = true; bought();
-      cfg.district.streets.forEach(function (sy) { grandOpening(cfg.district.gateX, sy, ['#3949ab', '#ffeb3b']); });
-      var sc = iso.toScreen(cfg.district.gateX, s.y, 60);
-      fx.text(sc.x, sc.y - 40, 'Factory district open!', { color: '#ffeb3b', size: 26, max: 1.6 });
-      fx.shake(8); fx.sound.done(); fx.vibrate(cfg.feel.vibrateUnlock, 0);
-      ui.toast('Factory district open!', 'Build your first factory: it turns crops into goods worth much more.', ['factory', cfg.factories[0].id]);
-    }
+    if (d.open || !(G.free || (G.districtReady() && G.money >= d.cost))) return;
+    d.open = true; d.paid = d.cost; bought();
+    var s = G.districtSpot();
+    cfg.district.streets.forEach(function (sy) { grandOpening(cfg.district.gateX, sy, ['#3949ab', '#ffeb3b']); });
+    var sc = iso.toScreen(cfg.district.gateX, s.y, 60);
+    fx.text(sc.x, sc.y - 40, 'Factory district open!', { color: '#ffeb3b', size: 26, max: 1.6 });
+    fx.sound.done(); fx.vibrate(cfg.feel.vibrateUnlock, 0);
+    G.camLook = { x: cfg.district.gateX - 3, y: s.y, t: 2.2 };
+    ui.toast('Factory district open!', 'Build your first factory: it turns crops into goods worth much more.', ['factory', cfg.factories[0].id]);
   }
+
   G.seenFull = G.saidServe = true;
   G.legacyGain = function () { return CR.legacy.gain(cfg, G.legacy, G.runEarned); };
   // Legacy shows once you could get a Golden seed, or have had one.
