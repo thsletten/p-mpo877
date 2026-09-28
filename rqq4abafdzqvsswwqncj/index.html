@@ -658,7 +658,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v103)</p>
+    <p class="ver">Crop Rush 1.0 (v104)</p>
   </div>
 </div>
 
@@ -12885,7 +12885,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     if (G.prevMoney != null) G.runEarned += Math.max(0, G.money - G.prevMoney);
     G.prevMoney = G.money; G.windfall = 0;
 
-    // v103 contracts (they replace orders): best sellers, as orders had it.
+    // v103 contracts (they replace orders), for things unlocked a while ago.
     var oItems = orderItems();
     if (G.ordersOpen() && CR.contracts.refill(G.contracts, cfg, G.rand, oItems, itemDemand, worth, dt)) ui.goalsNews();
     var r = CR.contracts.tick(G.contracts, dt);
@@ -13668,8 +13668,17 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
 
   // Orders ask for your best sellers, not carrots once tomatoes are worth
   // 5x (playtest 7).
+  // What contracts ask for (Tom 2026-09-28 20:22: not the newest thing you
+  // unlocked, something from a little while ago: with sunflowers, corn).
+  // The newest crop and the newest factory are left out; then the next 3
+  // crops and the next 2 factories. With only one crop it is that crop.
   function orderItems() {
-    return Object.keys(G.stand.shelves).sort(function (a, b) { return worth(b) - worth(a); }).slice(0, 3);
+    var byWorth = function (a, b) { return worth(b) - worth(a); };
+    var ids = Object.keys(G.stand.shelves);
+    var crops = ids.filter(function (id) { return cfg.crops[id]; }).sort(byWorth);
+    var goods = ids.filter(function (id) { return !cfg.crops[id]; }).sort(byWorth);
+    var pick = crops.slice(1, 4).concat(goods.slice(1, 3));
+    return pick.length ? pick : crops.slice(-1);
   }
   // New offers for the board, once a minute (playtest 11 idea).
   G.rerollIn = function () { return Math.max(0, (G.rerollAt || -1e9) + cfg.orders.reroll - G.time); };
