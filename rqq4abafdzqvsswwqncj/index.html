@@ -309,6 +309,7 @@ button { font-family: var(--font); cursor: pointer; }
 }
 .opt small, .wide small { color: #9c8b73; font-weight: 500; font-size: 13px; }
 .opt input { width: 26px; height: 26px; accent-color: #43a047; }
+.opt select { font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 10px; border: 2px solid #e2c99a; background: #fffaf0; color: inherit; max-width: 60%; }
 .wide {
   display: block; width: 100%; margin: 8px 0 0; border: 0; border-radius: 14px; padding: 12px;
   background: #ffc629; color: #5a3500; font-size: 17px; font-weight: 700; box-shadow: 0 4px 0 #d18a00;
@@ -668,6 +669,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
   <div class="scroll">
     <label class="opt"><span>Sound effects</span><input type="checkbox" id="soundOpt" checked></label>
     <label class="opt"><span>Music</span><input type="checkbox" id="musicOpt" checked></label>
+    <label class="opt"><span>Tune<br><small id="tuneNow"></small></span><select id="tuneOpt"></select></label>
     <label class="opt"><span>Vibration</span><input type="checkbox" id="vibOpt" checked></label>
     <h4 class="section">Your farm</h4>
     <div class="statsList" id="statsList"></div>
@@ -676,9 +678,10 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       <label class="opt"><span>Free upgrades</span><input type="checkbox" id="freeOpt"></label>
       <button type="button" class="wide" id="plotsBtn">Open every field</button>
       <button type="button" class="wide" id="cashBtn">+ 1M cash</button>
+      <button type="button" class="wide" id="tuneSkipBtn">Fade to the next tune</button>
     </details>
     <button type="button" class="wide danger" id="resetBtn">Start over <small>(deletes your save)</small></button>
-    <p class="ver">Crop Rush 1.0 (v107)</p>
+    <p class="ver">Crop Rush 1.0 (v108)</p>
   </div>
 </div>
 
@@ -5063,58 +5066,216 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     }
   };
 
-  // ---- music: a light, looping farm tune made on the fly ------------------
-  // I-V-vi-IV in C at 96 bpm: a soft pad, a bass on beats 1 and 3, a plucked
-  // tune that picks notes from the chord (a little different every loop) and
-  // a shaker on the off-beats. Quiet under the sound effects.
-  var music = { on: false, gain: null, next: 0, step: 0, timer: null, seed: 7 };
-  var CHORDS = [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]];
-  var TUNE = [0, 2, 4, 7, 9, 12, 14, 16];
+  // ---- music: light, looping farm tunes made on the fly --------------------
+  // Each tune is a pattern played step by step on the sound chip, so tunes
+  // add nothing to the download. Shuffle (the default) starts a random tune
+  // each time the game opens, never last time's, and every 30 minutes of
+  // play fades it out slowly and fades another one in. Quiet under the sound
+  // effects.
+  var MUSIC_VOL = 0.55, SHUFFLE_SECS = 30 * 60, FADE_OUT = 6, FADE_IN = 12;
+  var music = { on: false, gain: null, next: 0, step: 0, timer: null, seed: 7,
+    tune: null, pick: 'shuffle', avoid: null, switchAt: 0, fadeEnd: 0 };
   function mrand() { music.seed = (music.seed * 16807) % 2147483647; return music.seed / 2147483647; }
-  function note(type, freq, t, dur, vol, attack) {
-    var o = ac.createOscillator(), g = ac.createGain();
-    o.type = type; o.frequency.value = freq;
+  function m(n) { return 440 * Math.pow(2, (n - 69) / 12); }
+  function env(g, t, vol, attack, dur) {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(vol, t + (attack || 0.01));
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(music.gain);
-    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function note(type, freq, t, dur, vol, attack) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.value = freq; env(g, t, vol, attack, dur);
+    o.connect(g); g.connect(music.gain); o.start(t); o.stop(t + dur + 0.05);
+  }
+  // Plucked string: a bright saw through a closing low-pass.
+  function pluck(freq, t, dur, vol, bright) {
+    var o = ac.createOscillator(), f = ac.createBiquadFilter(), g = ac.createGain();
+    o.type = 'sawtooth'; o.frequency.value = freq;
+    f.type = 'lowpass'; f.Q.value = 2;
+    f.frequency.setValueAtTime(bright || 3200, t); f.frequency.exponentialRampToValueAtTime(400, t + dur * 0.8);
+    env(g, t, vol, 0.003, dur);
+    o.connect(f); f.connect(g); g.connect(music.gain); o.start(t); o.stop(t + dur + 0.05);
+  }
+  // Glockenspiel and friends: a few sine partials with a quick decay.
+  function bell(freq, t, dur, vol, partials) {
+    partials.forEach(function (p) { note('sine', freq * p[0], t, dur * p[2], vol * p[1], 0.003); });
+  }
+  // Electric piano with a slow wobble.
+  function keys(freq, t, dur, vol) {
+    var o = ac.createOscillator(), g = ac.createGain(), trem = ac.createOscillator(), tg = ac.createGain(), out = ac.createGain();
+    o.type = 'sine'; o.frequency.value = freq; env(g, t, vol, 0.015, dur);
+    trem.frequency.value = 4.5; tg.gain.value = 0.3; out.gain.value = 0.7;
+    trem.connect(tg); tg.connect(out.gain); o.connect(g); g.connect(out); out.connect(music.gain);
+    o.start(t); trem.start(t); o.stop(t + dur + 0.05); trem.stop(t + dur + 0.05);
+    note('sine', freq * 2, t, 0.25, vol * 0.25, 0.003);
+  }
+  function hiss(t, type, freq, vol, len) {
+    if (!ac.createBufferSource) return;
+    var s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+    s.buffer = noiseBuf; f.type = type; f.frequency.value = freq;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    s.connect(f); f.connect(g); g.connect(music.gain); s.start(t); s.stop(t + len + 0.02);
+  }
+  function kick(t, vol) {
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+    env(g, t, vol, 0.003, 0.22); o.connect(g); g.connect(music.gain); o.start(t); o.stop(t + 0.3);
+  }
+  // A written tune: per bar, [step, midi note, length in steps].
+  function playTune(tune, bar, s, t, d, fn) {
+    (tune[bar] || []).forEach(function (n) { if (n[0] === s) fn(m(n[1]), t, n[2] * d); });
+  }
+  // Loose chord-note fills while the tune rests, a little different each loop.
+  function fill(ch, t, d, p, fn) {
+    if (mrand() < p) fn(m(ch[Math.floor(mrand() * ch.length)] + 12), t, d * 2);
+  }
+
+  // bpm, steps per beat, steps per bar, swing (late off-steps), play(t, step, stepLength).
+  var TUNES = [
+    { id: 'farm', name: 'Farm Tune', bpm: 96, spb: 2, bar: 8,
+      // I-V-vi-IV in C: a soft pad, bass on beats 1 and 3, a plucked tune
+      // picking notes near the chord and a shaker on the off-beats.
+      play: function (t, st, d) {
+        var CH = [[0, 4, 7], [7, 11, 14], [9, 12, 16], [5, 9, 12]], TUNE = [0, 2, 4, 7, 9, 12, 14, 16];
+        var bar = Math.floor(st / 8) % 4, e = st % 8, ch = CH[bar], root = 131;
+        if (e === 0) ch.forEach(function (n) { note('triangle', semis(root * 2, n), t, d * 8, 0.035, 0.25); });
+        if (e === 0 || e === 4) note('sine', semis(root / 2, ch[0]), t, d * 3, 0.22, 0.01);
+        if (e % 2 === 1) hiss(t, 'highpass', 6000, 0.03, 0.05);
+        if (mrand() < (e % 2 ? 0.25 : 0.6)) {
+          var n = TUNE[Math.floor(mrand() * TUNE.length)];
+          if (ch.indexOf(n % 12) < 0 && mrand() < 0.5) n = ch[Math.floor(mrand() * 3)] + 12;
+          note('square', semis(root * 4, n), t, d * 1.6, 0.025, 0.005);
+          note('sine', semis(root * 4, n), t, d * 2, 0.06, 0.005);
+        }
+      } },
+    { id: 'sunset', name: 'Lazy Sunset', bpm: 78, spb: 2, bar: 8, swing: 0.3,
+      // Lo-fi: soft electric piano over a slow swung beat, a loose melody.
+      play: function (t, st, d) {
+        var CH = [[55, 59, 64, 67], [55, 57, 60, 64], [53, 57, 60, 64], [55, 59, 62, 65]];
+        var ROOT = [48, 45, 41, 43], PENT = [72, 74, 76, 79, 81, 84];
+        var bi = Math.floor(st / 8) % 16, s = st % 8, ch = CH[bi % 4];
+        if (s === 0 || s === 5) ch.forEach(function (n, i) {
+          note('sine', m(n), t + i * 0.012, d * (s ? 3 : 5), s ? 0.028 : 0.04, 0.02);
+          note('triangle', m(n) * 1.003, t + i * 0.012, d * 2, 0.01, 0.02);
+        });
+        if (s === 0 || s === 3) note('sine', m(ROOT[bi % 4] - (s ? 0 : 12)), t, d * 2.5, 0.26, 0.02);
+        if (s === 0 || s === 5) kick(t, 0.2);
+        if (s === 2 || s === 6) hiss(t, 'bandpass', 1800, 0.07, 0.12);
+        hiss(t, 'highpass', 9000, s % 2 ? 0.01 : 0.02, 0.03);
+        if (bi < 8 ? mrand() < (s % 2 ? 0.2 : 0.45) : mrand() < 0.15) {
+          var n = PENT[Math.floor(mrand() * PENT.length)];
+          note('sine', m(n), t, d * 2.5, 0.06, 0.01); note('triangle', m(n + 12), t, d * 1.2, 0.006, 0.01);
+        }
+      } },
+    { id: 'golden', name: 'Golden Hour', bpm: 82, spb: 2, bar: 8, swing: 0.3,
+      // Warmer lo-fi in E-flat: wobbly piano, record crackle, an echoing melody.
+      play: function (t, st, d) {
+        var CH = [[58, 62, 63, 67], [58, 60, 63, 67], [56, 60, 63, 67], [56, 58, 62, 65]];
+        var ROOT = [39, 36, 44, 46], PENT = [70, 72, 75, 77, 79, 82];
+        var bi = Math.floor(st / 8) % 16, s = st % 8, ch = CH[bi % 4];
+        if (s === 0 || s === 3 || s === 6) ch.forEach(function (n, i) { keys(m(n), t + i * 0.015, d * (s ? 2.5 : 4), s ? 0.03 : 0.04); });
+        if (s === 0 || s === 4) note('sine', m(ROOT[bi % 4]), t, d * 3, 0.28, 0.02);
+        if (s === 0 || s === 3) kick(t, s ? 0.14 : 0.2);
+        if (s === 2 || s === 6) hiss(t, 'bandpass', 2600, 0.06, 0.07);
+        hiss(t, 'highpass', 9500, s % 2 ? 0.008 : 0.016, 0.03);
+        if (mrand() < 0.35) hiss(t + mrand() * d, 'highpass', 3000, 0.02, 0.005);
+        if (mrand() < (bi < 8 ? (s % 2 ? 0.15 : 0.4) : 0.12)) {
+          var n = PENT[Math.floor(mrand() * PENT.length)];
+          note('triangle', m(n), t, d * 2, 0.05, 0.01);
+          note('triangle', m(n), t + d * 1.5, d * 2, 0.018, 0.01);
+        }
+      } },
+    { id: 'uke', name: 'Ukulele Lane', bpm: 100, spb: 2, bar: 8,
+      // Strummed ukulele, finger snaps and a glockenspiel tune for 8 bars,
+      // then 8 bars of the band alone so the tune doesn't wear thin.
+      play: function (t, st, d) {
+        var CH = [[67, 60, 64, 72], [67, 62, 67, 71], [69, 60, 64, 69], [69, 60, 65, 69], [67, 60, 64, 72], [67, 62, 67, 71], [69, 60, 65, 69], [67, 60, 64, 72]];
+        var ROOT = [48, 43, 45, 41, 48, 43, 41, 48];
+        var TUNE = [
+          [[0, 79, 2], [2, 76, 1], [3, 79, 1], [4, 84, 4]],
+          [[0, 83, 2], [2, 79, 2], [4, 74, 4]],
+          [[0, 81, 2], [2, 84, 1], [3, 81, 1], [4, 76, 4]],
+          [[0, 77, 2], [2, 81, 2], [4, 84, 2], [6, 81, 2]],
+          [[0, 79, 2], [2, 76, 1], [3, 79, 1], [4, 84, 2], [6, 88, 2]],
+          [[0, 86, 4], [4, 83, 2], [6, 79, 2]],
+          [[0, 81, 2], [2, 77, 2], [4, 74, 2], [6, 79, 2]],
+          [[0, 76, 4], [4, 72, 4]]
+        ];
+        var GLOCK = [[1, 1, 1], [2.76, 0.3, 0.4], [5.4, 0.1, 0.2]];
+        var bi = Math.floor(st / 8) % 16, s = st % 8, ch = CH[bi % 8];
+        var dir = { 0: 1, 2: 1, 3: -1, 5: -1, 6: 1, 7: -1 }[s]; // down, down-up, up-down-up
+        if (dir) ch.forEach(function (n, i) {
+          pluck(m(n), t + (dir > 0 ? i : 3 - i) * 0.012, d * 1.6, dir > 0 ? 0.024 : 0.016, 2600);
+        });
+        if (s === 0 || s === 4) note('sine', m(ROOT[bi % 8] - 12), t, d * 2, 0.2, 0.01);
+        if (s === 2 || s === 6) hiss(t, 'bandpass', 1500, 0.07, 0.05);
+        var glock = function (f, tt, len) { bell(f, tt, Math.max(len, d * 2), 0.05, GLOCK); };
+        if (bi < 8) playTune(TUNE, bi, s, t, d, glock);
+        else if (s % 2 === 0) fill(ch, t, d, 0.25, function (f, tt, len) { glock(f * 2, tt, len); });
+      } }
+  ];
+  function tuneById(id) { for (var i = 0; i < TUNES.length; i++) if (TUNES[i].id === id) return TUNES[i]; return null; }
+  function randomTune(not) {
+    var pool = TUNES.filter(function (x) { return x.id !== not; });
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  function startTune(tune, fadeIn) {
+    music.tune = tune; music.step = 0; music.seed = 7;
+    music.next = ac.currentTime + 0.1;
+    music.switchAt = music.next + SHUFFLE_SECS; music.fadeEnd = 0;
+    var g = music.gain.gain;
+    g.cancelScheduledValues(ac.currentTime);
+    if (fadeIn) { g.setValueAtTime(0.0001, music.next); g.linearRampToValueAtTime(MUSIC_VOL, music.next + FADE_IN); }
+    else g.setValueAtTime(MUSIC_VOL, ac.currentTime);
+    if (fx.music.onChange) fx.music.onChange(tune.id);
   }
   function schedule() {
-    if (!ac || !music.on) return;
-    var beat = 60 / 96 / 2; // eighth notes
-    while (music.next < ac.currentTime + 0.4) {
-      var t = music.next, st = music.step, bar = Math.floor(st / 8) % 4, e = st % 8;
-      var ch = CHORDS[bar], root = 131;
-      if (e === 0) ch.forEach(function (n) { note('triangle', semis(root * 2, n), t, beat * 8, 0.035, 0.25); });
-      if (e === 0 || e === 4) note('sine', semis(root / 2, ch[0]), t, beat * 3, 0.22, 0.01);
-      if (e % 2 === 1 && ac.createBufferSource) {
-        var src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
-        src.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = 6000;
-        g.gain.setValueAtTime(0.03, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-        src.connect(f); f.connect(g); g.connect(music.gain); src.start(t); src.stop(t + 0.07);
+    if (!ac || !music.on || !music.tune) return;
+    var now = ac.currentTime;
+    // Shuffle: a slow fade out, then the next tune fades in.
+    if (music.pick === 'shuffle') {
+      if (!music.fadeEnd && now >= music.switchAt) {
+        music.fadeEnd = now + FADE_OUT;
+        music.gain.gain.cancelScheduledValues(now);
+        music.gain.gain.setValueAtTime(music.gain.gain.value, now);
+        music.gain.gain.linearRampToValueAtTime(0.0001, music.fadeEnd);
+      } else if (music.fadeEnd && now >= music.fadeEnd) {
+        startTune(randomTune(music.tune.id), true);
       }
-      // The tune: mostly on the beat, notes near the chord.
-      if (mrand() < (e % 2 ? 0.25 : 0.6)) {
-        var n = TUNE[Math.floor(mrand() * TUNE.length)];
-        if (ch.indexOf(n % 12) < 0 && mrand() < 0.5) n = ch[Math.floor(mrand() * 3)] + 12;
-        note('square', semis(root * 4, n), t, beat * 1.6, 0.025, 0.005);
-        note('sine', semis(root * 4, n), t, beat * 2, 0.06, 0.005);
-      }
+    }
+    var tune = music.tune, d = 60 / tune.bpm / tune.spb;
+    while (music.next < now + 0.4) {
+      var t = music.next + (tune.swing && music.step % 2 === 1 ? d * tune.swing : 0);
+      if (!music.fadeEnd || t < music.fadeEnd) tune.play(t, music.step, d);
       music.step++;
-      music.next += beat;
+      music.next += d;
     }
   }
   fx.music = {
     set: function (on) {
       music.on = on;
       if (!ac) return; // starts when audio is unlocked
-      if (!music.gain) { music.gain = ac.createGain(); music.gain.gain.value = 0.55; music.gain.connect(master); }
+      if (!music.gain) { music.gain = ac.createGain(); music.gain.gain.value = MUSIC_VOL; music.gain.connect(master); }
+      if (on && !music.tune) startTune(music.pick === 'shuffle' ? randomTune(music.avoid) : tuneById(music.pick) || TUNES[0], false);
       if (on && !music.timer) {
-        music.next = ac.currentTime + 0.1;
+        music.next = Math.max(music.next, ac.currentTime + 0.1);
         music.timer = setInterval(schedule, 120);
       } else if (!on && music.timer) { clearInterval(music.timer); music.timer = null; }
     },
+    // 'shuffle' or a tune id; avoid = the tune shuffle should not open with.
+    choose: function (pick, avoid) {
+      var was = music.pick;
+      music.pick = pick === 'shuffle' || tuneById(pick) ? pick : 'shuffle';
+      if (avoid) music.avoid = avoid;
+      if (!ac || !music.gain || music.pick === was) return;
+      if (music.pick !== 'shuffle' && music.tune && music.tune.id !== music.pick) startTune(tuneById(music.pick), true);
+      else if (music.pick === 'shuffle' && music.tune) { music.switchAt = ac.currentTime + SHUFFLE_SECS; }
+    },
+    // Testing: start shuffle's slow fade to the next tune now.
+    skip: function () { if (ac && music.tune && !music.fadeEnd) { music.pick = 'shuffle'; music.switchAt = 0; } },
+    tunes: TUNES.map(function (x) { return { id: x.id, name: x.name }; }),
+    get playing() { return music.tune ? music.tune.id : null; },
+    onChange: null,
     get on() { return music.on; }
   };
   var unlock0 = fx.unlockAudio;
@@ -10364,14 +10525,28 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
       t.addEventListener('click', function () { showTab(t.dataset.tab); });
     });
     // Options are kept on this device (not in the farm's save).
-    var OPT_KEY = cfg.save.key + '-options', opts = { sound: true, music: true, vib: true };
-    try { var so = JSON.parse(window.localStorage.getItem(OPT_KEY) || '{}'); Object.keys(opts).forEach(function (k) { if (typeof so[k] === 'boolean') opts[k] = so[k]; }); } catch (e) { /* defaults */ }
+    // tune: 'shuffle' or one tune; lastTune lets shuffle open with a different one next time.
+    var OPT_KEY = cfg.save.key + '-options', opts = { sound: true, music: true, vib: true, tune: 'shuffle', lastTune: '' };
+    try { var so = JSON.parse(window.localStorage.getItem(OPT_KEY) || '{}'); Object.keys(opts).forEach(function (k) { if (typeof so[k] === typeof opts[k]) opts[k] = so[k]; }); } catch (e) { /* defaults */ }
+    function saveOpts() { try { window.localStorage.setItem(OPT_KEY, JSON.stringify(opts)); } catch (e) { /* private mode */ } }
+    function tuneName(id) { var t = CR.fx.music.tunes.filter(function (x) { return x.id === id; })[0]; return t ? t.name : ''; }
+    $('tuneOpt').innerHTML = '<option value="shuffle">Shuffle</option>' + CR.fx.music.tunes.map(function (t) {
+      return '<option value="' + t.id + '">' + t.name + '</option>';
+    }).join('');
+    function showTune() {
+      var now = CR.fx.music.playing;
+      $('tuneNow').textContent = opts.tune === 'shuffle' && now && opts.music ? 'Now: ' + tuneName(now) : '';
+    }
+    CR.fx.music.onChange = function (id) { opts.lastTune = id; saveOpts(); showTune(); };
+    CR.fx.music.choose(opts.tune, opts.lastTune);
     function applyOpts() {
-      CR.fx.muted = !opts.sound; CR.fx.music.set(opts.music); CR.fx.noVibrate = !opts.vib;
+      CR.fx.muted = !opts.sound; CR.fx.music.choose(opts.tune); CR.fx.music.set(opts.music); CR.fx.noVibrate = !opts.vib;
       $('soundOpt').checked = opts.sound; $('musicOpt').checked = opts.music; $('vibOpt').checked = opts.vib;
-      try { window.localStorage.setItem(OPT_KEY, JSON.stringify(opts)); } catch (e) { /* private mode */ }
+      $('tuneOpt').value = opts.tune;
+      showTune(); saveOpts();
     }
     applyOpts();
+    $('tuneOpt').addEventListener('change', function (e) { opts.tune = e.target.value; applyOpts(); });
     [['soundOpt', 'sound'], ['musicOpt', 'music'], ['vibOpt', 'vib']].forEach(function (o) {
       $(o[0]).addEventListener('change', function (e) { opts[o[1]] = e.target.checked; applyOpts(); });
     });
@@ -10408,6 +10583,7 @@ body.tut #hint { bottom: calc(env(safe-area-inset-bottom, 0px) + 176px); }
     });
     $('plotsBtn').addEventListener('click', function () { actions.openPlots(); ui.settings.hidden = true; });
     $('cashBtn').addEventListener('click', function () { G.money += 1e6; bump(ui.cash); });
+    $('tuneSkipBtn').addEventListener('click', function () { opts.tune = 'shuffle'; applyOpts(); CR.fx.music.skip(); });
 
     // ---- the shop
     // Level pips with "3/5" beside them; a bar when there are many levels
