@@ -81,6 +81,8 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #8fd655; tou
 .mbtn.red { background: #fff; color: #c9261e; }
 small.gpick { display: block; margin-top: 8px; font-weight: 700; opacity: 0.75; }
 div.gpick { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+div.gpick.routes { grid-template-columns: repeat(3, 1fr); }
+p.rtip { margin: 0 2px 6px; font-size: 12px; opacity: 0.8; }
 div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-spacing: -1px; white-space: nowrap; }
 .mbtn.red.armed { background: #e8402f; color: #fff; box-shadow: 0 4px 0 #9e2a22; }
 .mbox p { margin: 6px 2px 0; font-size: 13px; color: #6b6f85; }
@@ -130,6 +132,42 @@ div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-
 #tap .card .tx b { font-size: 15px; line-height: 1.15; overflow-wrap: anywhere; }
 #tap .card .tx em { line-height: 1.2; overflow-wrap: anywhere; }
 #tap .send { margin: 6px 0; padding: 10px; }
+/* the tap panels (panels.js): a bottom sheet with tabs, Tom's pick B 2026-10-08 */
+#tap.pnl .ph { display: flex; gap: 10px; align-items: center; margin: 0 36px 8px 0; }
+#tap.pnl .pic { flex: none; width: 46px; height: 46px; border-radius: 14px; background: #fff; display: grid; place-items: center; box-shadow: 0 2px 0 #e6d2ae; }
+#tap.pnl .pt h3 { margin: 0 0 2px; }
+#tap .pill { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 10px; background: #ebe6da; color: #6b6f85; }
+#tap .pill.green { background: #d4f4da; color: #1f8a3a; } #tap .pill.gold { background: #ffefbf; color: #a06800; } #tap .pill.red { background: #ffd9d3; color: #c22d1c; }
+#tap .now, #tap .sf { background: #fff; border-radius: 12px; padding: 6px 10px; margin-bottom: 6px; }
+#tap .now > small, #tap .sf > small, #tap h4 { display: block; margin: 2px 0; font-size: 10px; font-weight: 800; color: #9da0b0; text-transform: uppercase; letter-spacing: .05em; }
+#tap h4 { margin: 8px 0 2px; }
+#tap .sf p { margin: 2px 0; font-size: 13px; color: #6b6f85; } #tap .sf b { color: var(--navy); }
+#tap .mute { color: #9da0b0; font-size: 13px; margin: 6px 0; }
+#tap .gt { width: 100%; border-collapse: collapse; font-size: 13px; font-weight: 800; color: var(--navy); }
+#tap .gt th { font-size: 10px; color: #9da0b0; padding: 0 0 3px; }
+#tap .gt th i { display: inline-block; min-width: 24px; padding: 1px 3px; border-radius: 8px; color: #1f2438; font-style: normal; }
+#tap .gt td { text-align: center; padding: 3px 2px; }
+#tap .gt tr:nth-child(even) td { background: #f7f1e4; }
+#tap .gt td:first-child { text-align: left; padding-left: 6px; border-radius: 6px 0 0 6px; }
+#tap .gt td:last-child { border-radius: 0 6px 6px 0; }
+#tap .gt td.z { color: #cfc8b8; } #tap .gt td small { color: #9da0b0; font-size: 11px; }
+#tap .gt td.red b { color: #d8341f; } #tap .gt td.full b { color: #c88a00; }
+#tap .pb { margin: 5px 0; }
+#tap .pbl { display: flex; justify-content: space-between; font-size: 12px; color: #6b6f85; font-weight: 700; }
+#tap .pbl b { color: var(--navy); }
+#tap .pbt { height: 10px; border-radius: 5px; background: #ebe6da; overflow: hidden; margin-top: 2px; }
+#tap .pbt i { display: block; height: 100%; border-radius: 5px; min-width: 2px; }
+#tap .kv { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+#tap .kv span { font-size: 12px; color: #6b6f85; background: #f7f1e4; border-radius: 8px; padding: 3px 8px; } #tap .kv b { color: var(--navy); }
+#tap .flow { display: flex; align-items: center; gap: 2px; margin: 4px 0 6px; }
+#tap .flow .st { flex: 1; text-align: center; background: #f7f1e4; border-radius: 10px; padding: 4px 2px; }
+#tap .flow .st.on { background: #d9f2ff; box-shadow: inset 0 0 0 2px #5fd0ff; } #tap .flow .st.z b { color: #b8b1a2; }
+#tap .flow small { display: block; font-size: 10px; font-weight: 800; color: #9da0b0; } #tap .flow b { font-size: 14px; color: var(--navy); }
+#tap .flow .ar, #tap .ptabs { display: flex; gap: 6px; margin-bottom: 8px; }
+#tap .ptabs button { position: relative; flex: 1; border: 0; border-radius: 12px; padding: 8px 6px; font-weight: 800; font-size: 14px; color: var(--navy); background: #ead9b8; cursor: pointer; }
+#tap .ptabs button.on { background: var(--navy2); color: #fff; }
+#tap .ptabs em { position: absolute; right: -4px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff4a3d; color: #fff; font-style: normal; font-size: 11px; display: grid; place-items: center; padding: 0 4px; }
+#tap.psheet { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: 520px; margin: 0 auto; border-radius: 22px 22px 0 0; max-height: 50vh; overflow-y: auto; padding: 12px 12px calc(8px + var(--safe-bottom)); box-shadow: 0 -4px 0 #e6d2ae, 0 -6px 18px rgba(31,36,56,.25); z-index: 6; transform: none !important; }
 .big { text-align: center; }
 .big .ttl { font-size: 15px; color: #6b6f85; margin: 4px 0; }
 .big .num { font-size: 40px; font-weight: 900; color: #e8a412; text-shadow: 0 2px 0 #fff3a8; margin: 4px 0; }
@@ -314,7 +352,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // `first`: the first ★★ turns up within this many sorted crops.
     // More troughs (Second trough, then Third trough) wash more a batch (batch[1], [2]).
     // Batches: a trough load washes in `cycle` s (Soap: `soap` s).
-    wash: { batch: [80, 160, 240], cycle: 16, soap: 10, settle: 1.5 },
+    // troughs: big enough that two (with Soap) keep up with the field wagon on its
+    // Factory run late in Home (Tom 2026-10-08: no raw crops to the stall)
+    wash: { batch: [120, 240, 360], cycle: 16, soap: 10, settle: 1.5 },
     // the 5 star grades (Lab thread's numbers, 2026-10-07): what ★ .. ★★★★★ multiply
     // a washed crop or a Fine can by, and how the Sorting table splits Home's crops
     grades: [1, 1.5, 2.25, 3.5, 6],
@@ -329,7 +369,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the cans wait on the GOODS shelf. `trip`: tiles from the market to the
     // station (the lens reads the real track). Big from the start: the cart
     // calls less often (the hand's Bigger handcart merged in here).
-    station: { intake: 300, goods: 400, trip: 48 },
+    station: { intake: 480, goods: 400, trip: 48 },
     // the Lab (Tom 2026-10-07): one Lab for every valley, four tabs. Seeds has
     // a chip per crop, each with the same fixed slots (Sweet, Big, Bunches,
     // Pretty, Quick); Factory a chip per factory (Packhouse, Cannery); then Farm
@@ -587,6 +627,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the horse wagon's upgrades belong to Corn Valley (Tom 2026-10-06 "B"): in
     // valley 1 they measured 0-1%, the wagon already out-carries the harvest
     { id: 'horseUp', tab: 'line', icon: 'horse', of: 'horse', cost: [4800, 5500], need: function (s) { return line(s) === 3 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
+    // a second wagon on the same track (Tom 2026-10-08): each wagon runs the
+    // route you give it (Full loop, Factory run, Stall run), same kind and level as the first
+    { id: 'wagon2', tab: 'line', icon: 'horse', cost: [6500], need: function (s) { return line(s) === 3 && stationOn(s); }, needs: 'Horse wagon, station worker' },
     // a later valley (flags.steamTrain, off in valley 1): rails over the dirt
     // track, a bad old train, then the proper steam train
     { id: 'rails', tab: 'line', icon: 'rails', step: 1, cost: [4000], need: function (s) { return config.flags.steamTrain && line(s) === 3 && lv(s, 'farmShop') > 0; }, needs: 'Horse wagon' },
@@ -669,6 +712,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // crate (box, fractional; boxK the crop on top), tiers done by id
       lab: { cur: '', fed: 0, box: 0, boxK: '', done: {} },
       veh: null,                                    // { s, state, load: {kind: n}, cans: {canC, canT} }
+      veh2: null,                                   // the Second wagon, the same shape
+      routes: [],                                   // each wagon's route ('loop' | 'factory' | 'stall')
       stats: { cut: 0, cutYou: { carrot: 0, tomato: 0 }, cutHelp: { carrot: 0, tomato: 0 }, golden: 0, sold: 0, earned: 0,
         washed: 0, graded: 0,
         servedYou: 0, servedSell: 0, cans: 0, cansF: 0, cansP: 0, canEarned: 0, bulk: 0, bulkEarned: 0, time: 0, bestHaul: 0, trips: 0, moved: 0, haltIn: { carrot: 0, tomato: 0 },
@@ -992,8 +1037,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function pkRate(s, trip) {
     if (!pkAuto(s)) return 0;
     var T = trip || lineTrip(s), trough = washBatch(s) / washCycle(s), v = vehicle(s);
-    var feed = Math.min(intakeCap(s), v ? v.cap : 0) / T;
-    return Math.min(trough, feed, goodsCap(s) / T);
+    var feed = Math.min(intakeCap(s), v ? v.cap : 0) / T * Math.max(1, vehCount(s));   // a Second wagon feeds it too
+    return Math.min(trough, feed, goodsCap(s) / T * Math.max(1, vehCount(s)));
   }
   function tier(s) { return lv(s, 'scythe') ? 2 : lv(s, 'sickle') ? 1 : 0; }
   function sharp(s) { var t = tier(s); return t === 0 ? lv(s, 'gloves') : t === 1 ? lv(s, 'sharpS') : lv(s, 'sharpY'); }
@@ -1044,6 +1089,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var V = config.vehicles[k], L = V.levels[Math.min(n, V.levels.length - 1)], sp = L[1] * (onRails && V.railMult ? V.railMult : 1);
     return { kind: k, name: V.name, cap: L[0], speed: Math.round(sp * 100) / 100, stop: V.stop, leaveAfter: V.leaveAfter };
   }
+  // ---- routes (Tom 2026-10-08): what each wagon runs, picked on its tap menu.
+  // loop: halts > station > halts > stall (raw crops ride on when the IN is full)
+  // factory: halts > station > halts, never the stall: every crop goes to the IN
+  // stall: station > stall > station, washed crops and cans; tops up raw at the halts if it has room
+  var ROUTES = ['loop', 'factory', 'stall'];
+  var ROUTE_INFO = {
+    loop: { name: 'Full loop', text: 'Halts, station, stall. Raw crops ride on to the stall when the IN is full.' },
+    factory: { name: 'Factory run', text: 'Halts to the station and back. Every crop goes to the IN to be washed.' },
+    stall: { name: 'Stall run', text: 'Station to the stall and back with washed crops and cans. Tops up at the halts when it has room.' }
+  };
+  function vehCount(s) { return vehicleKind(s) ? 1 + (line(s) === 3 ? Math.min(1, lv(s, 'wagon2')) : 0) : 0; }
+  // routes need the station staffed and the wash shed; before that every wagon runs the loop
+  function routesOn(s) { return stationOn(s) && lv(s, 'wash') > 0; }
+  function route(s, i) {
+    if (!routesOn(s)) return 'loop';
+    var r = s.routes && s.routes[i];
+    if (ROUTES.indexOf(r) >= 0) return r;
+    return vehCount(s) > 1 ? (i === 0 ? 'factory' : 'stall') : 'loop';
+  }
+  function setRoute(s, i, r) { if (ROUTES.indexOf(r) < 0) return false; s.routes = (s.routes || []).slice(0, 2); s.routes[i] = r; return true; }
   function vehicle(s) { var k = vehicleKind(s); return k ? vehicleAt(k, lineLevel(s), rails(s)) : null; }
   function vtext(v) { return v.cap + ' a trip, speed ' + String(v.speed); }
   function customerInterval(s) { return config.customers.interval * Math.pow(config.customers.adMult, lv(s, 'ad')); }
@@ -1117,6 +1182,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'horseUp':
         var hr = rails(s), g0 = vehicleAt('horse', n, hr), g1 = vehicleAt('horse', n + 1, hr);
         return { name: HORSE_NAMES[n], text: g1.speed > g0.speed ? 'A second horse: the wagon goes faster.' : 'High sideboards: the wagon carries more each trip.', from: vtext(g0), to: vtext(g1) };
+      case 'wagon2': var w2 = vehicle(s) || vehicleAt('horse', 0);
+        return { name: 'Second wagon', text: 'Another ' + w2.name.toLowerCase() + ' on the track. Give each wagon a route: one on the Factory run empties the halts, one on the Stall run brings washed crops and cans down.', from: '1 wagon, ' + vtext(w2), to: '2 wagons, ' + w2.cap * 2 + ' a round' };
       case 'rails': var dNow = vehicle(s) || vehicleAt('horse', 0), dR = vehicleAt(dNow.kind, lineLevel(s), true);
         return { name: 'Lay rails', text: 'Rails over the old dirt track. The wagon rolls ' + Math.round((C.vehicles.horse.railMult - 1) * 100) + '% faster on them, and a locomotive can run.', from: vtext(dNow), to: vtext(dR) };
       case 'oldTrain': var dTop = vehicle(s) || vehicleAt('horse', 99, true), o0 = vehicleAt('oldtrain', 0);
@@ -1461,12 +1528,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (o.pos && typeof o.pos === 'object') { var px = num(o.pos.x, -60, 60, NaN), pz = num(o.pos.z, -80, 20, NaN); if (isFinite(px) && isFinite(pz)) s.pos = { x: px, z: pz }; }
     if (Array.isArray(o.carry)) s.carry = o.carry.filter(function (c) { return KINDS_ALL.indexOf(c) >= 0; }).slice(0, carryLimit(s));
     var v = vehicle(s);
+    if (Array.isArray(o.routes)) s.routes = o.routes.slice(0, 2).map(function (r) { return ROUTES.indexOf(r) >= 0 ? r : null; });
+    if (v && o.veh2 && typeof o.veh2 === 'object' && lv(s, 'wagon2')) {
+      var ld2 = o.veh2.load || {}, room2 = v.cap, load2 = {};
+      KINDS_ALL.forEach(function (k) { var n = Math.floor(num(ld2[k], 0, room2, 0)); load2[k] = n; room2 -= n; });
+      s.veh2 = { s: num(o.veh2.s, 0, 200, 0), state: ['wait', 'down', 'top', 'fac', 'station', 'unload', 'up', 'back'].indexOf(o.veh2.state) >= 0 ? o.veh2.state : 'wait', load: load2, cans: { canC: 0, canT: 0 } };
+    }
     if (conv && conv.moved && o.veh && typeof o.veh === 'object') { o.veh.s = 0; o.veh.state = 'wait'; }   // a new vehicle starts at the halt
     if (v && o.veh && typeof o.veh === 'object') {
       var ld = o.veh.load || {}, cn = o.veh.cans || {}, room = v.cap, load = {};
       // every kind it can carry (crops of each grade, cans), up to its capacity
       KINDS_ALL.forEach(function (k) { var n = Math.floor(num(ld[k], 0, room, 0)); load[k] = n; room -= n; });
-      s.veh = { s: num(o.veh.s, 0, 200, 0), state: ['wait', 'down', 'top', 'fac', 'station', 'unload', 'up'].indexOf(o.veh.state) >= 0 ? o.veh.state : (o.veh.state === 'dock' ? 'down' : 'wait'),
+      s.veh = { s: num(o.veh.s, 0, 200, 0), state: ['wait', 'down', 'top', 'fac', 'station', 'unload', 'up', 'back'].indexOf(o.veh.state) >= 0 ? o.veh.state : (o.veh.state === 'dock' ? 'down' : 'wait'),
         load: load, cans: { canC: Math.floor(num(cn.canC, 0, 1e4, 0)), canT: Math.floor(num(cn.canT, 0, 1e4, 0)) } };
     }
     return s;
@@ -1539,6 +1612,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     bigShare: bigShare, cutItems: cutItems, aShare: aShare, prettyShare: prettyShare, regrow: regrow, cansFrom: cansFrom, yieldOf: yieldOf, priceMult: priceMult, seedLv: seedLv,
     roman: roman, tierName: tierName, tierValley: tierValley, isMilestone: isMilestone, ladderMult: ladderMult, growthMult: growthMult, sizeAt: sizeAt, qualityShift: qualityShift, seedTier: seedTier, seedOpen: seedOpen, seedId: seedId, seedCrop: seedCrop,
     RAW: RAW, rawEmpty: rawEmpty, isRaw: isRaw, isBig: isBig, rawN: rawN, rawOf: rawOf,
+    ROUTES: ROUTES, ROUTE_INFO: ROUTE_INFO, vehCount: vehCount, routesOn: routesOn, route: route, setRoute: setRoute,
     intakeCap: intakeCap, goodsCap: goodsCap, goodsN: goodsN, stationOn: stationOn, stationStep: stationStep, GOODS_ORDER: GOODS_ORDER, lineTrip: lineTrip,
     troughs: troughs, washRate: washRate, pkAuto: pkAuto, pkMult: pkMult, pkRate: pkRate, canBatch: canBatch, canCycle: canCycle,
     HOP_KINDS: HOP_KINDS, GRADE_WORD: GRADE_WORD, hopEmpty: hopEmpty, hopN: hopN, hopCrop: hopCrop, hopRoom: hopRoom, hopTakes: hopTakes, isCan: isCan, gradeOf: gradeOf, canOf: canOf,
@@ -2109,11 +2183,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var DIRT = '#c9a06a', RUT = '#a37443', SLEEPER = '#7a5233';
   // rutted dirt cart track: two brown ruts at rail gauge, grass strip in the middle
   function dirtTrack(p, s0, s1, o) {
-    o = o || {}; s1 = Math.min(s1 == null ? 1e9 : s1, p.len()); s0 = s0 || 0; var W = o.w || 1.9, wild = !!o.wild, k0 = o.k || 0;
+    // o.off: a lane beside the path (two narrow lanes for two wagons, Tom 2026-10-08); o.g: rut gauge
+    o = o || {}; s1 = Math.min(s1 == null ? 1e9 : s1, p.len()); s0 = s0 || 0; var W = o.w || 1.9, wild = !!o.wild, k0 = o.k || 0, OFF = o.off || 0, G = o.g || 0.38;
     for (var i = 0; i < p.pts.length - 1; i++) {
       if (p.s[i + 1] < s0 || p.s[i] > s1) continue;
       var a = p.pts[i], b = p.pts[i + 1], dx = b[0] - a[0], dz = b[1] - a[1], L = Math.hypot(dx, dz), ang = Math.atan2(dx, dz);
-      var cx = (a[0] + b[0]) / 2, cz = (a[1] + b[1]) / 2, nx = Math.cos(ang), nz = -Math.sin(ang);
+      var nx = Math.cos(ang), nz = -Math.sin(ang), cx = (a[0] + b[0]) / 2 + nx * OFF, cz = (a[1] + b[1]) / 2 + nz * OFF;
       var h1 = hash(i * 7 + 1, 11 + k0), h2 = hash(i * 3 + 5, 23 + k0), h3 = hash(i * 5 + 2, 41 + k0);
       if (wild) {
         vr(cx, 0.012, cz, W * 0.9, 0.024, L + 0.08, h1 < 0.5 ? '#b5c46a' : '#a8b862', ang);
@@ -2123,8 +2198,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       } else {
         vr(cx, 0.015, cz, W, 0.03, L + 0.1, h1 < 0.5 ? DIRT : '#c29763', ang);
         [-1, 1].forEach(function (s) { var ex = cx + nx * s * (W / 2 - 0.02), ez = cz + nz * s * (W / 2 - 0.02); if (hash(i, s + 3) < 0.45) vr(ex, 0.02, ez, 0.14, 0.04, L * 0.7, '#9fd067', ang); });
-        [-1, 1].forEach(function (s) { var wob = (hash(i, s + 17) - 0.5) * 0.05; vr(cx + nx * (s * 0.38 + wob), 0.036, cz + nz * (s * 0.38 + wob), 0.34, 0.02, L + 0.06, RUT, ang); });
-        vr(cx, 0.04, cz, 0.4, 0.05, L + 0.06, h2 < 0.5 ? '#86c94e' : '#7cc14a', ang);
+        [-1, 1].forEach(function (s) { var wob = (hash(i, s + 17) - 0.5) * 0.05; vr(cx + nx * (s * G + wob), 0.036, cz + nz * (s * G + wob), 0.34 * G / 0.38, 0.02, L + 0.06, RUT, ang); });
+        vr(cx, 0.04, cz, 0.4 * G / 0.38, 0.05, L + 0.06, h2 < 0.5 ? '#86c94e' : '#7cc14a', ang);
         if (h1 > 0.62) vr(cx + nx * (h2 - 0.5) * 0.12, 0.08, cz + nz * (h2 - 0.5) * 0.12, 0.13, 0.08 + h3 * 0.1, 0.12, '#5fb83f', ang);
         if (!o.noPuddle && h3 < 0.045) { var s2 = h1 < 0.5 ? -1 : 1, px = cx + nx * s2 * 0.38, pz = cz + nz * s2 * 0.38; vr(px, 0.05, pz, 0.34, 0.02, 0.7, '#7cc4e4', ang); vr(px + nx * 0.03, 0.062, pz + nz * 0.03, 0.12, 0.01, 0.3, '#c8ecfa', ang); }
         if (h2 > 0.9) { var sd = h3 < 0.5 ? -1 : 1, dd = W / 2 + 0.05; rock(cx + nx * sd * dd, cz + nz * sd * dd, 0.45); }
@@ -3824,6 +3899,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   if (LOC === '1') { L.washAt = { x: L.pk.x0 + 1.1, z: L.pk.z0 + 2.8 }; L.sortAt = { x: L.pk.x1 - 1.2, z: L.pk.z0 + 2.3 }; }
   // the line from the market up the trunk and along the branch
   function linePath(run) { return M.Path(0, 0.6).line(0.6 - L.zJ).arc(L.arcR, -90).line(4).arc(L.arcR, 90).line(run); }
+  L.lane = 0.52;                                      // two wagons: each lane's middle this far off the line
   L.sJ = 0.6 - L.zJ;
   L.sRun = L.sJ + Math.PI * L.arcR + 4;              // straight branch run starts here (z = zJ - 8)
   L.zRun = L.zJ - 2 * L.arcR;
@@ -4670,7 +4746,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the main road grows with the valleys (src/farmline/road.js, Tom 2026-10-06 pick F)
     info.roadLv = FL.road.level(s); info.road = FL.road.draw(info.roadLv, L, reserve, BLOCK);
     // the track: dirt from the start (cart track), rails drawn by the rail mesh on top
-    M.dirtTrack(lp, 0, lp.len(), { k: 3, w: onRails ? 2.3 : 1.9, noPuddle: onRails });
+    // two wagons (Tom 2026-10-08 "B, but smaller tracks and wagons"): two narrow lanes in the same corridor
+    if (!onRails && Lg.vehCount(s) > 1) [-1, 1].forEach(function (sd, i) { M.dirtTrack(lp, 0, lp.len(), { k: 3 + i * 4, w: 1.0, g: 0.24, off: sd * L.lane }); });
+    else M.dirtTrack(lp, 0, lp.len(), { k: 3, w: onRails ? 2.3 : 1.9, noPuddle: onRails });
     if (lineLv >= 5) ballast(lp, 0.3, lp.len());
     vb(-1.4, 0, -0.2, 2.8, 0.03, 0.9, M.DIRT);
     reservePath(lp, 0, lp.len(), 1.5);
@@ -5933,7 +6011,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     fields: ['fieldC', 'fieldT', 'tomatoes'],
     pick: ['helper', 'helper2', 'tHelper', 'tHelper2', 'hbasket', 'htool'],
     you: ['carry', 'boots', 'sickle', 'sharpS', 'scythe', 'sharpY', 'gloves', 'helper', 'cart', 'seller'],
-    line: ['cart', 'cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'],
+    line: ['cart', 'cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'wagon2', 'rails', 'oldTrain', 'train', 'wagon'],
     cannery: ['canWorker', 'canSpeed', 'tomCans'],
     tills: ['seller', 'sellSpeed', 'farmStall', 'farmShop'],
     customers: ['ad', 'shelves', 'farmStall', 'farmShop'],
@@ -5974,7 +6052,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var pick = hC + hT;
     var V = Lg.vehicle(s), lineLen = V ? trackLen(V.kind, s) : 0;
     var lineTrip = V ? 2 * lineLen / (V.speed * 0.8) + V.stop + V.cap / Math.max(4, Math.ceil(V.cap / 12)) * 0.12 * 2 + 1 + (Lg.stationOn(s) ? 2 : 0) : 0;
-    var lineRate = V ? V.cap / lineTrip : Infinity;
+    var lineRate = V ? V.cap / lineTrip * Lg.vehCount(s) : Infinity;   // a Second wagon doubles it
     // what one crop costs you in seconds
     var dist = line ? 4 : 21.5;
     var cut = 1 / (v * swath(s) * DENSE);
@@ -6031,8 +6109,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function cap(s, ctx, sig, m) {
     m = m || model(s, ctx); sig = sig || [];
     var has = function (k) { return sig.indexOf(k) >= 0; };
+    // the stall first: a full market backs the line up and fills the halts
+    // too, and then a bigger wagon fixes nothing. Tills or buyers: the model says
+    var L0 = {}; m.links.forEach(function (l) { L0[l.id] = l.rate; });
+    if (has('marketFull')) return { id: has('queueFull') || L0.tills < L0.customers ? 'tills' : 'customers', live: true, m: m };
+    if (has('queueFull') && !has('noStock')) return { id: 'tills', live: true, m: m };
     if (has('haltFull')) return { id: 'line', live: true, m: m };
-    if (has('marketFull') || (has('queueFull') && !has('noStock'))) return { id: 'tills', live: true, m: m };
     if (has('noStock')) {
       // short of crops: the weakest supply link (fields, pickers or you)
       var L = {}; m.links.forEach(function (l) { L[l.id] = l.rate; });
@@ -7450,6 +7532,188 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(this.FL = this.FL || {});
 
 </script>
+<script>/* src/farmline/panels.js */
+// Farm Line: the tap panels (Tom 2026-10-08 "we need to be able to click the
+// buildings, stall, stations, cart, for content and UI"). A tap on a building,
+// the stall, a station or the cart opens a panel with what is inside it right
+// now (by grade), what it is doing, its upgrades (cheapest first) and its
+// "So far" numbers. Tom picked B (2026-10-08): a bottom sheet with tabs
+// Inside / Upgrades / So far; the camera keeps the thing in the top half of
+// the screen and walking off closes it. ?panel=o shows the old pop-up card.
+// game.js keeps the hit tests and the old menu; this file only builds the
+// panel from the api game.js hands it (attach).
+(function (FL) {
+  'use strict';
+  var A = null, VAR = 'b';
+  try { var q = /[?&]panel=([a-z])/.exec(location.search); if (q) VAR = q[1]; } catch (e) {}
+  FL.panelVar = VAR;
+  var W = ['★', '★★', '★★★', '★★★★', '★★★★★'];
+  var NM = { carrot: 'Carrots', tomato: 'Tomatoes', canC: 'Carrot cans', canT: 'Tomato cans' };
+
+  // ---- small parts ----
+  function sum(g) { return g.reduce(function (a, n) { return a + n; }, 0) + (g.d || 0); }
+  // a table: a row per item, a column per grade (grey ☆ for unwashed), a total
+  function gradeTable(rows) {
+    var S = A.S(), NS = A.Lg.maxStar(S);
+    rows.forEach(function (r) { for (var q = 4; q >= NS; q--) if (r.g[q]) { NS = q + 1; break; } });
+    var D = rows.some(function (r) { return r.g.d; });
+    var h = '<table class="gt"><tr><th></th>' + (D ? '<th><i style="background:' + A.RAW + '">☆</i></th>' : '');
+    for (var i = 0; i < NS; i++) h += '<th><i style="background:' + A.GC[i] + '">' + (i + 1) + '★</i></th>';
+    h += '<th>all</th></tr>';
+    rows.forEach(function (r) {
+      var t = sum(r.g), cap = r.cap ? '<small>/' + r.cap + '</small>' : '';
+      h += '<tr><td>' + r.name + '</td>' + (D ? '<td' + (r.g.d ? ' style="color:#7d8597"' : ' class="z"') + '>' + (r.g.d || '·') + '</td>' : '');
+      for (var j = 0; j < NS; j++) h += '<td' + (r.g[j] ? ' style="color:' + dark(A.GC[j]) + '"' : ' class="z"') + '>' + (r.g[j] || '·') + '</td>';
+      h += '<td class="' + (r.cap && t === 0 ? 'red' : r.cap && t >= r.cap ? 'full' : '') + '"><b>' + t + '</b>' + cap + '</td></tr>';
+    });
+    return h + '</table>';
+  }
+  // grade colours read on cream: a darker cut of each
+  function dark(c) { return { '#7fd3ff': '#1d8fd0', '#ffcf3a': '#c88a00', '#ff5aa8': '#d6337f', '#e8402f': '#c02a1a', '#b06cff': '#8040d0' }[c] || c; }
+  function bar(k, col, label, sub) {
+    k = Math.max(0, Math.min(1, k || 0));
+    return '<div class="pb"><div class="pbl"><span>' + label + '</span><b>' + (sub || '') + '</b></div><div class="pbt"><i style="width:' + Math.round(k * 100) + '%;background:' + col + '"></i></div></div>';
+  }
+  function pill(t, tone) { return '<span class="pill ' + (tone || '') + '">' + t + '</span>'; }
+  function rowsFor(pool, fams, cap) { return fams.map(function (f) { return { name: NM[f], g: A.gradeCounts(pool, [f]), cap: cap }; }); }
+
+  // ---- what each thing holds and does right now ----
+  // returns { icon, title, level, status: [text, tone], now: html, stats: [..], ids, send }
+  function model(m) {
+    var S = A.S(), G = A.G(), Lg = A.Lg, f = Lg.fmt, st = S.stats, o = { icon: 'basket', title: A.title(m), stats: A.stats(m), ids: A.ids(m), now: '', status: null };
+    var open = { carrot: 1, tomato: Lg.lv(S, 'tomatoes') > 0, canC: Lg.lv(S, 'cannery') > 0, canT: Lg.lv(S, 'tomCans') > 0 };
+    var fams = ['carrot', 'tomato', 'canC', 'canT'].filter(function (k) { return open[k]; });
+    switch (m.kind) {
+      case 'stall':
+        o.icon = 'market';
+        var sc = Lg.shelfCap(S), rows = rowsFor(S.stock.shelf, fams, sc), empty = rows.filter(function (r) { return sum(r.g) === 0; });
+        var q = 0, tills = Lg.tills(S); for (var i = 0; i < 3; i++) q += (G.tq[i] || []).length;
+        o.status = empty.length ? [empty[0].name + ' sold out', 'red'] : q ? [q + ' in the queue', 'gold'] : ['Open', 'green'];
+        o.now = '<h4>On the shelves</h4>' + gradeTable(rows) +
+          '<div class="kv"><span>Tills <b>' + tills + '</b></span><span>Sellers <b>' + Lg.sellers(S) + '</b></span><span>Queue <b>' + q + '</b></span><span>Earning <b>' + f(Math.round(A.income() * 60)) + '</b>/min</span></div>';
+        break;
+      case 'vehicle':
+        // one panel per tapped wagon: m.key is the car index today; with a second
+        // wagon (G.vehs, "Late Home valley jams" thread) m.wagon picks which
+        var v = (G.vehs && G.vehs[m.wagon != null ? m.wagon : m.key]) || G.veh, vk = Lg.vehicle(S); o.icon = vIcon(S);
+        if (v) {
+          var n = A.vLoad(v), cap = vk ? vk.cap : 0, used = ['carrot', 'tomato', 'canC', 'canT'].filter(function (k) { return Lg.famN(v.st.load, k) > 0; });
+          var SW = { wait: 'Loading at the halt', up: 'Heading to the halts', down: 'Going to the station', unload: 'Unloading', top: 'Topping up', fac: 'At the station', station: 'Loading cans', conGo: 'Off to a contract', conDrop: 'Delivering a contract', conBack: 'Coming back' };
+          o.status = [SW[v.st.state] || 'On the line', v.st.state === 'wait' ? 'gold' : 'green'];
+          o.now = bar(cap ? n / cap : 0, '#ffb53a', 'Load', n + ' / ' + cap) + (used.length ? gradeTable(rowsFor(v.st.load, used)) : '<p class="mute">Empty</p>');
+          o.send = v.st.state === 'wait';
+          o.slot = SLOTS.vehicle ? SLOTS.vehicle(m, v) || '' : '';   // the route chooser goes here
+        }
+        break;
+      case 'packhouse':
+        o.icon = 'wash';
+        if (Lg.lv(S, 'wash')) {
+          var M = S.mach, ii = S.stock.intake, inN = ii.carrot + ii.tomato, gN = Lg.goodsN(S), gC = Lg.goodsCap(S);
+          o.status = gN >= gC ? ['Store full', 'red'] : M.wash ? ['Washing', 'green'] : inN ? ['Starting a batch', 'gold'] : ['Waiting for crops', 'grey'];
+          o.now = '<div class="flow">' +
+            step('IN', inN + '/' + Lg.intakeCap(S), inN ? '' : 'z') + arrow() +
+            step('Washer', M.wash ? (M.wash.carrot + M.wash.tomato) : '-', M.wash ? 'on' : 'z') + arrow() +
+            (Lg.lv(S, 'sorter') ? step('Sorter', M.sort ? (M.sort.carrot + M.sort.tomato) : '-', M.sort ? 'on' : 'z') + arrow() : '') +
+            step('CROPS', A.famSum(S.stock.goods, ['carrot', 'tomato']), '') + '</div>' +
+            bar(M.wash ? M.wash.t / Lg.washCycle(S) : 0, '#5fd0ff', 'Wash batch', Lg.washBatch(S) + ' in ' + Math.round(Lg.washCycle(S)) + ' s') +
+            (Lg.lv(S, 'sorter') ? bar(M.sort ? M.sort.t / Lg.sortCycle(S) : 0, '#ffd23a', 'Sorting', M.sort ? (M.sort.carrot + M.sort.tomato) + ' crops' : 'idle') : '') +
+            '<h4>CROPS store</h4>' + gradeTable(rowsFor(S.stock.goods, fams.filter(function (k) { return k === 'carrot' || k === 'tomato'; })));
+          o.stats = ['Washed <b>' + f(st.washed || 0) + '</b>' + (Lg.lv(S, 'sorter') ? ', graded <b>' + f(st.graded || 0) + '</b>' : ''), 'Extra earned <b>' + f(st.pkEarned || 0) + '</b>'];
+        }
+        break;
+      case 'cannery':
+        o.icon = 'cannery';
+        if (Lg.lv(S, 'cannery')) {
+          var b = S.mach.can, hop = Lg.hopN(S);
+          o.status = b && G.canRun ? ['Canning', 'green'] : b ? ['Needs you on CAN', 'gold'] : hop ? ['Filling the hopper', 'gold'] : ['Waiting for ★ crops', 'grey'];
+          o.now = bar(b ? b.t / Lg.canCycle(S, false) : 0, '#ff8ac4', 'Batch', (b ? A.batchN(b) : 0) + ' of ' + Lg.canBatch(S)) +
+            '<div class="kv"><span>Hopper <b>' + hop + '</b></span><span>Takes <b>' + (Lg.gradedCans(S) ? 'all grades' : '★ only') + '</b></span></div>' +
+            '<h4>CANS store</h4>' + gradeTable(rowsFor(S.stock.goods, fams.filter(function (k) { return k === 'canC' || k === 'canT'; })));
+          o.stats = ['Cans made <b>' + f(st.cans) + '</b>', 'Earned from cans <b>' + f(st.canEarned) + '</b>'];
+        }
+        break;
+      case 'store':
+        o.icon = m.key === 'cans' ? 'cans' : 'basket';
+        if (m.key === 'in') { var ib = S.stock.intake; o.now = bar((ib.carrot + ib.tomato) / Lg.intakeCap(S), '#5fd0ff', 'IN', (ib.carrot + ib.tomato) + ' / ' + Lg.intakeCap(S)); o.stats = []; }
+        else { var ff = fams.filter(function (k) { return m.key === 'cans' ? k === 'canC' || k === 'canT' : k === 'carrot' || k === 'tomato'; }); o.now = gradeTable(rowsFor(S.stock.goods, ff)) + bar(Lg.goodsN(S) / Lg.goodsCap(S), '#9aa1b0', 'Whole station', Lg.goodsN(S) + ' / ' + Lg.goodsCap(S)); o.stats = []; }
+        o.status = ['Walk on to ' + (m.key === 'in' ? 'drop' : 'pick up'), 'grey'];
+        break;
+      case 'halt':
+        o.icon = m.key === 'tomato' ? 'haltT' : 'halt';
+        var pool = A.haltPool(m.key), hn = A.poolN(pool), hc = Lg.haltCap(S);
+        o.status = hn >= hc ? ['Full', 'red'] : hn ? [hn + ' waiting', 'gold'] : ['Empty', 'grey'];
+        o.now = bar(hn / hc, hn >= hc ? '#ff6b5e' : '#ffb53a', 'Waiting', hn + ' / ' + hc);
+        break;
+      case 'field':
+        o.icon = m.key === 'tomato' ? 'tomato' : 'basket';
+        var hs = G.helpers.filter(function (h) { return h.crop === m.key; }).length;
+        o.status = [hs ? hs + ' helper' + (hs > 1 ? 's' : '') + ' picking' : 'Yours to cut', hs ? 'green' : 'grey'];
+        break;
+      case 'bulk': o.icon = 'basket'; break;
+      case 'helper': o.icon = 'helper'; break;
+      case 'you': o.icon = 'gloves'; break;
+      case 'corn': o.icon = 'corn'; break;
+      case 'lab': o.icon = 'lab'; break;
+      case 'fix': o.icon = 'sign'; o.status = [m.stock ? 'On hand' : 'Jammed', m.stock ? 'grey' : 'red']; break;
+      case 'con': o.icon = 'contracts'; break;
+    }
+    return o;
+  }
+  function vIcon(S) { var k = A.Lg.vehicleKind(S) || 'cart'; return k === 'oldtrain' ? 'oldTrain' : k; }
+  function step(t, n, c) { return '<div class="st ' + c + '"><small>' + t + '</small><b>' + n + '</b></div>'; }
+  function arrow() { return '<i class="ar">›</i>'; }
+
+  // ---- the panel ----
+  var sig = '', tab = 'in';
+  // other threads add a block to a panel: FL.panels.slot('vehicle', function (m, v) { return html; })
+  var SLOTS = {};
+  function head(o) {
+    return '<div class="ph"><div class="pic">' + A.icon(o.icon, 34) + '</div><div class="pt"><h3>' + o.title + '</h3>' + (o.status ? pill(o.status[0], o.status[1]) : '') + '</div></div>';
+  }
+  // every upgrade this thing has, cheapest first
+  function upgrades(o) {
+    var S = A.S(), offs = A.Lg.offers(S).filter(function (x) { return (o.ids || []).indexOf(x.id) >= 0; }).sort(function (a, b) { return a.cost - b.cost; });
+    return { list: offs, html: offs.map(function (x) { return A.card(x, true); }).join('') };
+  }
+  function soFar(o) { return o.stats.filter(Boolean).map(function (s) { return '<p>' + s + '</p>'; }).join(''); }
+  function render(m, force) {
+    var o = model(m), up = upgrades(o), extra = A.extra(m), coins = A.S().coins;
+    // things with nothing live to show (a jam card, the compost heap, a site
+    // not bought yet) put their lines on the Inside tab instead
+    if (!o.now && o.stats.filter(Boolean).length) { o.now = '<div class="sf">' + soFar(o) + '</div>'; o.stats = []; }
+    var s = tab + m.kind + m.key + JSON.stringify(o) + up.list.map(function (x) { return x.id + x.cost + (x.cost <= coins); }).join() + extra;
+    if (!force && s === sig) return false; sig = s;
+    var send = o.send !== undefined ? '<button type="button" class="mbtn gold send" id="sendNow"' + (o.send ? '' : ' disabled') + '>Send now</button>' : '';
+    var canN = up.list.filter(function (x) { return x.cost <= coins; }).length;
+    // a jam card's fixes belong next to the jam: no Upgrades tab there
+    var fix = m.kind === 'fix', tabs = fix ? [['in', 'What is jamming']] : [['in', 'Inside'], ['up', 'Upgrades' + (canN ? ' <em>' + canN + '</em>' : '')]];
+    if (o.stats.filter(Boolean).length) tabs.push(['sf', 'So far']);
+    if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'in';
+    var body = tab === 'in' ? (o.now || '<p class="mute">Nothing inside.</p>') + send + (o.slot || '') + extra + (fix ? up.html : '')
+      : tab === 'up' ? (up.html || '<p class="mute">Nothing to buy here right now.</p>') : '<div class="sf">' + soFar(o) + '</div>';
+    return head(o) + '<div class="ptabs">' + tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div><div class="pbody">' + body + '</div>';
+  }
+  function on() { return VAR === 'b'; }
+
+  FL.panels = {
+    attach: function (api) {
+      A = api;
+    },
+    on: on,
+    slot: function (kind, fn) { SLOTS[kind] = fn; sig = ''; },
+    sheet: function () { return on(); },
+    open: function () { tab = 'in'; sig = ''; },
+    // fill the panel body; returns true when it changed
+    fill: function (el, m, force) {
+      var h = render(m, force); if (h === false) return false;
+      el.innerHTML = h;
+      Array.prototype.forEach.call(el.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; A.refresh(true); }); });
+      return true;
+    }
+  };
+})(this.FL = this.FL || {});
+
+</script>
 <script>/* src/farmline/game.js */
 // Farm Line valley 1: the play loop (docs/farmline-valley1.md). Walk through
 // ripe crops to cut them; they fly onto your back. Carry them to the stall
@@ -7508,7 +7772,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function newRuntime() {
     return {
       t: 0, fields: {}, player: null, helpers: [], customers: [], flyers: [], parts: [], puffs: [], texts: [], coinFly: [],
-      veh: null, sellers: [], worker: null, piles: {}, tq: [[], [], []], tillT: [0, 0, 0],
+      veh: null, vehs: [], sellers: [], worker: null, piles: {}, tq: [[], [], []], tillT: [0, 0, 0],
       spawnT: 1.5, haul: null, focus: null, railBuild: false, cam: { x: L.start.x, z: L.start.z - 4 }, coinShown: 0, banner: null, saveT: 0, frame: 0,
       golden: null, bus: null, busPending: 0, incLog: [], incT: 0, cut: null, fogZ: -38 + DZ, fogTrunk: -20 + DZ, fogAll: 1,
       canBatch: 0, canT: 0, canFlip: false, onServe: false, onCan: false, restockT: 0, hintT: {}, pilesDirty: true, offT: 0, offs: [],
@@ -7751,11 +8015,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var SPOTS_HWAGON = grid(0, -0.25, 3, 4, 0.42, 0.5, 0.72, 2);
   var SPOTS_OLDWAGON = grid(0, 0, 2, 3, 0.48, 0.55, 0.52, 2);
   function removeVehicle() {
-    var v = G.veh; if (!v) return;
-    v.cars.forEach(function (c) { RD.remove(c.g); }); v.crew.forEach(function (c) { RD.remove(c.a.g); }); if (v.porter) RD.remove(v.porter.g); (v.donkeys || []).forEach(function (d) { RD.remove(d); });
-    G.veh = null;
+    (G.vehs || []).forEach(function (v) {
+      v.cars.forEach(function (c) { RD.remove(c.g); }); v.crew.forEach(function (c) { RD.remove(c.a.g); }); if (v.porter) RD.remove(v.porter.g); (v.donkeys || []).forEach(function (d) { RD.remove(d); });
+    });
+    G.veh = null; G.vehs = [];
   }
-  function vehSig() { return Lg.vehicleKind(S) + ':' + Lg.lineLevel(S); }
+  function vehSig() { return Lg.vehicleKind(S) + ':' + Lg.lineLevel(S) + ':' + Lg.vehCount(S); }
   function isTrain(v) { return v && (v.kind === 'train' || v.kind === 'oldtrain'); }
   function syncVehicle() {
     var kind = Lg.vehicleKind(S);
@@ -7763,26 +8028,35 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.veh && G.veh.sig === vehSig()) return;
     var prevKind = G.veh && G.veh.kind;
     removeVehicle();
-    var st = S.veh || (S.veh = { s: 0, state: 'wait', load: Lg.goods(), cans: { canC: 0, canT: 0 } });
+    // the Second wagon (Tom 2026-10-08): same kind and level, its own state and route
+    for (var wi = 0; wi < Lg.vehCount(S); wi++) G.vehs.push(makeVehicle(kind, wi, prevKind));
+    G.veh = G.vehs[0];
+  }
+  function makeVehicle(kind, wi, prevKind) {
+    var st = wi ? S.veh2 || (S.veh2 = { s: 0, state: 'wait', load: Lg.goods(), cans: { canC: 0, canT: 0 } }) : S.veh || (S.veh = { s: 0, state: 'wait', load: Lg.goods(), cans: { canC: 0, canT: 0 } });
     KINDS.forEach(function (k) { st.load[k] = st.load[k] || 0; });
-    var v = { kind: kind, sig: vehSig(), cars: [], crew: [], st: st, waitT: 0, dwell: 0, chunkT: 0, hop: 0, pump: 0, walk: 0, smokeT: 0, v: 0, trips: 0, moved: 0, plan: null, lvl: Lg.lineLevel(S), loadCar: 0, donkeys: [], haulT: 0, work: 0, out: 0, side: 1, sideE: 1, swing: 1, dip: 0 };
+    // two wagons: each in its own narrow lane, drawn smaller (the stall's wagon on the stall's side)
+    var two = Lg.vehCount(S) > 1 && !isTrain({ kind: kind }), K = two ? 0.72 : 1, laneS = 1;
+    if (two && info.platPile) { var mq = M.at(info.line, L.sStop); laneS = (info.platPile.x - mq.x) * mq.rx + (info.platPile.z - mq.z) * mq.rz >= 0 ? 1 : -1; }
+    // the lanes are drawn with the line's left normal (models.js dirtTrack), M.at's rx is its right
+    var v = { idx: wi, K: K, lat: two ? (wi ? 1 : -1) * laneS * L.lane : 0, kind: kind, sig: vehSig(), cars: [], crew: [], st: st, waitT: 0, dwell: 0, chunkT: 0, hop: 0, pump: 0, walk: 0, smokeT: 0, v: 0, trips: 0, moved: 0, plan: null, lvl: Lg.lineLevel(S), loadCar: 0, donkeys: [], haulT: 0, work: 0, out: 0, side: 1, sideE: 1, swing: 1, dip: 0 };
     if (kind === 'cart') {
-      var big = v.lvl >= 3 ? 1.2 : 1, cg = RD.makeRig(M.handCart()); cg.scale.set(big, big, big);
-      v.cars.push({ g: cg, len: 1.4, off: 0, pile: RD.makePile(SPOTS_CART.length, SPOTS_CART, cg) });
+      var big = (v.lvl >= 3 ? 1.2 : 1) * K, cg = RD.makeRig(M.handCart()); cg.scale.set(big, big, big);
+      v.cars.push({ g: cg, len: 1.4 * K, off: 0, pile: RD.makePile(SPOTS_CART.length, SPOTS_CART, cg) });
       v.crew.push({ a: RD.makePerson(LOOK.puller, { arms: true }), walk: 0 });
       v.haltS = L.sHalt; v.mktS = L.sStop + 0.3;
     } else if (kind === 'donkey') {
       // a big wooden wagon, one donkey (two from "Second donkey"), the driver on the bench
-      var bw = v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1, wg = RD.makeRig(M.donkeyWagon(v.lvl)); wg.scale.set(bw, bw, bw);
-      v.cars.push({ g: wg, len: 1.9, off: 0, pile: RD.makePile(SPOTS_DWAGON.length, SPOTS_DWAGON, wg) });
-      for (var dn = 0; dn < (v.lvl >= 2 ? 2 : 1); dn++) { var dk = RD.makeRig(M.donkey()); dk.scale.set(1.3, 1.3, 1.3); v.donkeys.push(dk); }   // drawn at the people's 1.3x
+      var bw = (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1) * K, wg = RD.makeRig(M.donkeyWagon(v.lvl)); wg.scale.set(bw, bw, bw);
+      v.cars.push({ g: wg, len: 1.9 * K, off: 0, pile: RD.makePile(SPOTS_DWAGON.length, SPOTS_DWAGON, wg) });
+      for (var dn = 0; dn < (v.lvl >= 2 ? 2 : 1); dn++) { var dk = RD.makeRig(M.donkey()); dk.scale.set(1.3 * K, 1.3 * K, 1.3 * K); v.donkeys.push(dk); }   // drawn at the people's 1.3x
       v.crew.push({ a: RD.makePerson(LOOK.puller, { arms: true }), walk: 0 });
       v.haltS = L.sHalt; v.mktS = L.sStop + 0.3;
     } else if (kind === 'horse') {
       // the horse wagon: a long wagon with sideboards, one big horse (two from "Team of two"), the driver on the bench
-      var hw = RD.makeRig(M.horseWagon(v.lvl));
-      v.cars.push({ g: hw, len: 2.5, off: 0, pile: RD.makePile(SPOTS_HWAGON.length, SPOTS_HWAGON, hw) });
-      for (var hn = 0; hn < (v.lvl >= 2 ? 2 : 1); hn++) { var hm = RD.makeRig(M.horse(hn === 1)); hm.scale.set(1.3, 1.3, 1.3); v.donkeys.push(hm); }
+      var hw = RD.makeRig(M.horseWagon(v.lvl)); hw.scale.set(K, K, K);
+      v.cars.push({ g: hw, len: 2.5 * K, off: 0, pile: RD.makePile(SPOTS_HWAGON.length, SPOTS_HWAGON, hw) });
+      for (var hn = 0; hn < (v.lvl >= 2 ? 2 : 1); hn++) { var hm = RD.makeRig(M.horse(hn === 1)); hm.scale.set(1.3 * K, 1.3 * K, 1.3 * K); v.donkeys.push(hm); }
       v.crew.push({ a: RD.makePerson(LOOK.puller, { arms: true }), walk: 0 });
       v.haltS = L.sHalt; v.mktS = L.sStop + 0.3;
     } else if (kind === 'oldtrain') {
@@ -7819,17 +8093,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     if (st.state === 'unload') st.state = 'down';
     v.loadedCap = Lg.vehicle(S).cap;
-    G.veh = v;
+    return v;
   }
   function vLoad(v) { var n = 0, ld = v.st.load; for (var k in ld) n += ld[k] || 0; return n; }
-  function sendNow() {
-    var v = G.veh; if (!v || v.st.state !== 'wait') return false;
+  function sendNow(v) {
+    v = v || G.veh; if (!v || v.st.state !== 'wait') return false;
     v.hop = 1; snd.toot(); S.hints.tapped = 1;
     if (vLoad(v) > 0 || stationCall(v)) { leaveHalt(v); return true; }
     var q = carPos(v, 0); text(q.x, 2.2, q.z, 'Empty', '#ffffff', 15, 0.9);
     return false;
   }
-  function carPos(v, i) { return v.st.con && info.con && info.con.path ? M.at(info.con.path, v.st.cs + v.cars[i].off) : M.at(info.line, v.st.s + v.cars[i].off); }
+  function carPos(v, i) { return v.st.con && info.con && info.con.path ? M.at(info.con.path, v.st.cs + v.cars[i].off) : vat(v, info.line, v.st.s + v.cars[i].off); }
+  // a point on the line for this wagon: the Second wagon runs a little to the side so the two pass
+  function vat(v, path, s) {
+    var q = M.at(path, s); if (!v.lat || path !== info.line) return q;
+    var o = {}; for (var k in q) o[k] = q[k]; o.x = q.x + q.rx * v.lat; o.z = q.z + q.rz * v.lat; return o;
+  }
 
   // ------------------------------------------------------------------ input
   var input = { active: false, id: -1, ox: 0, oy: 0, dx: 0, dy: 0, radius: 54, keys: {}, forced: null, tap: null };
@@ -8241,6 +8520,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // run dry
   function stationCall(v) {
     if (!Lg.stationOn(S)) return false;
+    var rt = Lg.route(S, v.idx || 0); if (rt === 'factory' || rt === 'stall') return true;
     var cap = Lg.vehicle(S).cap, crops = 0; Lg.RAW.forEach(function (k) { crops += v.st.load[k] || 0; });
     if (Lg.goodsFree(S) >= 0.75 * Math.min(cap, Lg.goodsCap(S))) return true;
     if (crops > 0 && Lg.lv(S, 'wash')) { var ib = S.stock.intake; if (ib.carrot + ib.tomato + G.washIn < Lg.washBatch(S)) return true; }
@@ -8250,7 +8530,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function stationS(v) {
     var c = v.cars[Math.min(v.cars.length - 1, v.loadCar)], mx = 0;
     v.cars.forEach(function (q) { mx = Math.max(mx, q.off); });
-    return Math.min(L.sSt - (c ? c.off : 0), L.sEnd - mx - 0.6);
+    return Math.min(L.sSt - (c ? c.off : 0), L.sEnd - mx - 0.6) - (v.stOff || 0);
   }
   // crops off both halts onto the vehicle, a chunk every 0.12 s
   // ---- loading and unloading (Tom 2026-10-07): at every stop the driver (the
@@ -8391,7 +8671,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // them at the FACTORY station first), then runs down the siding to our dock
   // (st.con, st.cs along info.con.path), hands it over, and comes back up.
   function conFam(v) {
-    if (!CN || !info.con || !info.con.path || !(v.kind === 'cart' || v.kind === 'donkey' || v.kind === 'horse')) return null;
+    if (!CN || !info.con || !info.con.path || v.idx || !(v.kind === 'cart' || v.kind === 'donkey' || v.kind === 'horse')) return null;
     return CN.rush() && CN.left() > 0 ? CN.order().fam : null;
   }
   function haltFam(f) { return Lg.famN(S.stock.halt, f) + Lg.famN(S.stock.haltT, f); }
@@ -8413,12 +8693,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (v.dwell > 0.8) { st.state = 'conBack'; v.dwell = 0; }
   }
   function leaveHalt(v) { v.st.state = stationCall(v) ? 'fac' : 'down'; v.waitT = 0; }
-  function updateVehicle(dt) {
-    var v = G.veh; if (!v) return;
-    var st = v.st, V = Lg.vehicle(S), cap = V.cap, path = info.line;
+  function updateVehicle(dt) { G.vehs.forEach(function (v) { updateVeh(v, dt); }); }
+  function updateVeh(v, dt) {
+    var st = v.st, V = Lg.vehicle(S), cap = V.cap, path = info.line, route = Lg.route(S, v.idx);
     v.chunkT -= dt; v.hop = Math.max(0, v.hop - dt * 3);
     updateLoader(v, dt);
-    var moving = false, reserve = stationReserve(cap);
+    var moving = false, reserve = route === 'loop' ? stationReserve(cap) : 0;
     var cf = conFam(v);
     if (st.state === 'wait') {
       if (Math.abs(st.s - v.haltS) > 0.05) { st.state = 'up'; }
@@ -8431,6 +8711,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
       else if (cf && Lg.isCan(cf) && Lg.famN(st.load, cf) > 0) { v.dwell += dt; if (v.dwell > 0.5) conGo(v); }
       else if (cf && Lg.isCan(cf) && Lg.stationOn(S) && Lg.famN(S.stock.goods, cf) > 0) { v.dwell += dt; if (v.dwell > 0.5) { st.state = 'fac'; v.waitT = 0; } }
+      // the Stall run does not wait at the halts: straight up to the station
+      else if (route === 'stall') { v.dwell += dt; if (v.dwell > 0.3) { st.state = 'fac'; v.waitT = 0; } }
+      else if (route === 'factory') {
+        // the Factory run: fill up, then to the IN. It goes with a part load when the halts run dry
+        v.dwell += dt;
+        loadHalts(v, cap - vLoad(v));
+        var fl = vLoad(v); if (fl > 0) v.waitT += dt; else v.waitT = 0;
+        var dry = poolN(S.stock.halt) + poolN(S.stock.haltT) === 0;
+        if (v.dwell > 1 && fl > 0 && (fl >= cap || (dry && v.dwell > 2) || v.waitT >= V.leaveAfter)) { st.state = 'fac'; v.waitT = 0; }
+      }
       else {
         v.dwell += dt;
         loadHalts(v, cap - vLoad(v) - reserve);
@@ -8450,12 +8740,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var pulledV = v.kind === 'cart' || v.kind === 'donkey' || v.kind === 'horse', wantA = 0;
     if (pulledV) {
       // down the line, and back up our Contract-yard siding, it faces the other way
-      wantA = st.state === 'down' || st.state === 'top' || st.state === 'unload' || st.state === 'conBack' ? Math.PI : 0;
+      wantA = st.state === 'down' || st.state === 'top' || st.state === 'unload' || st.state === 'conBack' || st.state === 'back' ? Math.PI : 0;
       if (v.turnA == null) v.turnA = wantA;
     }
     // leaving a stop: the loader gets back on first, then a pulled wagon turns
     // round on the spot, then it rolls (Tom: trip time matters less than looks)
-    var going = st.state === 'fac' || st.state === 'down' || st.state === 'up', conRun = st.state === 'conGo' || st.state === 'conBack';
+    var going = st.state === 'fac' || st.state === 'down' || st.state === 'up' || st.state === 'back', conRun = st.state === 'conGo' || st.state === 'conBack';
     // stops are tight (halts, the FACTORY gantry, the platform): a wagon that has to turn
     // backs out a little way first, then turns round in the open
     v.turning = pulledV && Math.abs(v.turnA - wantA) > 0.001;
@@ -8505,10 +8795,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
     }
     if (st.state === 'conDrop') conDrop(v, dt, cap);
-    if (st.state === 'station') stationStop(v, dt, cap);
+    if (st.state === 'station') stationStop(v, dt, cap, route, V);
     // passing the halts on the way down: fill the room the station made
     if (st.state === 'top') { v.dwell += dt; if (v.chunkT <= 0 && !loadHalts(v, cap - vLoad(v)) && v.dwell > 0.4) { if (cf && Lg.famN(st.load, cf) > 0) conGo(v); else st.state = 'down'; } }
-    if (st.state === 'unload') unloadAtMarket(v, dt, cap, V.stop);
+    if (st.state === 'unload') unloadAtMarket(v, dt, cap, V.stop, route);
     // sounds near the player
     var q0 = carPos(v, 0), nearP = near(G.player, q0.x, q0.z, 11);
     if (moving && nearP) {
@@ -8534,13 +8824,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // into the Cannery hopper (with its worker), crops into the INTAKE until it
   // is full (with the Packhouse worker), then the goods off the GOODS shelf
   // until it is empty or the cart is full. The rest rides on as plain crops.
-  function stationStop(v, dt, cap) {
+  function stationStop(v, dt, cap, route, V) {
     var st = v.st; v.dwell += dt;
     if (v.chunkT > 0) return;
     v.chunkT = 0.12;
     var chunk = Math.max(5, Math.ceil(cap / 10)), q = carPos(v, Math.min(v.cars.length - 1, v.loadCar));
     if (v.dwell < 0.5 || v.out > 0) { var sti = info.station.intake; if (needLoader(v, sti.x, sti.z)) return; }
-    var r = Lg.stationStep(S, st.load, cap, chunk, G.washIn);
+    var r = Lg.stationStep(S, st.load, cap, chunk, G.washIn, route === 'factory' ? 'in' : route === 'stall' ? 'out' : undefined);
     if (r) {
       G.pilesDirty = true;
       if (r.what === 'hopper') { S.stats.moved += r.n; G.canSettle = 0; haul(v, r.kind, L.hopper.x, 1.2, L.hopper.z, false); }
@@ -8549,10 +8839,20 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (near(G.player, q.x, q.z, 10)) snd.tick(4, 0);
       return;
     }
+    if (route === 'factory') {
+      // every raw crop goes into the IN: the wagon waits while it is full (the wash is the cap then)
+      var raw = 0; Lg.RAW.forEach(function (k) { raw += st.load[k] || 0; });
+      v.inWait = raw > 0;
+      if (raw > 0) return;
+      if (v.dwell >= 1) { st.state = 'back'; v.waitT = 0; v.trips++; }
+      return;
+    }
+    // the Stall run waits a while for goods when it has none
+    if (route === 'stall' && vLoad(v) === 0 && v.dwell < V.leaveAfter) return;
     if (v.dwell >= 1) { st.state = 'down'; v.topUp = true; }
   }
   // the market: everything onto the platform (crops up to what it holds)
-  function unloadAtMarket(v, dt, cap, stop) {
+  function unloadAtMarket(v, dt, cap, stop, route) {
     var st = v.st;
     v.dwell += dt;
     if (v.chunkT > 0) return;
@@ -8569,7 +8869,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var cr = KINDS.filter(function (k) { return Lg.cropOf(k) && st.load[k] > 0; })[0];
     if (cr) {
       var roomP = Lg.haltCap(S) - platCrops();
-      if (roomP <= 0) { v.full = true; return; }
+      if (roomP <= 0) { v.full = true; G.mktJamT = G.t; return; }
       v.full = false;
       var k = Math.min(chunk, st.load[cr], roomP); st.load[cr] -= k; S.stock.plat[cr] += k; S.stats.moved += k; G.pilesDirty = true;
       haul(v, cr, info.platPile.x, info.platPile.y + 0.3, info.platPile.z, false);
@@ -8577,7 +8877,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       return;
     }
     v.full = false;
-    if (v.dwell >= Math.max(1, stop - 1)) { st.state = 'up'; v.trips++; S.stats.trips++; }
+    if (v.dwell >= Math.max(1, stop - 1)) { st.state = route === 'stall' ? 'fac' : 'up'; v.trips++; S.stats.trips++; }
   }
 
   // ---- the Cannery: batches with a fill bar (Tom 2026-10-06 "B") ----
@@ -9044,6 +9344,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.cut) { var c = G.cut; c.t += dt; updateCut(c, dt); var u = Math.min(1, c.t / 0.8); tx = tx + (0 - tx) * u; tz = tz + (c.camZ - tz) * u; }
     else if (G.railBuild) { var s = RD.updateRails(dt); if (s < 0) { G.railBuild = false; snd.fanfare(); } else { var q = M.at(info.line, s); tx = q.x * 0.7 + p.x * 0.3; tz = q.z - 2; if (Math.floor(G.t * 7) !== Math.floor((G.t - dt) * 7)) snd.clack(0); } }
     else if (G.focus) { G.focus.t += dt; if (G.focus.t > G.focus.dur) G.focus = null; else { var uu = Math.min(1, G.focus.t / 0.5) * Math.min(1, (G.focus.dur - G.focus.t) / 0.5); tx = tx + (G.focus.x - tx) * uu; tz = tz + (G.focus.z - tz) * uu; } }
+    // a bottom-sheet panel keeps its building in the top half; walk off and it closes
+    if (G.menu && !G.cut && PNL() && FL.panels.sheet() && G.menu.x != null) {
+      var mv = G.menu.kind === 'vehicle' && (G.vehs[G.menu.wagon != null ? G.menu.wagon : G.menu.key] || G.veh); if (mv) { var vq = carPos(mv, 0); G.menu.x = vq.x; G.menu.z = vq.z; }
+      if (Math.hypot(p.x - G.menu.px, p.z - G.menu.pz) > 2.5) closeMenu(); else { tx = G.menu.x; tz = G.menu.z + 0.22 * groundH; }
+    }
     if (!G.cut) { tx = Math.max(-20, Math.min(12, tx)); tz = Math.max(fogTarget() < -40 ? -44 : -34, Math.min(6 + L.YARD - 0.17 * groundH, tz)); }
     var k = 1 - Math.exp(-dt * 5);
     G.cam.x += (tx - G.cam.x) * k; G.cam.z += (tz - G.cam.z) * k;
@@ -9262,12 +9567,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // the wagon in an arc while it turns
   function leadAt(v, path, ps, dir, L) {
     var ta = v.turnA || 0, mid = Math.abs(Math.sin(ta)) > 0.01;
-    if (!mid) { var sg = ta > 1.5 ? -1 : 1, q = M.at(path, ps + sg * L); return { x: q.x, z: q.z, rx: q.rx * sg, rz: q.rz * sg }; }
-    var c = M.at(path, ps), a = Math.atan2(c.dx, c.dz) + ta, fx = Math.sin(a), fz = Math.cos(a);
+    if (!mid) { var sg = ta > 1.5 ? -1 : 1, q = vat(v, path, ps + sg * L); return { x: q.x, z: q.z, rx: q.rx * sg, rz: q.rz * sg }; }
+    var c = vat(v, path, ps), a = Math.atan2(c.dx, c.dz) + ta, fx = Math.sin(a), fz = Math.cos(a);
     return { x: c.x + fx * L, z: c.z + fz * L, rx: fz, rz: -fx };
   }
-  function placeVehicle(dt) {
-    var v = G.veh; if (!v) return;
+  function placeVehicle(dt) { G.vehs.forEach(function (v) { placeVeh(v, dt); }); }
+  function placeVeh(v, dt) {
     var st = v.st, path = info.line, dir = st.state === 'up' || st.state === 'wait' || st.state === 'fac' || st.state === 'station' ? 1 : -1, hop = Math.sin(v.hop * Math.PI) * 0.25;
     // on our siding to the Contract yard: its own path (a pulled wagon turns round to come back up)
     var vs = st.s; if (st.con && info.con && info.con.path) { path = info.con.path; vs = st.cs; dir = st.state === 'conBack' ? -1 : 1; }
@@ -9278,7 +9583,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var ps = vs;
     if (cutRun && pulled) { path = cutRun; ps = G.cut.trainS; dir = 1; }
     v.cars.forEach(function (c, i) {
-      var q = cutRun ? M.at(cutRun, Math.max(0, G.cut.trainS - c.off)) : M.at(path, vs + c.off + trainJolt(v, i));
+      var q = cutRun ? M.at(cutRun, Math.max(0, G.cut.trainS - c.off)) : vat(v, path, vs + c.off + trainJolt(v, i));
       // the Old rattler wobbles and jolts as it goes
       var wob = old && v.moving ? Math.sin(G.t * 11 + i * 1.7) * 0.035 : 0, jolt = old && v.moving ? Math.max(0, Math.sin(G.t * 7.3 + i)) * 0.05 : 0;
       c.g.position.set(q.x, hop + jolt, q.z); c.g.rotation.y = Math.atan2(q.dx, q.dz) + (pulled ? (cutRun ? 0 : v.turnA || 0) : 0) + (old && v.moving ? Math.sin(G.t * 5 + i) * 0.02 : 0);
@@ -9295,9 +9600,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var nShow = tot > 0 ? Math.max(1, Math.ceil(per * piles.length * Math.min(1, tot / cap))) : 0, fams = PRODUCTS.map(function (f) { return Lg.famN(st.load, f); });
     var seq = []; for (var u = 0; u < nShow; u++) { var x = (u + 0.5) / nShow * tot, acc = 0, f = 0; for (; f < 3; f++) { acc += fams[f]; if (x <= acc) break; } seq.push(PRODUCTS[f]); }
     piles.forEach(function (c, i) { RD.setPile(c.pile, seq.slice(i * per, (i + 1) * per)); });
-    var c0 = v.cars[0], q0 = M.at(path, ps);
+    var c0 = v.cars[0], q0 = vat(v, path, ps);
     if (v.kind === 'cart') {
-      var lead = leadAt(v, path, ps, dir, 1.35), fa = c0.g.rotation.y;
+      var lead = leadAt(v, path, ps, dir, 1.35 * v.K), fa = c0.g.rotation.y;
       var pu = v.crew[0].a;
       c0.g.rotation.x = v.moving ? 0.05 + Math.sin(v.walk * 2) * 0.015 : 0.08;
       pu.g.position.set(lead.x, hop, lead.z);
@@ -9306,27 +9611,27 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var pr = pu.body.rig; if (pr) { var pm = v.moving ? 1 : 0; pr.parts[0].a = 0.42 + Math.sin(v.walk) * 0.1 * pm; pr.parts[1].a = 0.42 - Math.sin(v.walk) * 0.1 * pm; rigMove(pr, pu.g, adt); poseRig(pr, pu.g); }
     } else if (v.kind === 'donkey') {
       // the donkeys walk ahead in the shafts; the driver sits on the front bench
-      var dl = leadAt(v, path, ps, dir, 2.05 * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1)), da = c0.g.rotation.y, nd = v.donkeys.length;
+      var dl = leadAt(v, path, ps, dir, 2.05 * v.K * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1)), da = c0.g.rotation.y, nd = v.donkeys.length;
       c0.g.rotation.x = v.moving ? Math.sin(v.walk * 2) * 0.012 : 0;
       v.donkeys.forEach(function (d, k) {
-        var off = nd > 1 ? (k ? 0.36 : -0.36) : 0;
+        var off = nd > 1 ? (k ? 0.36 : -0.36) * v.K : 0;
         d.position.set(dl.x + dl.rx * off, hop + (d.rig ? d.rig.bob : 0), dl.z + dl.rz * off); d.rotation.y = da + Math.PI;
         animBeast(d, adt, k, false);
       });
-      var ra = c0.g.rotation.y, bz = 0.68 * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1), dr = v.crew[0].a;
-      dr.g.position.set(q0.x + Math.sin(ra) * bz, 0.36 + hop + (v.moving ? Math.abs(Math.sin(v.walk * 2)) * 0.03 : 0), q0.z + Math.cos(ra) * bz);
+      var ra = c0.g.rotation.y, bz = 0.68 * v.K * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1), dr = v.crew[0].a;
+      dr.g.position.set(q0.x + Math.sin(ra) * bz, 0.36 * v.K + hop + (v.moving ? Math.abs(Math.sin(v.walk * 2)) * 0.03 : 0), q0.z + Math.cos(ra) * bz);
       dr.g.rotation.y = ra; animLegs(dr, false, 0); dr.legs[0].rotation.x = -1.35; dr.legs[1].rotation.x = -1.35;
     } else if (v.kind === 'horse') {
       // the horses walk ahead in the shafts (side by side from "Team of two"); the driver sits high on the bench
-      var hl = leadAt(v, path, ps, dir, 2.75), ha = c0.g.rotation.y, nh = v.donkeys.length;
+      var hl = leadAt(v, path, ps, dir, 2.75 * v.K), ha = c0.g.rotation.y, nh = v.donkeys.length;
       c0.g.rotation.x = v.moving ? Math.sin(v.walk * 1.6) * 0.01 : 0;
       v.donkeys.forEach(function (d, k) {
-        var off = nh > 1 ? (k ? 0.42 : -0.42) : 0;
+        var off = nh > 1 ? (k ? 0.42 : -0.42) * v.K : 0;
         d.position.set(hl.x + hl.rx * off, hop + (d.rig ? d.rig.bob : 0), hl.z + hl.rz * off); d.rotation.y = ha + Math.PI;
         animBeast(d, adt, k, true);
       });
-      var hra = c0.g.rotation.y, hz = 0.95, hd = v.crew[0].a;
-      hd.g.position.set(q0.x + Math.sin(hra) * hz, 0.6 + hop + (v.moving ? Math.abs(Math.sin(v.walk * 2)) * 0.03 : 0), q0.z + Math.cos(hra) * hz);
+      var hra = c0.g.rotation.y, hz = 0.95 * v.K, hd = v.crew[0].a;
+      hd.g.position.set(q0.x + Math.sin(hra) * hz, 0.6 * v.K + hop + (v.moving ? Math.abs(Math.sin(v.walk * 2)) * 0.03 : 0), q0.z + Math.cos(hra) * hz);
       hd.g.rotation.y = hra; animLegs(hd, false, 0); hd.legs[0].rotation.x = -1.35; hd.legs[1].rotation.x = -1.35;
     } else if (v.kind === 'handcar') {
       v.crew.forEach(function (cr, i) {
@@ -9345,7 +9650,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.worker) placeWorker(G.worker);
     if (G.washer) G.washer.x = L.washer.x;
     placeStaff(G.washer, G.washRun, true); placeStaff(G.sorter, G.sortRun, false);
-    if (G.pkW) { var pw = G.pkW, pwBusy = G.veh && G.veh.st.state === 'station'; pw.bob += (pwBusy ? 9 : 2) / 60; pw.a.g.position.set(pw.x, 0.42 + Math.abs(Math.sin(pw.bob)) * (pwBusy ? 0.08 : 0.03), pw.z); pw.a.g.rotation.y = Math.PI / 2; animLegs(pw.a, false, 0); }
+    if (G.pkW) { var pw = G.pkW, pwBusy = G.vehs.some(function (q) { return q.st.state === 'station'; }); pw.bob += (pwBusy ? 9 : 2) / 60; pw.a.g.position.set(pw.x, 0.42 + Math.abs(Math.sin(pw.bob)) * (pwBusy ? 0.08 : 0.03), pw.z); pw.a.g.rotation.y = Math.PI / 2; animLegs(pw.a, false, 0); }
     placeVehicle(1 / 60);
     if (G.marketG) { var k = G.marketPop > 0 ? G.marketPop / 0.6 : 0, sy = 1 - Math.sin(k * Math.PI) * 0.12; G.marketG.scale.set(1, sy, 1); }
     RD.dynBegin();
@@ -9428,12 +9733,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var sw = { x: (mk.shelfSpots[0].x + mk.shelfSpots[3].x) / 2, z: mk.shelfSpots[0].z };
     var sp0 = P(sw.x, 2.6, sw.z);
     out.push({ key: 'stall', title: 'Stall shelves', rows: stall, w: sw, p: sp0, far: sp0 });
-    var v = G.veh;
-    if (v) {
+    G.vehs.forEach(function (v) {
       var lc = Math.min(v.cars.length - 1, v.loadCar || 0), q = carPos(v, lc), fams = PRODUCTS.filter(function (f) { return Lg.famN(v.st.load, f) > 0; });
       var wp = P(q.x, 1.9, q.z);
-      out.push({ key: 'wagon', title: 'Wagon load', w: q, p: wp, far: wp, rows: (fams.length ? fams : ['carrot']).map(function (f) { return { name: nm[f], pool: v.st.load, fams: [f], cap: Lg.vehicle(S).cap }; }), total: vLoad(v), cap: Lg.vehicle(S).cap });
-    }
+      out.push({ key: 'wagon' + (v.idx ? v.idx + 1 : ''), title: 'Wagon load', w: q, p: wp, far: wp, rows: (fams.length ? fams : ['carrot']).map(function (f) { return { name: nm[f], pool: v.st.load, fams: [f], cap: Lg.vehicle(S).cap }; }), total: vLoad(v), cap: Lg.vehicle(S).cap });
+    });
     if (info.station && Lg.lv(S, 'wash')) {
       var gC = Lg.goodsCap(S), ps = L.pkShelf || L.shelf, cs = L.shelf, g = S.stock.goods;
       var crops = ['carrot', 'tomato'].filter(function (f) { return f === 'carrot' || open.tomato; }), cans = ['canC', 'canT'].filter(function (f) { return open[f]; });
@@ -9481,16 +9785,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // tap anywhere else or walk off and it folds back
       if (G.boardOpen === pl.key && Math.hypot(me.x - pl.w.x, me.z - pl.w.z) > 14) G.boardOpen = null;
       if (G.boardOpen !== pl.key) {
-        var all = pl.key === 'station' ? pl.split : pl.key === 'stall' ? pl.rows : [{ pool: pl.rows[0].pool, fams: PRODUCTS }], g = [0, 0, 0, 0, 0];
+        var wag = pl.key.indexOf('wagon') === 0, all = pl.key === 'station' ? pl.split : pl.key === 'stall' ? pl.rows : [{ pool: pl.rows[0].pool, fams: PRODUCTS }], g = [0, 0, 0, 0, 0];
         all.forEach(function (r) { gradeCounts(r.pool, r.fams).forEach(function (n, i) { g[i] += n; }); });
-        var parts = [[(pl.key === 'stall' ? 'Shelves ' : pl.key === 'wagon' ? 'Wagon ' : 'Ready ') + sumG(g), '#ffffff']];
+        var parts = [[(pl.key === 'stall' ? 'Shelves ' : wag ? (G.vehs.length < 2 ? 'Wagon ' : pl.key === 'wagon' ? 'Wagon 1: ' : 'Wagon 2: ') : 'Ready ') + sumG(g), '#ffffff']];
         var gd = 0; all.forEach(function (r) { gd += gradeCounts(r.pool, r.fams).d; }); if (gd) { parts[0][0] = parts[0][0].replace(/\d+$/, function (t) { return +t + gd; }); parts.push(['pill', String(gd), RAW_COL]); }
         g.forEach(function (n, i) { if (n) parts.push(['pill', String(n), GRADE_COL[i]]); });
         chip(pl.far.x, pl.far.y, parts, 'rgba(30,36,60,.9)', 11, 0.95, { board: pl.key });
         return;
       }
       if (pl.key === 'stall') board(pl.p.x, pl.p.y, 'On the shelves', pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams), n = sumG(g); return { name: r.name, g: g, tot: (n + g.d) + '/' + r.cap, totCol: n + g.d === 0 ? '#ff6b5e' : n + g.d >= r.cap ? '#ffd23a' : '#fff' }; }));
-      else if (pl.key === 'wagon') board(pl.p.x, pl.p.y, 'Wagon ' + pl.total + '/' + pl.cap, pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams); return { name: r.name, g: g, tot: String(sumG(g) + g.d) }; }));
+      else if (pl.key.indexOf('wagon') === 0) board(pl.p.x, pl.p.y, (G.vehs.length < 2 ? 'Wagon ' : pl.key === 'wagon' ? 'Wagon 1: ' : 'Wagon 2: ') + pl.total + '/' + pl.cap, pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams); return { name: r.name, g: g, tot: String(sumG(g) + g.d) }; }));
       else { var rows = []; pl.split.forEach(function (o) { o.rows.forEach(function (r) { var g = gradeCounts(r.pool, r.fams); rows.push({ name: r.name, g: g, tot: String(sumG(g) + g.d) }); }); }); board(pl.p.x, pl.p.y, 'Ready to take', rows); }
     });
   }
@@ -9552,7 +9856,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (offs.length > 1 && offs[1].cost <= offs[0].cost * 3 && both.length <= 34) return [[both, '#ffffff']];
     return [[problem + ': ' + fixName(offs[0]), '#ffffff'], ['coin'], [Lg.fmt(offs[0].cost), '#ffd23a']];
   }
-  var LINE_FIX = ['cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'];
+  // the stall held the vehicle up a moment ago: the platform was full. Full
+  // halts then are the stall's doing, not the cart's (it flips on and off as
+  // the shelves drain, so it counts for a round trip)
+  function marketJam() { return G.mktJamT != null && G.t - G.mktJamT < 20; }
+  // too few buyers or too few tills: the queues tell. Short queues with full
+  // shelves mean nobody comes for it all; long ones mean the tills are slow
+  function tillsShort() {
+    var mq = Lg.maxQueue(S), n = 0, open = 0;
+    for (var i = 0; i < Lg.tills(S); i++) { open++; n += G.tq[i].length; }
+    return open > 0 && n >= open * mq * 0.5;
+  }
+  var BUYER_FIX = ['ad', 'shelves', 'farmStall', 'farmShop'];
+  var LINE_FIX = ['cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'wagon2', 'rails', 'oldTrain', 'train', 'wagon'];
   var SHOP_FIX = ['sellSpeed', 'seller', 'shelves', 'farmStall', 'farmShop'];
   var FARM_FIX = ['hbasket', 'htool', 'helper2', 'tHelper2', 'fieldC', 'fieldT', 'carry'];
   // one chip per anchor, highest priority first
@@ -9567,11 +9883,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var h = info.halts[c]; if (!h || (c === 'tomato' && !Lg.lv(S, 'tomatoes'))) return;
       var n = poolN(haltPool(c)), cap = Lg.haltCap(S);
       if (n < cap) return;
+      if (Lg.line(S) > 0 && marketJam()) return;   // the stall chip says what to buy
+      // a wagon on the Factory run waits at a full IN: the wash is the cap, not the wagons
+      if (G.vehs.some(function (v) { return v.inWait && v.st.state === 'station'; })) { add(h.x, 1.5, h.z, 'Wash too slow', ['belt', 'beltUp', 'pkWorker'], ['The halt is full: <b>' + n + ' / ' + cap + '</b>.', 'A wagon is waiting at the station for room in the IN.'], '#ff9b1f'); return; }
       if (Lg.line(S) === 0) add(h.x, 1.5, h.z, 'Crates piling up', ['cart'], ['The halt is full: <b>' + n + ' / ' + cap + '</b>.', 'A cart would take them to the stall.'], '#ff9b1f');
       else add(h.x, 1.5, h.z, Lg.line(S) <= 2 ? 'Cart too small' : Lg.line(S) === 3 ? 'Wagon too small' : 'Line too slow', LINE_FIX, ['The halt is full: <b>' + n + ' / ' + cap + '</b>.', 'Crops are waiting for a ride.']);
     });
     // the shop cannot sell what the line brings
-    if (G.veh && G.veh.full) add(info.platPile.x, 1.7, info.platPile.z, "Stall can't keep up", SHOP_FIX, ['The market platform is full.', 'The tills are the bottleneck.']);
+    if (G.veh && marketJam()) {
+      if (tillsShort()) add(info.platPile.x, 1.7, info.platPile.z, 'Tills too slow', SHOP_FIX, ['The market platform is full and the queues are long.', 'The tills are the bottleneck, not the wagon.']);
+      else add(info.platPile.x, 1.7, info.platPile.z, 'Need more buyers', BUYER_FIX, ['The market platform and the shelves are full, but the queues are short.', 'The farm grows more than buyers want: Advertising brings more of them, Shelves make each one buy more.', 'Until then the halts fill up. That is not the wagon\'s fault.']);
+    }
     for (var i = 0; i < 3; i++) if (G.tq[i].length >= Lg.maxQueue(S)) {
       var qf = queueSpot(i, Lg.maxQueue(S) - 1); add(qf.x, 1.6, qf.z + 0.4, 'Queue is full', SHOP_FIX, ['<b>' + G.tq[i].length + '</b> waiting at this till.', 'Customers at the back give up.'], '#ff9b1f');
       break;
@@ -9817,7 +10139,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (line === 0 && !h.dropped && p.items.length >= 3) { var dz = L.dropZone && L.dropZone[0], m = dz ? P((dz.x0 + dz.x1) / 2, 0.5, (dz.z0 + dz.z1) / 2) : P(L.serve.x, FL.stallVar ? 2.4 : 0.2, L.serve.z); hint(L.dropZone ? 'Drop them behind the stall' : 'Bring them to the stall', m.x, m.y - 6); return; }
     if (q0 && q0.state === 'pay' && !G.onServe && (h.served || 0) < 3 && !p.items.length && !Lg.sellers(S)) { var m2 = P(L.serve.x, FL.stallVar ? 2.4 : 0.2, L.serve.z); hint(L.serveZone ? 'Go behind the counter to sell' : 'Stand on SERVE to sell', m2.x, m2.y - 6); return; }
     if (line >= 1 && !h.halt && p.items.length >= 3 && Lg.carryLimit(S) > 0) { var hh = P(info.halts.carrot.x, 0.3, info.halts.carrot.z - 0.6); hint('Drop at the halt: the cart takes it', hh.x, hh.y - 4); return; }
-    if (G.hintT.h7 > 0 && G.veh && !h.tapped) { var vq = carPos(G.veh, 0), vp = P(vq.x, 1.6, vq.z); hint('Tap the ' + ({ cart: 'cart', donkey: 'donkey cart', horse: 'horse wagon', oldtrain: 'train', train: 'train' })[G.veh.kind] + ' to send it now', vp.x, vp.y); return; }
+    if (G.hintT.h7 > 0 && G.veh && !h.tapped) { var vq = carPos(G.veh, 0), vp = P(vq.x, 1.6, vq.z); hint('Tap the ' + ({ cart: 'cart', donkey: 'donkey cart', horse: 'horse wagon', oldtrain: 'train', train: 'train' })[G.veh.kind] + (PNL() ? ': see its load, send it now' : ' to send it now'), vp.x, vp.y); return; }
     if (!Lg.sellers(S) && !h.h8 && G.tq[0].length >= 4 && !near(p, L.serve.x, L.serve.z, 10)) { var m3 = P(L.serve.x, 0.2, L.serve.z); hint('Customers are waiting!', m3.x, m3.y - 6); G.hintT.h8 = 1; return; }
     if (G.hintT.h9 > 0) { var tf = G.fields.tomato && G.fields.tomato.f; if (tf) { var tp = P(tf.x0 + 4, 0.5, tf.z0 + tf.d * 0.5); hint('Tomatoes sell for 2', tp.x, tp.y); return; } }
     if (G.hintT.sellerAway > 0) { var sp = P(L.tills[0], 1.8, L.counterZ - 0.6); hint('Your seller sells while you are away', sp.x, sp.y); return; }
@@ -9876,6 +10198,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     $('awayBtn').addEventListener('click', collectAway);
     $('summary').addEventListener('click', function () { $('summary').hidden = true; });
     $('tapClose').addEventListener('click', closeMenu);
+    // route buttons, wherever they are shown (the wagon menu, or a tap panel hosting routeHtml)
+    document.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('[data-route]'); if (b) pickRoute(+b.dataset.wagon, b.dataset.route); });
+    if (FL.panels && FL.panels.slot) FL.panels.slot('vehicle', function (m) { return routeHtml(m.wagon != null ? m.wagon : m.key); });
     try { snd.muted = localStorage.getItem(CFG.save.key + '-sound') === '0'; G.haptics = localStorage.getItem(CFG.save.key + '-buzz') !== '0'; } catch (e) { /* ignore */ }
   }
   function refreshSettings() {
@@ -9889,7 +10214,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function liveJams() {
     var sig = [];
     if (G.helpers.some(function (h) { return h.stuck; })) sig.push('haltFull');
-    if (G.veh && G.veh.full) sig.push('marketFull');
+    if (G.veh && marketJam()) sig.push('marketFull');
     if (G.customers.some(function (c) { return c.state === 'nostock'; })) sig.push('noStock');
     for (var i = 0; i < Lg.tills(S); i++) if (G.tq[i].length >= Lg.maxQueue(S)) { sig.push('queueFull'); break; }
     if (G.worker && G.worker.idle) sig.push('workerIdle');
@@ -9946,6 +10271,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     boots: '<path d="M10 10 H24 V30 H38 a4 4 0 0 1 4 4 V40 H10 Z" fill="#7a4a28" stroke="#4a2a14" stroke-width="2"/><rect x="10" y="36" width="32" height="5" fill="#2b2f3a"/><path d="M4 22 H8 M2 30 H8" stroke="#ffd23a" stroke-width="3" stroke-linecap="round"/>',
     'field-carrot': '<rect x="6" y="8" width="36" height="32" rx="3" fill="#a8693b"/><g fill="#ff8a1f"><rect x="11" y="13" width="6" height="6"/><rect x="21" y="13" width="6" height="6"/><rect x="31" y="13" width="6" height="6"/><rect x="11" y="27" width="6" height="6"/><rect x="21" y="27" width="6" height="6"/><rect x="31" y="27" width="6" height="6"/></g><path d="M24 2 v8 M20 6 l4 -4 l4 4" stroke="#2fa34f" stroke-width="3" fill="none"/>',
     'field-tomato': '<rect x="6" y="8" width="36" height="32" rx="3" fill="#a8693b"/><g fill="#f2362b"><circle cx="14" cy="16" r="4"/><circle cx="24" cy="16" r="4"/><circle cx="34" cy="16" r="4"/><circle cx="14" cy="30" r="4"/><circle cx="24" cy="30" r="4"/><circle cx="34" cy="30" r="4"/></g><path d="M24 2 v8 M20 6 l4 -4 l4 4" stroke="#2fa34f" stroke-width="3" fill="none"/>',
+    // a halt: a shelter on the platform with a crate of its crop (not the cart's icon)
+    halt: '<path d="M4 16 L24 6 L44 16 Z" fill="#c0392b" stroke="#8e2a1f" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="16" width="4" height="22" fill="#7a4a28"/><rect x="36" y="16" width="4" height="22" fill="#7a4a28"/><rect x="4" y="38" width="40" height="6" rx="1" fill="#b98a5a" stroke="#94603a" stroke-width="2"/><rect x="15" y="26" width="18" height="12" fill="#c98b4e" stroke="#94603a" stroke-width="2"/><path d="M18 26 L24 18 L30 26 Z" fill="#ff8a1f"/><path d="M24 18 L22 14 M24 18 L26 14" stroke="#2fb84a" stroke-width="2"/>',
+    haltT: '<path d="M4 16 L24 6 L44 16 Z" fill="#c0392b" stroke="#8e2a1f" stroke-width="2" stroke-linejoin="round"/><rect x="8" y="16" width="4" height="22" fill="#7a4a28"/><rect x="36" y="16" width="4" height="22" fill="#7a4a28"/><rect x="4" y="38" width="40" height="6" rx="1" fill="#b98a5a" stroke="#94603a" stroke-width="2"/><rect x="15" y="26" width="18" height="12" fill="#c98b4e" stroke="#94603a" stroke-width="2"/><circle cx="20" cy="24" r="4" fill="#e8402f"/><circle cx="28" cy="24" r="4" fill="#e8402f"/><path d="M20 20 V18 M28 20 V18" stroke="#2fb84a" stroke-width="2"/>',
     sign: '<rect x="21" y="22" width="6" height="22" fill="#7a4a28"/><rect x="6" y="6" width="36" height="20" rx="3" fill="#fff4e0" stroke="#94603a" stroke-width="3"/><circle cx="24" cy="16" r="5" fill="#ffcb2b" stroke="#e8a412" stroke-width="2"/>',
     shelves: '<rect x="6" y="8" width="36" height="34" fill="#c98b4e"/><rect x="9" y="11" width="30" height="12" fill="#ffe9b0"/><rect x="9" y="27" width="30" height="12" fill="#ffe9b0"/><g fill="#ff8a1f"><rect x="12" y="15" width="6" height="8"/><rect x="21" y="15" width="6" height="8"/><rect x="30" y="15" width="6" height="8"/><rect x="12" y="31" width="6" height="8"/><rect x="21" y="31" width="6" height="8"/></g>',
     helper: '<rect x="14" y="22" width="20" height="18" rx="3" fill="#ffb52e"/><rect x="16" y="8" width="16" height="15" rx="3" fill="#ffcf9e"/><rect x="13" y="5" width="22" height="6" rx="2" fill="#2fa34f"/><rect x="19" y="14" width="3" height="4" fill="#2a1b14"/><rect x="26" y="14" width="3" height="4" fill="#2a1b14"/><rect x="16" y="30" width="16" height="10" fill="#4a9b4a"/>',
@@ -10094,7 +10422,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // ---- tap menus over buildings and vehicles ----
   var MENU_IDS = {
     field: { carrot: ['fieldC', 'helper', 'helper2', 'hbasket', 'htool'], tomato: ['fieldT', 'tHelper', 'tHelper2', 'hbasket', 'htool'] },
-    helper: ['hbasket', 'htool', 'helper2', 'tHelper2'], halt: ['cart', 'cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'], vehicle: ['cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'],
+    helper: ['hbasket', 'htool', 'helper2', 'tHelper2'], halt: ['cart', 'cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'wagon2', 'rails', 'oldTrain', 'train', 'wagon'], vehicle: ['cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'wagon2', 'rails', 'oldTrain', 'train', 'wagon'],
     stall: ['ad', 'shelves', 'seller', 'sellSpeed', 'farmStall', 'farmShop'], cannery: ['cannery', 'canWorker', 'tomCans', 'canSpeed'],
     packhouse: ['wash', 'pkWorker', 'sorter', 'lens1', 'lens2', 'belt', 'beltUp'], bulk: ['compost'], lab: ['lab'], con: ['conYard', 'conBuyers', 'conCrane'], corn: ['corn'], you: ['gloves', 'sickle', 'sharpS', 'scythe', 'sharpY', 'carry', 'boots']
   };
@@ -10111,6 +10439,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     for (var ci = 0; ci < T.length; ci++) {
       var t = T[ci];
       if (sx < t.x - 6 || sx > t.x + t.w + 6 || sy < t.y - 6 || sy > t.y + t.h + 10) continue;
+      // with tap panels, a stock chip opens its thing's panel (it shows the same grades)
+      if (t.board && PNL()) { var bw = t.board === 'station' ? (L.pkShelf ? { kind: 'store', key: 'crops', x: (L.pkShelf.x0 + L.pkShelf.x1) / 2, y: 0.8, z: (L.pkShelf.z0 + L.pkShelf.z1) / 2 } : null) : goSpot(t.board === 'stall' ? 'stall' : 'vehicle', (+t.board.slice(5) || 1) - 1); if (bw) { closeMenu(); openMenu(bw); return bw; } }
       if (t.board) { G.boardOpen = G.boardOpen === t.board ? null : t.board; closeMenu(); return { kind: 'board' }; }
       if (t.con && CN) { var cy = CN.hit({ x: -18, z: -10 }); if (cy) { openMenu(cy); return cy; } }
       openMenu({ kind: 'fix', key: ci, ids: t.ids, title: t.title, lines: t.lines, stock: t.stock, x: G.player.x, y: 1.4, z: G.player.z, pin: { x: t.x + t.w / 2, y: t.y } });
@@ -10119,13 +10449,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     G.boardOpen = null;   // a tap anywhere else folds an open stock board
     var P = RD.toScreen, best = null, bd = 1e9;
     function cand(kind, key, x, y, z, r) { var p = P(x, y, z), d = Math.hypot(p.x - sx, p.y - sy); if (d < r && d < bd) { bd = d; best = { kind: kind, key: key, x: x, y: y, z: z }; } }
-    if (G.veh) G.veh.cars.forEach(function (c, i) { var q = carPos(G.veh, i); cand('vehicle', i, q.x, 0.7, q.z, 46); });
+    G.vehs.forEach(function (v, wi) { v.cars.forEach(function (c, i) { var q = carPos(v, i); cand('vehicle', wi, q.x, 0.7, q.z, 46); }); });
     G.helpers.forEach(function (h, i) { cand('helper', i, h.x, 0.8, h.z, 30); });
     cand('you', 0, G.player.x, 0.8, G.player.z, 26);
     var g = groundAt(sx, sy);
+    // the stall and the halts are hit by their whole drawn shape on screen, roof
+    // and all (Tom 2026-10-08 "hard to press the shop, and the halts"); they win
+    // over you or a helper standing in front of them, not over a wagon
+    if (!best || best.kind === 'helper' || best.kind === 'you') { var bh = shapeHit(sx, sy); if (bh) best = bh; }
     if (!best) {
       Object.keys(G.fields).forEach(function (c) { var f = G.fields[c].f; if (g.x >= f.x0 && g.x <= f.x0 + f.w && g.z >= f.z0 && g.z <= f.z0 + f.d) best = { kind: 'field', key: c, x: f.x0 + 4, y: 0.4, z: f.z0 + f.d / 2 }; });
-      ['carrot', 'tomato'].forEach(function (c) { var h = info.halts[c]; if (h && (c === 'carrot' || Lg.lv(S, 'tomatoes')) && Math.abs(g.x - h.x) < 1 && g.z > L.haltZ0 - 0.3 && g.z < L.haltZ1 + 0.3) best = { kind: 'halt', key: c, x: h.x, y: 0.6, z: h.z }; });
       var lot = L.lot; if (g.x > lot.x0 - 0.3 && g.x < lot.x1 + 0.3 && g.z > lot.z0 - 0.5 && g.z < lot.z1 + 0.8 && Lg.line(S) >= 1) best = { kind: 'cannery', key: 0, x: (lot.x0 + lot.x1) / 2, y: 1, z: (lot.z0 + lot.z1) / 2 };
       if (info.station && g.x > L.bin.x0 - 0.3 && g.x < L.shelf.x1 + 0.3 && g.z > L.dock.z0 - 0.3 && g.z < L.dock.z1 + 0.6 && Lg.lv(S, 'seller')) best = { kind: 'packhouse', key: 0, x: L.branchX, y: 1, z: L.stZ };
       var pk = L.pk; if (g.x > pk.x0 - 0.3 && g.x < pk.x1 + 0.3 && g.z > pk.z0 - 0.3 && g.z < pk.z1 + 1.4 && Lg.lv(S, 'seller')) best = { kind: 'packhouse', key: 0, x: (pk.x0 + pk.x1) / 2, y: 1, z: (pk.z0 + pk.z1) / 2 };
@@ -10138,14 +10471,50 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       }
       if (info.bulk && Math.abs(g.x - (L.bulk.x + L.bulkMat.x) / 2) < 1.4 && Math.abs(g.z - L.bulk.z) < 0.9) best = { kind: 'bulk', key: 0, x: L.bulk.x, y: 0.8, z: L.bulk.z };
       var lb = L.lab; if (g.x > lb.x0 - 0.3 && g.x < lb.x1 + 0.3 && g.z > lb.z0 - 0.3 && g.z < lb.z1 + 1.2 && Lg.lv(S, 'cannery')) best = { kind: 'lab', key: 0, x: (lb.x0 + lb.x1) / 2, y: 1, z: (lb.z0 + lb.z1) / 2 };
-      var st = Lg.stage(S), xr = [6.2, 9.2, 12.2][st]; if (g.x > 1.9 && g.x < xr && g.z > [-2.8, -3.8, -6.2][st] && g.z < 0.4) best = { kind: 'stall', key: 0, x: (2 + xr) / 2, y: 1, z: -1.6 };
       if (Lg.lv(S, 'cannery') && !Lg.lv(S, 'corn') && Math.abs(g.x - L.lock.x) < 3 && Math.abs(g.z - L.lock.z) < 3) best = { kind: 'corn', key: 0, x: L.lock.x, y: 0.5, z: L.lock.z };
       if (CN) { var cy = CN.hit(g); if (cy) best = cy; }
     }
-    if (best && best.kind === 'vehicle') sendNow();
+    if (best && best.kind === 'vehicle') { best.wagon = best.key; if (!PNL()) sendNow(G.vehs[best.key]); }   // with a tap panel, its Send now button sends
     if (best && best.kind === 'lab' && Lg.lv(S, 'lab')) { closeMenu(); openLab(); return best; }
     if (best) openMenu(best); else closeMenu();
     return best;
+  }
+  // the tap shapes: a box per thing (ground rect + height), projected to the
+  // screen; a tap inside its screen outline hits it, the nearest centre wins
+  function tapShapes() {
+    var out = [];
+    if (mk && mk.blocks && mk.blocks.length) {
+      var x0 = 1e9, x1 = -1e9, z0 = 1e9, z1 = -1e9;
+      mk.blocks.forEach(function (b) { x0 = Math.min(x0, b.x0); x1 = Math.max(x1, b.x1); z0 = Math.min(z0, b.z0); z1 = Math.max(z1, b.z1); });
+      mk.shelfSpots.forEach(function (sp) { x0 = Math.min(x0, sp.x - 0.6); x1 = Math.max(x1, sp.x + 0.6); z0 = Math.min(z0, sp.z - 0.6); });
+      out.push({ kind: 'stall', key: 0, x0: x0 - 0.3, x1: x1 + 0.3, z0: z0 - 0.3, z1: z1 + 0.3, h: 2.8 });
+    }
+    ['carrot', 'tomato'].forEach(function (c) { var h = info.halts[c]; if (h && (c === 'carrot' || Lg.lv(S, 'tomatoes'))) out.push({ kind: 'halt', key: c, x0: h.x - 1.1, x1: h.x + 1.1, z0: L.haltZ0 - 0.4, z1: L.haltZ1 + 0.4, h: 1.8 }); });
+    return out;
+  }
+  function shapeHit(sx, sy) {
+    var P = RD.toScreen, best = null, bd = 1e9;
+    tapShapes().forEach(function (b) {
+      var xs = [], ys = [];
+      [b.x0, b.x1].forEach(function (x) { [b.z0, b.z1].forEach(function (z) { [0, b.h].forEach(function (y) { var q = P(x, y, z); xs.push(q.x); ys.push(q.y); }); }); });
+      var l = Math.min.apply(null, xs) - 8, r = Math.max.apply(null, xs) + 8, t = Math.min.apply(null, ys) - 8, bt = Math.max.apply(null, ys) + 8;
+      if (sx < l || sx > r || sy < t || sy > bt) return;
+      var d = Math.hypot(sx - (l + r) / 2, sy - (t + bt) / 2);
+      if (d < bd) { bd = d; best = { kind: b.kind, key: b.key, x: (b.x0 + b.x1) / 2, y: 0.8, z: (b.z0 + b.z1) / 2 }; }
+    });
+    return best;
+  }
+  // where a panel's thing sits
+  function goSpot(kind, key) {
+    var mid = function (r) { return { x: (r.x0 + r.x1) / 2, z: (r.z0 + r.z1) / 2 }; }, q;
+    if (kind === 'vehicle') { var gv = G.vehs[key || 0] || G.veh; if (!gv) return null; q = carPos(gv, 0); }
+    else if (kind === 'field') { var fd = G.fields[key] && G.fields[key].f; if (!fd) return null; q = { x: fd.x0 + 4, z: fd.z0 + fd.d / 2 }; }
+    else if (kind === 'halt') q = info.halts[key];
+    else if (kind === 'packhouse') q = mid(L.pk);
+    else if (kind === 'cannery') q = mid(L.lot);
+    else if (kind === 'stall') { var sh = tapShapes()[0]; if (sh && sh.kind === 'stall') q = { x: (sh.x0 + sh.x1) / 2, z: (sh.z0 + sh.z1) / 2 }; }
+    if (!q) return null;
+    return { kind: kind, key: kind === 'field' || kind === 'halt' || kind === 'vehicle' ? key || (kind === 'vehicle' ? 0 : key) : 0, x: q.x, y: 0.8, z: q.z };
   }
   function menuIds(m) { if (m.kind === 'fix') return m.ids; if (m.kind === 'field') return MENU_IDS.field[m.key]; if (m.kind === 'helper') return G.helpers[m.key] && G.helpers[m.key].crop === 'tomato' ? ['hbasket', 'htool', 'tHelper2'] : ['hbasket', 'htool', 'helper2']; return MENU_IDS[m.kind] || []; }
   function menuTitle(m) {
@@ -10155,7 +10524,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'field': return CFG.crops[m.key].name + ' 8x' + Lg.fieldDepth(S, m.key);
       case 'helper': var h = G.helpers[m.key]; return (h && h.crop === 'tomato' ? 'Tomato helper' : 'Carrot helper') + ' ' + (h ? h.n + 1 : '');
       case 'halt': return Lg.line(S) ? (m.key === 'carrot' ? 'Carrot halt' : 'Tomato halt') : 'Drop spot';
-      case 'vehicle': return v ? v.name : 'Line';
+      case 'vehicle': return v ? v.name + (Lg.vehCount(S) > 1 ? ' ' + (m.key + 1) : '') : 'Line';
       case 'stall': return CFG.stages[Lg.stage(S)].name;
       case 'cannery': return Lg.lv(S, 'cannery') ? (Lg.lv(S, 'canSpeed') >= 4 ? 'Cannery' : Lg.lv(S, 'canSpeed') >= 2 ? 'Brick works' : 'Cannery workshop') : 'Cannery site';
       case 'corn': return 'Corn Valley';
@@ -10175,7 +10544,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'field': return ['Cut by you: <b>' + f(st.cutYou[m.key]) + '</b>', 'By helpers: <b>' + f(st.cutHelp[m.key]) + '</b>', 'Golden crops found: <b>' + st.golden + '</b>'];
       case 'helper': var h = G.helpers[m.key]; return h ? ['Crops picked: <b>' + f(h.picked) + '</b>', 'Trips: <b>' + h.trips + '</b>', 'Carry: <b>' + Lg.helperCarry(S) + '</b>, ' + Lg.helperTool(S).name] : [];
       case 'halt': var pool = haltPool(m.key); return ['Crops through: <b>' + f(st.haltIn[m.key]) + '</b>', 'Waiting: <b>' + poolN(pool) + ' / ' + Lg.haltCap(S) + '</b>'];
-      case 'vehicle': var v = Lg.vehicle(S); return ['Trips: <b>' + f(st.trips) + '</b>', 'Crops moved: <b>' + f(st.moved) + '</b>', v ? 'Carries <b>' + v.cap + '</b> a trip' : ''];
+      case 'vehicle': var v = Lg.vehicle(S), gv = G.vehs[m.key]; return [Lg.vehCount(S) > 1 && gv ? 'Trips this session: <b>' + f(gv.trips) + '</b>' : 'Trips: <b>' + f(st.trips) + '</b>', 'Crops moved: <b>' + f(st.moved) + '</b>', v ? 'Carries <b>' + v.cap + '</b> a trip' : ''];
       case 'stall': return ['Served by you: <b>' + f(st.servedYou) + '</b>, by sellers: <b>' + f(st.servedSell) + '</b>', 'Sold: <b>' + f(st.sold) + '</b>', 'Earned: <b>' + f(st.earned) + '</b>'];
       case 'cannery': return Lg.lv(S, 'cannery') ? ['Cans made: <b>' + f(st.cans) + '</b> (\u2605\u2605\u2605 or better <b>' + f(st.cansS || 0) + '</b>, \u2605\u2605 <b>' + f(st.cansP) + '</b>, Fine <b>' + f(st.cansF) + '</b>)', 'Earned from cans: <b>' + f(st.canEarned) + '</b>', 'Hopper <b>' + Lg.hopN(S) + '</b>' + hopGrades() + ', cans on the shelf <b>' + canSum(S.stock.goods) + '</b>', canPrices(), gradeLine()] : ['Cans carrots (sell for 5) while you stand on CAN.', 'Washed crops make Fine cans (+25%), \u2605\u2605 and \u2605\u2605\u2605 crops their own better cans.', 'Needs: ' + Lg.BY.cannery.needs];
       case 'packhouse': return Lg.lv(S, 'wash') ? ['Washed: <b>' + f(st.washed || 0) + '</b>' + (Lg.lv(S, 'sorter') ? ', graded: <b>' + f(st.graded || 0) + '</b>' : ''), 'Extra earned: <b>' + f(st.pkEarned || 0) + '</b>', 'Trough <b>' + Lg.washBatch(S) + '</b> a batch, <b>' + Math.round(Lg.washCycle(S)) + ' s</b>', 'Intake <b>' + (S.stock.intake.carrot + S.stock.intake.tomato) + ' / ' + Lg.intakeCap(S) + '</b>, shelf <b>' + Lg.goodsN(S) + ' / ' + Lg.goodsCap(S) + '</b>', Lg.lv(S, 'cannery') ? 'Washed crops go into the Cannery by themselves when it takes their grade, the rest onto the shelf.' : ''] : ['Washed crops sell for 25% more.', 'Needs: ' + Lg.BY.wash.needs];
@@ -10217,26 +10586,54 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // what the Cannery takes in (Tom 2026-10-08: no picker; graded crops only
   // once Premium line is researched)
   function gradeLine() { return 'Takes in: <b>' + (Lg.gradedCans(S) ? 'every grade, best first' : '\u2605 only') + '</b>' + (Lg.gradedCans(S) ? '' : ' (graded crops go to the stall until <b>Premium line</b> in the Lab)'); }
-  function openMenu(m) { G.menu = m; refreshMenu(true); $('tap').hidden = false; placeMenu(); }
+  // the route chooser (Tom 2026-10-08): three presets per wagon, once the
+  // station has its worker. A block of its own so the tap panels can host it
+  function routeHtml(wi) {
+    if (!Lg.routesOn(S) || wi == null) return '';
+    var cur = Lg.route(S, wi);
+    return '<small class="gpick">Route</small><div class="gpick routes">' + Lg.ROUTES.map(function (r) {
+      return '<button type="button" class="mbtn' + (r === cur ? ' gold' : '') + '" data-route="' + r + '" data-wagon="' + wi + '">' + Lg.ROUTE_INFO[r].name + '</button>';
+    }).join('') + '</div><p class="rtip">' + Lg.ROUTE_INFO[cur].text + '</p>';
+  }
+  function pickRoute(wi, r) {
+    if (!Lg.setRoute(S, wi, r)) return;
+    var v = G.vehs[wi]; if (v) { v.hop = 1; var q = carPos(v, 0); text(q.x, 2.4, q.z, Lg.ROUTE_INFO[r].name, '#ffffff', 16, 1.1); }
+    snd.toot(); save(); refreshMenu(true);
+  }
+  // the tap panels (panels.js; ?panel=o shows the old card) take over the card
+  function PNL() { return FL.panels && FL.panels.on(); }
+  function openMenu(m) {
+    G.menu = m; m.px = G.player.x; m.pz = G.player.z;
+    var pn = PNL(), el = $('tap'); if (pn) FL.panels.open();
+    el.classList.toggle('pnl', !!pn); el.classList.toggle('psheet', !!(pn && FL.panels.sheet()));
+    refreshMenu(true); el.hidden = false; placeMenu();
+  }
   function closeMenu() { if (!G || !G.menu) return; G.menu = null; $('tap').hidden = true; }
   var menuSig = '';
   function refreshMenu(force) {
     var m = G.menu; if (!m) return;
+    if (PNL()) { if (FL.panels.fill($('tapBody'), m, force)) bindMenu(!!panelExtra(m)); return; }
     var ids = menuIds(m) || [], offs = Lg.offers(S).filter(function (o) { return ids.indexOf(o.id) >= 0; }).slice(0, m.kind === 'fix' ? 2 : 3);
     var conH = !CN ? '' : m.kind === 'con' ? CN.html() : m.kind === 'vehicle' ? CN.rushHtml() : '';
-    var sig = m.kind + m.key + offs.map(function (o) { return o.id + o.cost + (o.cost <= S.coins); }).join() + menuStats(m).join() + conH;
+    var rtH = m.kind === 'vehicle' ? routeHtml(m.key) : '';
+    var sig = rtH + m.kind + m.key + offs.map(function (o) { return o.id + o.cost + (o.cost <= S.coins); }).join() + menuStats(m).join() + conH;
     if (!force && sig === menuSig) return; menuSig = sig;
     var html = '<h3>' + menuTitle(m) + '</h3><div class="so"><small>' + (m.kind === 'fix' ? (m.stock ? 'On hand' : 'What is jamming') : m.kind === 'store' ? 'Stored' : 'So far') + '</small>' + menuStats(m).filter(Boolean).map(function (s) { return '<p>' + s + '</p>'; }).join('') + '</div>';
-    if (m.kind === 'vehicle') html += '<button type="button" class="mbtn gold send" id="sendNow">Send now</button>';
+    if (m.kind === 'vehicle') html += rtH + '<button type="button" class="mbtn gold send" id="sendNow">Send now</button>';
     html += conH;
     html += offs.map(function (o) { return cardHtml(o, true); }).join('');
     $('tapBody').innerHTML = html;
+    bindMenu(!!conH);
+  }
+  function panelExtra(m) { return !CN ? '' : m.kind === 'con' ? CN.html() : m.kind === 'vehicle' ? CN.rushHtml() : ''; }
+  function bindMenu(con) {
     Array.prototype.forEach.call($('tapBody').querySelectorAll('button[data-id]'), function (b) { b.addEventListener('click', function () { buyItem(b.dataset.id); }); });
-    var sn = $('sendNow'); if (sn) sn.addEventListener('click', function () { sendNow(); });
-    if (CN && conH) CN.bind($('tapBody'), function () { refreshMenu(true); placeMenu(); });
+    var sn = $('sendNow'); if (sn) sn.addEventListener('click', function () { var m = G.menu; sendNow(G.vehs[m && m.wagon != null ? m.wagon : m ? m.key : 0]); refreshMenu(true); });
+    if (CN && con) CN.bind($('tapBody'), function () { refreshMenu(true); placeMenu(); });
   }
   function placeMenu() {
     var m = G.menu, el = $('tap'); if (!m) return;
+    if (PNL() && FL.panels.sheet()) { el.style.transform = ''; return; }
     var p = m.pin || RD.toScreen(m.x, m.y, m.z), w = el.offsetWidth || 260, h = el.offsetHeight || 160, SWd = RD.size.W;
     var x = Math.max(8, Math.min(SWd - w - 8, p.x - w / 2)), y = p.y - h - 24;
     if (y < HR.top - 10) y = Math.min(HR.bottom - h, p.y + 30);
@@ -10290,7 +10687,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     try { localStorage.removeItem(CFG.save.key); } catch (e) { /* ignore */ }
     S = Lg.newState(); S.pos = null;
     if (CN) CN.reset();
-    var prev = G; G = newRuntime(); G.player = prev.player; G.helpers = prev.helpers; G.customers = prev.customers; G.veh = prev.veh; G.sellers = prev.sellers; G.worker = prev.worker; G.piles = prev.piles; G.haptics = prev.haptics;
+    var prev = G; G = newRuntime(); G.player = prev.player; G.helpers = prev.helpers; G.customers = prev.customers; G.veh = prev.veh; G.vehs = prev.vehs; G.sellers = prev.sellers; G.worker = prev.worker; G.piles = prev.piles; G.haptics = prev.haptics;
     if (prev.bus) RD.remove(prev.bus.g);
     G.lastLayoutSig = function () { return G.layout; };
     S.pos = L.start;
@@ -10336,7 +10733,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (!S.stats.servedYou && !S.stats.servedSell) { spawnCustomer(false); G.customers[0].x = -7; G.spawnT = 3; }
     checkAway();
     window.__fl = {
-      get S() { return S; }, get G() { return G; }, tick: tick, draw: draw, menu: function (k) { openMenu({ kind: k, key: '' }); }, buy: buyItem, info: function () { return info; }, mk: function () { return mk; }, Lg: Lg, CFG: CFG,
+      get S() { return S; }, get G() { return G; }, tick: tick, draw: draw, menu: function (k, key) { var m = { kind: k, key: key == null ? '' : key }; if (k === 'vehicle' && G.vehs[key]) { var q = carPos(G.vehs[key], 0); m.x = q.x; m.y = 0.7; m.z = q.z; m.wagon = key; } openMenu(m); }, buy: buyItem, info: function () { return info; }, mk: function () { return mk; }, Lg: Lg, CFG: CFG,
       setInput: function (dx, dy, m) { input.forced = m ? { x: dx, y: dy, m: m } : null; },
       toScreen: RD.toScreen, carPos: function () { var v = G.veh; return v ? carPos(v, Math.min(v.cars.length - 1, v.loadCar || 0)) : null; }, give: function (n) { S.coins += n; }, save: save, L: L, cubes: function () { return RD.R.cubes; },
       // clock and away earnings: shift the clock, or pretend you were away for n seconds
@@ -10350,6 +10747,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // test: put a golden crop on a tile (shots of the ?golden= looks)
     window.__fl.goldenAt = function (crop, x, z) { if (G.golden) tintGolden(false); G.golden = { crop: crop, x: x, z: z, t: CFG.golden.life, idx: -1 }; tintGolden(true); if (G.golden && LK) LK.spawn(G.golden); return !!G.golden; };
     if (FL.tips) FL.tips.attach(window.__fl);
+    if (FL.panels) FL.panels.attach({
+      S: function () { return S; }, G: function () { return G; }, Lg: Lg, GC: GRADE_COL, RAW: RAW_COL, gradeCounts: gradeCounts, icon: icon, card: cardHtml,
+      title: menuTitle, stats: menuStats, ids: menuIds, extra: panelExtra, income: incomeRate, vLoad: vLoad, haltPool: haltPool, poolN: poolN,
+      famSum: function (p, fams) { var n = 0; fams.forEach(function (f) { n += Lg.famN(p, f); }); return n; },
+      batchN: function (b) { return Lg.batchGrades(b, S).reduce(function (a, n) { return a + n; }, 0); },
+      refresh: function (f) { refreshMenu(f); placeMenu(); },
+      go: function (kind, key) { var w = goSpot(kind, key); if (w) { closeMenu(); openMenu(w); } }
+    });
     if (LK) LK.init({ get G() { return G; }, RD: RD, snd: snd, sparkle: sparkle, HR: HR });
     if (TEST) { G.paused = true; }
     // the Balance lens (Settings > Testing tools), only in a test build
