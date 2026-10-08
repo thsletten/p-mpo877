@@ -304,12 +304,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // faster line (cycle); each is x1.25 cans a second, as before.
     cannery: { hopper: 100, preWorker: 40, you: 0.8, worker: 1.6, speedMult: 0.8, batch: [24, 30, 30, 38, 38, 48, 48], settle: 2 },
     // the Packhouse up behind the fields (Tom 2026-10-06 "d"): it starts as a
-    // wash shed (+25%, and `up` of the crops come out one star better); the
-    // Sorting table (Tom 2026-10-07: after the washer, the shed grows into the
-    // Packhouse) finds each crop's real grade: `split` of them ★, ★★, ★★★.
+    // wash shed (+25%: a washed crop is ★, washing gives no more stars, Tom
+    // 2026-10-08); the Sorting table (Tom 2026-10-07: after the washer, the
+    // shed grows into the Packhouse) finds each washed crop's real grade, ugly,
+    // broken or perfect: `split` of them ★, ★★, ★★★.
     // The Halt belts come with the second trough (batch[1]).
     // Batches: a trough load washes in `cycle` s (Soap: `soap` s).
-    wash: { batch: [80, 160], cycle: 16, soap: 10, settle: 1.5, up: 0.01 },
+    wash: { batch: [80, 160], cycle: 16, soap: 10, settle: 1.5 },
     // the 5 star grades (Lab thread's numbers, 2026-10-07): what ★ .. ★★★★★ multiply
     // a washed crop or a Fine can by, and how the Sorting table splits Home's crops
     grades: [1, 1.5, 2.25, 3.5, 6],
@@ -1113,10 +1114,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'sellSpeed': var sv = serveTime(s, 'seller'); return { name: 'Faster sellers ' + ROMAN[n], text: 'Every seller rings up quicker. You are still the fastest.', from: sv.toFixed(2) + ' s a sale', to: (sv * C.customers.sellSpeedMult).toFixed(2) + ' s a sale' };
       case 'farmStall': return { name: 'Farm stall', text: 'The stall grows: a second till with its own seller, bigger buyers (x' + C.customers.stageMult[1] + ').', from: '1 till, 1 seller', to: '2 tills, 2 sellers' };
       case 'farmShop': return { name: 'Farm shop', text: 'A small shop: a third till with its seller, bigger buyers (x' + C.customers.stageMult[2] + ' in all).', from: '2 tills, 2 sellers', to: '3 tills, 3 sellers' };
-      case 'wash': return { name: 'Wash shed', text: 'A wash shed up behind the fields, at the FACTORY station. Drop crops on WASH (IN), take them washed off its OUT shelf: they sell for 25% more, and 1 in 100 comes out a star better.', from: '', to: 'Washed +25%' };
+      case 'wash': return { name: 'Wash shed', text: 'A wash shed up behind the fields, at the FACTORY station. Drop crops on WASH (IN), take them washed off its OUT shelf: washed crops are \u2605 and sell for 25% more. Later the Sorting table finds the better ones.', from: '', to: 'Washed +25%' };
       case 'pkWorker': return { name: 'Packhouse worker', text: 'The line calls at the FACTORY station: crops off at the IN stop, goods on at the OUT stop, and down to the stall.', from: 'You only', to: 'Worker' };
       case 'lab': return { name: 'Lab', text: 'A Seed shed Lab by the road. Pay for a research and it starts; keep its crate fed with crops on the LAB mat and a test plot grows it: better seeds, farm, shop and factory.', from: '', to: 'Research' };
-      case 'sorter': return { name: 'Sorting table', text: 'The wash shed grows into the Packhouse. The table finds each crop\'s real grade: ' + sortWords(s) + '. Prize and Champion grades come with Lab research in Sunflower and Berry Valley. The Cannery takes the grades you pick, the rest go to the stall.', from: 'All \u2605', to: 'Up to ' + STARS[maxStar(s) - 1] + ' x' + config.grades[maxStar(s) - 1] };
+      case 'sorter': return { name: 'Sorting table', text: 'The wash shed grows into the Packhouse. The table checks every washed crop, ugly, broken or perfect, and gives it its stars: ' + sortWords(s) + '. Prize and Champion grades come with Lab research in Sunflower and Berry Valley. The Cannery takes the grades you pick, the rest go to the stall.', from: 'All \u2605', to: 'Up to ' + STARS[maxStar(s) - 1] + ' x' + config.grades[maxStar(s) - 1] };
       case 'belt': return { name: 'Halt belts', text: 'Belts carry the crops from both halts up to the intake, and a second trough washes twice as much a batch.', from: 'Cart only, batch ' + washBatch(s), to: C.belt.rate[0] + ' a second, batch ' + C.wash.batch[1] };
       case 'compost': var cs0 = compostShift(s), cs1 = C.compost.shift[Math.min(n + 1, C.compost.shift.length - 1)]; return { name: 'Rich compost ' + ROMAN[n], text: 'Each crop you dump on the COMPOST heap fertilises one crop: at the Sorting table it has a better chance of a higher grade.', from: '+' + Math.round(cs0 * 100) + '% up a grade', to: '+' + Math.round(cs1 * 100) + '% up a grade' };
       case 'beltUp': return { name: BELT_NAMES[n], text: 'The belts run faster.', from: beltRate(s) + ' a second', to: C.belt.rate[n + 1] + ' a second' };
@@ -7271,7 +7272,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       { t: 'Sell them', d: 'To sell, go behind the counter onto the <b>marked floor</b>. You serve faster than any seller.', at: function () { var z = L().serveZone; return z ? zc(z) : { x: L().serve.x, z: L().counterZ }; } }] },
     helper: { ic: 'helper', cards: [{ t: 'Your first farmer', d: 'Farmers cut their own field and pile the crops at its halt. Give them bigger baskets and better tools. You still cut the fastest.', at: function () { var p = L().pads.carrot; return { x: p.x, z: p.z }; } }] },
     cart: { ic: 'cart', cards: [{ t: 'Your cart', d: 'It runs the line by itself: crops from the halts up to the station, goods back down to the stall. Tap it to send it off now. Later a donkey, then a horse, pulls it.', at: function () { var q = F.carPos(); return q ? { x: q.x, z: q.z } : { x: L().haltX.carrot, z: L().haltZ + 2 }; } }] },
-    wash: { ic: 'wash', cards: [{ t: 'Wash shed', d: 'Drop crops on <b>WASH</b>. Washed crops sell for <b>25% more</b>, and now and then one comes out a star better. Take them off the OUT shelf.', at: function () { var w = L().washMat || { x: (L().pk.x0 + L().pk.x1) / 2, z: L().pk.z1 }; return { x: w.x, z: w.z }; } }] },
+    wash: { ic: 'wash', cards: [{ t: 'Wash shed', d: 'Drop crops on <b>WASH</b>. Washed crops are <b>\u2605</b> and sell for <b>25% more</b>. Take them off the OUT shelf.', at: function () { var w = L().washMat || { x: (L().pk.x0 + L().pk.x1) / 2, z: L().pk.z1 }; return { x: w.x, z: w.z }; } }] },
     grades: { ic: 'sorter', cards: [
       { t: 'A ★★ crop!', d: 'Some crops are better than others. Every washed crop gets <b>stars</b>, from ★ to ★★★★★.', at: function () { var st = F.info().station, g = st && (st.pkGoods || st.goods); return g ? { x: g.x, z: g.z } : { x: -6, z: -40 }; } },
       { t: 'More stars, more coins', d: function () { return 'Each star grade sells for more. The boards at the stall count them.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().serve.x, z: L().counterZ }; } },
@@ -7285,7 +7286,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       { t: 'Feed it crops', d: 'Pay to start a research. It eats crops from its crate: fill the crate on the <b>LAB</b> mat. An empty crate only pauses it.', at: function () { return { x: L().labMat.x, z: L().labMat.z }; } },
       { t: 'One at a time', d: 'One research runs at a time, and it keeps going while you are away as long as the crate has crops. Tap the purple <b>Lab</b> button to choose.', at: function () { return { x: L().labMat.x, z: L().labMat.z - 6 }; }, ui: 'labBtn' }] },
     conYard: { ic: 'contracts', cards: [{ t: 'Contract yard', d: 'Buyers drive up for big orders of one thing. Pick one of three and fill it in time for <b>+30% to +80%</b>. Carry it onto LOAD, or RUSH it and the cart takes it.', at: at(-19, -8) }] },
-    sorter: { ic: 'sorter', cards: [{ t: 'Sorting table', d: function () { return 'It finds every crop\'s real stars. The Cannery takes the grades you pick, the rest go to the stall. The top two grades come with Lab research in later valleys.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
+    sorter: { ic: 'sorter', cards: [{ t: 'Sorting table', d: function () { return 'It checks every washed crop, ugly, broken or perfect, and gives it its stars. The Cannery takes the grades you pick, the rest go to the stall. The top two grades come with Lab research in later valleys.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
     prize: { ic: 'sorter', cards: [{ t: 'First Prize crop!', d: function () { return '★★★★ Prize crops sell <b>x' + F.CFG.grades[3] + '</b>. About 3 in 100 sorted crops are Prize.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
     champ: { ic: 'sorter', cards: [{ t: 'A Champion!', d: function () { return '★★★★★ Champion crops sell <b>x' + F.CFG.grades[4] + '</b>. Only 1 in 100 is one.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] }
   };
@@ -8631,13 +8632,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         var made = w.carrot + w.tomato;
         if (toSort) { W.sortIn.carrot += w.carrot; W.sortIn.tomato += w.tomato; G.sortSettle = 0; }
         else {
-          // washed crops: into the Cannery by themselves while it takes their grade (Fine cans),
-          // the rest onto the OUT shelf; 1 in 100 comes out a star better (Tom 2026-10-07),
-          // and with Pretty carrots / Shiny tomatoes a share comes out two stars
+          // washed crops (1★: washing never gives stars, only the Sorting table
+          // does, Tom 2026-10-08): into the Cannery by themselves while it takes
+          // their grade (Fine cans), the rest onto the OUT shelf
           var hw = 0; ['carrot', 'tomato'].forEach(function (crop) {
-            var na = Math.min(w[crop], Math.round(w[crop] * Lg.prettyShare(S, crop)) + Math.floor(w[crop] * CFG.wash.up + Math.random())), nw = w[crop] - na;
-            if (na && FL.tips) FL.tips.graded(2);
-            [[crop + 'W', nw], [crop + 'A', na]].forEach(function (q) { if (!q[1]) return; var nh = Lg.pkToHop(S, q[0], q[1]); S.stock.hopper[q[0]] += nh; gd[q[0]] += q[1] - nh; hw += nh; });
+            var k = crop + 'W', nw = w[crop]; if (!nw) return;
+            var nh = Lg.pkToHop(S, k, nw); S.stock.hopper[k] += nh; gd[k] += nw - nh; hw += nh;
           });
           if (hw) { G.canSettle = 0; G.secondsFly = (G.secondsFly || 0) + hw; }
           G.goodsFly = (G.goodsFly || 0) + made - hw;
@@ -8649,8 +8649,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         if (near(G.player, px, pz, 12)) { text(px, 2.4, pz, 'Washed ' + made + '!', '#bff0ff', 17, 1.3); snd.quarter(0); }
       }
     }
-    // the sorting table finds each crop's real stars (sortSplit, then the wash's
-    // 1 in 100 a star better); every grade the Cannery takes goes into it by
+    // the sorting table finds each washed crop's real stars (sortSplit: ugly,
+    // broken or perfect, Tom 2026-10-08); every grade the Cannery takes goes into it by
     // itself while it has room, the rest onto the OUT shelf
     if (toSort) {
       var si = W.sortIn;
@@ -8667,12 +8667,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             // fertilised crops (the COMPOST heap) sort with Rich compost's shift
             var fz = Math.min(nn, S.compost.left), sp0 = Lg.sortSplit(S, crop), spF = fz ? Lg.sortSplit(S, crop, Lg.compostShift(S)) : sp0;
             S.compost.left -= fz;
-            var sp = sp0.map(function (x, i) { return (x * (nn - fz) + spF[i] * fz) / nn; }), up = CFG.wash.up, rnd = function (x) { return Math.floor(x + Math.random()); };
-            // n[g]: crops of g stars, best grades drawn first; then the wash's lift moves 1 in 100 up a star
+            var sp = sp0.map(function (x, i) { return (x * (nn - fz) + spF[i] * fz) / nn; }), rnd = function (x) { return Math.floor(x + Math.random()); };
+            // n[g]: crops of g stars, best grades drawn first
             var n = [0, 0, 0, 0, 0, 0], left = nn;
             for (var g = 5; g >= 2; g--) { n[g] = Math.min(left, rnd(nn * sp[g - 1])); left -= n[g]; }
             n[1] = left;
-            for (var g2 = Lg.maxStar(S) - 1; g2 >= 1; g2--) { var u = Math.min(n[g2], rnd(n[g2] * up)); n[g2] -= u; n[g2 + 1] += u; }
             for (var g3 = 1; g3 <= 5; g3++) {
               if (!n[g3]) continue; var k = Lg.starKind(crop, g3), nh = Lg.pkToHop(S, k, n[g3]);
               hop[k] += nh; gd[k] += n[g3] - nh; secs += nh; best[g3] += n[g3];
