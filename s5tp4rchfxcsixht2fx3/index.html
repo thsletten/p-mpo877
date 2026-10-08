@@ -312,9 +312,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // ★ by the `find` chance (the bare table, + its lenses, + compost) and each
     // star after that climbs one more by `climb` (+ Quality seed research).
     // `first`: the first ★★ turns up within this many sorted crops.
-    // The Halt belts come with the second trough (batch[1]).
+    // More troughs (Second trough, then Third trough) wash more a batch (batch[1], [2]).
     // Batches: a trough load washes in `cycle` s (Soap: `soap` s).
-    wash: { batch: [80, 160], cycle: 16, soap: 10, settle: 1.5 },
+    wash: { batch: [80, 160, 240], cycle: 16, soap: 10, settle: 1.5 },
     // the 5 star grades (Lab thread's numbers, 2026-10-07): what ★ .. ★★★★★ multiply
     // a washed crop or a Fine can by, and how the Sorting table splits Home's crops
     grades: [1, 1.5, 2.25, 3.5, 6],
@@ -330,8 +330,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // station (the lens reads the real track). Big from the start: the cart
     // calls less often (the hand's Bigger handcart merged in here).
     station: { intake: 300, goods: 400, trip: 48 },
-    // halt belts (Lab: Belts): crops a second from the halts up to the intake
-    belt: { rate: [14, 24] },
     // the Lab (Tom 2026-10-07): one Lab for every valley, four tabs. Seeds has
     // a chip per crop, each with the same fixed slots (Sweet, Big, Bunches,
     // Pretty, Quick); Factory a chip per factory (Packhouse, Cannery); then Farm
@@ -576,8 +574,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // table, one more per valley; config.lens
     { id: 'lens1', tab: 'line', icon: 'sorter', of: 'sorter', cost: lensCost(1), need: function (s) { return lv(s, 'sorter') > 0; }, needs: 'Sorting table' },
     { id: 'lens2', tab: 'line', icon: 'sorter', of: 'sorter', cost: lensCost(2), need: function (s) { return lv(s, 'sorter') > 0 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
-    { id: 'belt', tab: 'line', icon: 'belt', step: 1, cost: [5000], need: function (s) { return researched(s, 'rBelt'); }, needs: 'Research: Belts' },
-    { id: 'beltUp', tab: 'line', icon: 'belt', of: 'belt', cost: [5500], need: function (s) { return lv(s, 'belt') > 0 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
+    { id: 'belt', tab: 'line', icon: 'wash', step: 1, cost: [5000], need: function (s) { return researched(s, 'rBelt'); }, needs: 'Research: Second trough' },
+    { id: 'beltUp', tab: 'line', icon: 'wash', of: 'belt', cost: [5500], need: function (s) { return lv(s, 'belt') > 0 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
     { id: 'canWorker', tab: 'line', icon: 'worker', step: 1, of: 'cannery', cost: [1350], need: function (s) { return lv(s, 'cannery') > 0; }, needs: 'Cannery' },
     { id: 'tomCans', tab: 'line', icon: 'cans', step: 1, of: 'cannery', cost: [2300], need: function (s) { return lv(s, 'canWorker') > 0; }, needs: 'Cannery worker' },
     { id: 'canSpeed', tab: 'line', icon: 'gear2', of: 'cannery', cost: [1600, 2400, 3600, 5200, 7000, 9200], need: function (s) { return lv(s, 'canWorker') > 0; } },
@@ -645,9 +643,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     train: 'Steam train', wagon: 'Wagon', seller: 'Seller', farmStall: 'Farm stall', farmShop: 'Farm shop', sellSpeed: 'Faster sellers',
     corn: 'Clear the track to Corn Valley',
     wash: 'Wash trough', pkWorker: 'Packhouse worker', lab: 'Lab',
-    sorter: 'Sorting table', lens1: 'Sorting lens', lens2: 'Second lens', belt: 'Halt belts', beltUp: 'Faster belts', conYard: 'Contract yard', conBuyers: 'Better buyers', conCrane: 'Steel crane', compost: 'Rich compost'
+    sorter: 'Sorting table', lens1: 'Sorting lens', lens2: 'Second lens', belt: 'Second trough', beltUp: 'Third trough', conYard: 'Contract yard', conBuyers: 'Better buyers', conCrane: 'Steel crane', compost: 'Rich compost'
   };
-  var BELT_NAMES = ['Wide belts'];
+  var BELT_NAMES = ['Third trough'];
   var AD_NAMES = ['Signboard I', 'Signboard II', 'Signboard III', 'Chalkboard I', 'Chalkboard II', 'Chalkboard III', 'Flyers I', 'Flyers II', 'Flyers III', 'Bunting I', 'Bunting II', 'Bunting III'];
   var CART_NAMES = ['Bigger cart', 'Wider wheels', 'Big hand cart'], DONKEY_NAMES = ['Bigger wagon', 'Second donkey', 'Taller sides', 'Long wagon', 'Big wagon'], HORSE_NAMES = ['High sideboards', 'Team of two'];
   var ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI'];
@@ -903,7 +901,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (rf(s, 'rSprink') && farmTier(s, crop) >= 5) r *= rf(s, 'rSprink');
     return r;
   }
-  function washBatch(s) { var b = config.wash.batch; return b[lv(s, 'belt') ? 1 : 0]; }
+  // the troughs in the wash shed (Tom 2026-10-08: no belts from the halts, the
+  // cart or train is the only way crops reach the station; ids 'belt' and
+  // 'beltUp' are kept so old saves keep what they bought)
+  function troughs(s) { return 1 + (lv(s, 'belt') ? 1 + (lv(s, 'beltUp') ? 1 : 0) : 0); }
+  function washBatch(s) { var b = config.wash.batch; return b[Math.min(troughs(s), b.length) - 1]; }
+  function washRate(s, n) { return Math.round(config.wash.batch[n - 1] / washCycle(s)); }
   function washCycle(s) { return researched(s, 'rSoap') ? config.wash.soap : config.wash.cycle; }
   // the samples a research wants, in words ("100 carrots"; n: another count)
   function sampleWord(R, n) { return fmt(n == null ? R.n : n) + ' ' + kindWord(R.kind); }
@@ -912,9 +915,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function intakeCap() { return config.station.intake; }
   function goodsCap() { return config.station.goods; }
   function goodsN(s) { var g = s.stock.goods, n = 0; for (var k in g) n += g[k] || 0; return n; }
-  function beltRate(s) { return lv(s, 'belt') ? config.belt.rate[Math.min(lv(s, 'beltUp'), config.belt.rate.length - 1)] : 0; }
   // the Packhouse runs without you once its worker is in: the line drops raw
-  // crops into the intake and takes the goods (the belts feed the intake too)
+  // crops into the intake and takes the goods
   function pkAuto(s) { return lv(s, 'wash') > 0 && lv(s, 'pkWorker') > 0; }
   // the line calls at the FACTORY station once a worker is in there (before
   // that the Packhouse and the Cannery are your job, Tom 2026-10-06)
@@ -980,8 +982,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // what the Packhouse adds to a crop on the way through (x value), and how
   // many crops a second its automatic side handles (the lens and idleRate).
   // The cart calls at the station once a round trip (trip: its seconds): the
-  // trough washes at most what the intake held when the cart left (the belts
-  // keep it topped up in between) and makes at most what the shelf holds.
+  // trough washes at most what the intake held when the cart left and makes
+  // at most what the shelf holds.
   function pkMult(s) {
     var P = config.products, q = lv(s, 'sorter') ? sortSplit(s, 'carrot') : [1];
     return q.reduce(function (v, x, i) { return v + x * P[starKind('carrot', i + 1)].price; }, 0);
@@ -990,7 +992,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function pkRate(s, trip) {
     if (!pkAuto(s)) return 0;
     var T = trip || lineTrip(s), trough = washBatch(s) / washCycle(s), v = vehicle(s);
-    var feed = Math.min(intakeCap(s), v ? v.cap : 0) / T + beltRate(s);
+    var feed = Math.min(intakeCap(s), v ? v.cap : 0) / T;
     return Math.min(trough, feed, goodsCap(s) / T);
   }
   function tier(s) { return lv(s, 'scythe') ? 2 : lv(s, 'sickle') ? 1 : 0; }
@@ -1139,11 +1141,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'pkWorker': return { name: 'Packhouse worker', text: 'The line calls at the FACTORY station: crops off at the IN stop, goods on at the OUT stop, and down to the stall.', from: 'You only', to: 'Worker' };
       case 'lab': return { name: 'Lab', text: 'A Seed shed Lab by the road. Pay for a research and it starts; keep its crate fed with crops on the LAB mat and a test plot grows it: better seeds, farm, shop and factory.', from: '', to: 'Research' };
       case 'sorter': return { name: 'Sorting table', text: 'The wash shed grows into the Packhouse. The table checks every washed crop, ugly, broken or perfect, and gives it its stars: ' + sortWords(s) + '. Good grades are rare: lenses on the table find more. Prize and Champion grades come with Lab research in Sunflower and Berry Valley.', from: 'All \u2605', to: 'Up to ' + STARS[maxStar(s) - 1] + ' x' + config.grades[maxStar(s) - 1] };
-      case 'belt': return { name: 'Halt belts', text: 'Belts carry the crops from both halts up to the intake, and a second trough washes twice as much a batch.', from: 'Cart only, batch ' + washBatch(s), to: C.belt.rate[0] + ' a second, batch ' + C.wash.batch[1] };
+      case 'belt': return { name: 'Second trough', text: 'A second trough in the wash shed, with its own washer: every batch washes twice as many crops. Keep the cart bringing enough to fill it.', from: washRate(s, 1) + ' a second', to: washRate(s, 2) + ' a second' };
       case 'compost': var cs0 = compostShift(s), cs1 = C.compost.shift[Math.min(n + 1, C.compost.shift.length - 1)]; return { name: 'Rich compost ' + ROMAN[n], text: 'Each crop you dump on the COMPOST heap fertilises one crop: at the Sorting table it has a better chance to beat \u2605.', from: '+' + Math.round(cs0 * 100) + '% find', to: '+' + Math.round(cs1 * 100) + '% find' };
       case 'lens1': case 'lens2': var LF = C.lens.find, lf0 = n ? LF[n - 1] : 0, lf1 = LF[Math.min(n, LF.length - 1)], fc = function (x) { return +(100 * x).toFixed(1) + '%'; };
         return { name: (id === 'lens1' ? 'Sorting lens ' : 'Second lens ') + ROMAN[n], text: n ? 'A stronger lens: the table spots more good crops. Find chance ' + fc(findChance(s)) + ' now.' : 'A brass lens on the Sorting table: it spots more good crops. Find chance ' + fc(findChance(s)) + ' now.', from: '+' + fc(lf0) + ' find', to: '+' + fc(lf1) + ' find' };
-      case 'beltUp': return { name: BELT_NAMES[n], text: 'The belts run faster.', from: beltRate(s) + ' a second', to: C.belt.rate[n + 1] + ' a second' };
+      case 'beltUp': return { name: BELT_NAMES[n] || 'Third trough', text: 'A third trough and washer: every batch washes three times what one trough did. The cart or train has to keep up.', from: washRate(s, 2) + ' a second', to: washRate(s, 3) + ' a second' };
       case 'conYard': return { name: 'Contract yard', text: 'A crane yard in the meadow by the tomatoes. Buyers drive up for big orders of one thing: pick one of three, fill it in time for a bonus. Carry it onto LOAD, or RUSH it and the cart runs it down its own siding.', from: '', to: 'Orders' };
       case 'conBuyers': var cb0 = C.contracts ? C.contracts.buyersBonus : 0.15; return { name: 'Better buyers ' + ROMAN[n], text: 'Every order pays more when it is full in time.', from: 'Bonus +' + Math.round(n * cb0 * 100) + '%', to: 'Bonus +' + Math.round((n + 1) * cb0 * 100) + '%' };
       case 'conCrane': var cm = C.contracts ? C.contracts.craneMult : 1.5; return { name: 'Steel crane', text: 'A tall steel crane and a bigger deck: buyers ask for ' + Math.round((cm - 1) * 100) + '% more, so every order and its bonus is bigger.', from: 'Orders x1', to: 'Orders x' + cm };
@@ -1154,7 +1156,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   // a research card's words at tier n (0-based): { name, text, to }
   var RES_NAMES = { rBees: 'Beehives', rSprink: 'Sprinklers', rLabHalt: 'Lab halt', rTaste: 'Taste table', rCrates: 'Farm crates', rBoard: 'Price board',
-    rSoap: 'Soap', rSort: 'Sorting', rFine: 'Fine labels', rPrem: 'Premium line', rChunky: 'Chunky cut', rRecipe: 'Rich recipe', rBelt: 'Belts', rPrize: 'Prize eye', rChamp: 'Champion eye' };
+    rSoap: 'Soap', rSort: 'Sorting', rFine: 'Fine labels', rPrem: 'Premium line', rChunky: 'Chunky cut', rRecipe: 'Rich recipe', rBelt: 'Second trough', rPrize: 'Prize eye', rChamp: 'Champion eye' };
   var SEED_NAMES = { yield: 'Yield', price: 'Flavor', size: 'Size', growth: 'Growth', quality: 'Quality' };
   // a card's name with its tier ("Carrot yield II", "Soap I"; one-tier cards have no number)
   function resLabel(id, n) {
@@ -1202,7 +1204,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'labhalt': return { name: nm, text: 'A stop for the Lab on the line: the cart, later the train, drops ' + pcs(f) + ' of each load into the Lab silo, so a long research keeps going.', to: 'Lab silo' };
       case 'prize': return { name: nm, text: 'The Sorting table learns to spot Prize crops: \u2605\u2605\u2605\u2605 sell x' + config.grades[3] + ' (until now they count as \u2605\u2605\u2605, x' + config.grades[2] + ').', to: '\u2605\u2605\u2605\u2605 x' + config.grades[3] };
       case 'champ': return { name: nm, text: 'The Sorting table spots the very best: Champion \u2605\u2605\u2605\u2605\u2605 crops sell x' + config.grades[4] + ' (until now they count as Prize, x' + config.grades[3] + ').', to: '\u2605\u2605\u2605\u2605\u2605 x' + config.grades[4] };
-      case 'belt': return { name: nm, text: 'Opens the Halt belts: crops ride from the halts up to the Packhouse intake.', to: 'Halt belts' };
+      case 'belt': return { name: nm, text: 'Opens the Second trough for the wash shed: twice the crops washed a batch.', to: 'Second trough' };
     }
     return { name: nm, text: '', to: '' };
   }
@@ -1264,7 +1266,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var canWant = lv(s, 'cannery') ? items * C.customers.canShare : 0;
     var cansSold = Math.min(cans, canWant + Math.max(0, items - canWant - (sup - cans)));
     var cropsSold = Math.min(sup - cans, items - cansSold);
-    // crops through the Packhouse are worth more (its hand or belts run idle too)
+    // crops through the Packhouse are worth more (its worker runs idle too)
     var pk = Math.min(1, pkRate(s) / Math.max(1e-9, sup)), pkV = 1 + pk * (pkMult(s) - 1);
     return Math.max(0, cropsSold * cropValue * pkV + cansSold * canPrice);
   }
@@ -1538,7 +1540,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     roman: roman, tierName: tierName, tierValley: tierValley, isMilestone: isMilestone, ladderMult: ladderMult, growthMult: growthMult, sizeAt: sizeAt, qualityShift: qualityShift, seedTier: seedTier, seedOpen: seedOpen, seedId: seedId, seedCrop: seedCrop,
     RAW: RAW, rawEmpty: rawEmpty, isRaw: isRaw, isBig: isBig, rawN: rawN, rawOf: rawOf,
     intakeCap: intakeCap, goodsCap: goodsCap, goodsN: goodsN, stationOn: stationOn, stationStep: stationStep, GOODS_ORDER: GOODS_ORDER, lineTrip: lineTrip,
-    beltRate: beltRate, pkAuto: pkAuto, pkMult: pkMult, pkRate: pkRate, canBatch: canBatch, canCycle: canCycle,
+    troughs: troughs, washRate: washRate, pkAuto: pkAuto, pkMult: pkMult, pkRate: pkRate, canBatch: canBatch, canCycle: canCycle,
     HOP_KINDS: HOP_KINDS, GRADE_WORD: GRADE_WORD, hopEmpty: hopEmpty, hopN: hopN, hopCrop: hopCrop, hopRoom: hopRoom, hopTakes: hopTakes, isCan: isCan, gradeOf: gradeOf, canOf: canOf,
     feedCan: feedCan, pkToHop: pkToHop, hopPull: hopPull, canKeep: canKeep, goodsFree: goodsFree, stars: stars, starKind: starKind, sortSplit: sortSplit, findChance: findChance, climbChance: climbChance, lensFind: lensFind, gradedCans: gradedCans, maxStar: maxStar, canTake: canTake, canOut: canOut, batchN: batchN, batchGrades: batchGrades
   };
@@ -3376,34 +3378,40 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   // the wash: an open shed (tin roof over the back only), a long trough with a
   // spray bar, foam and splashes; the washer stands behind it facing you.
-  // The trough runs along x from tx0 to tx1 at depth tz0..tz1.
-  function wash(x0, z0, x1, z1, tz0, tz1, workers) {
-    var tx0 = x0 + 0.35, tx1 = x1 - 0.35, wk = C.woodD;
+  // The trough runs along x from tx0 to tx1 at depth tz0..tz1; n > 1 splits
+  // it into n troughs side by side (Second and Third trough), each washer at
+  // one (workers: their x; [] for none, the game's washer works trough 0).
+  function wash(x0, z0, x1, z1, tz0, tz1, workers, n) {
+    var X0 = x0 + 0.35, X1 = x1 - 0.35, wk = C.woodD;
     vb(x0, 0, z0, x1 - x0, 0.06, z1 - z0, '#bfc6cf');
     [[x0, z0], [x1 - 0.14, z0], [x0, z0 + 0.5], [x1 - 0.14, z0 + 0.5]].forEach(function (q) { vb(q[0], 0, q[1], 0.14, 1.35, 0.14, wk); });
     for (var rz = z0 - 0.2; rz < z0 + 0.7; rz += 0.3) vb(x0 - 0.15, 1.4 - (rz - z0) * 0.15, rz, x1 - x0 + 0.3, 0.08, 0.3, Math.round(rz / 0.3) % 2 ? '#9aa3ad' : '#b9c1ca');
     vb(x0 + (x1 - x0) / 2 - 0.9, 1.0, z0 + 0.62, 1.8, 0.38, 0.06, '#2f6fb8');
     var sm = Mdl(); M.signText(sm, 'WASH', 0, 0.3, 0, 0.05, '#ffffff', 0.03); place(sm, x0 + (x1 - x0) / 2, 1.01, z0 + 0.69);
-    // the trough: low steel sides (the washer's arms show over them), water, crops bobbing, foam
-    var TH = 0.36;
-    vb(tx0, 0.06, tz0, tx1 - tx0, TH - 0.05, tz1 - tz0, '#9da2ab');
-    vb(tx0 + 0.08, TH, tz0 + 0.08, tx1 - tx0 - 0.16, 0.03, tz1 - tz0 - 0.16, C.water);
-    vb(tx0 - 0.04, TH - 0.05, tz0 - 0.04, tx1 - tx0 + 0.08, 0.12, 0.1, '#c3c6cc'); vb(tx0 - 0.04, TH - 0.05, tz1 - 0.06, tx1 - tx0 + 0.08, 0.12, 0.1, '#c3c6cc');
-    for (var k = 0; k < Math.floor((tx1 - tx0) * 3); k++) {
-      var bx = tx0 + 0.2 + (k * 0.37) % (tx1 - tx0 - 0.4), bz = tz0 + 0.18 + (k * 0.23) % (tz1 - tz0 - 0.36);
-      if (k % 2) place(M.tomatoI(0.2), bx, TH, bz); else place(M.carrotX(0.45), bx, TH + 0.06, bz, k % 4 ? 0 : 1);
-      if (k % 3 === 0) vb(bx + 0.12, TH + 0.03, bz - 0.06, 0.12, 0.04, 0.12, '#ffffff');
+    n = n || 1; var TW = (X1 - X0 - 0.3 * (n - 1)) / n;
+    for (var ti = 0; ti < n; ti++) {
+      var tx0 = X0 + ti * (TW + 0.3), tx1 = tx0 + TW;
+      // each trough: low steel sides (the washer's arms show over them), water, crops bobbing, foam
+      var TH = 0.36;
+      vb(tx0, 0.06, tz0, tx1 - tx0, TH - 0.05, tz1 - tz0, '#9da2ab');
+      vb(tx0 + 0.08, TH, tz0 + 0.08, tx1 - tx0 - 0.16, 0.03, tz1 - tz0 - 0.16, C.water);
+      vb(tx0 - 0.04, TH - 0.05, tz0 - 0.04, tx1 - tx0 + 0.08, 0.12, 0.1, '#c3c6cc'); vb(tx0 - 0.04, TH - 0.05, tz1 - 0.06, tx1 - tx0 + 0.08, 0.12, 0.1, '#c3c6cc');
+      for (var k = 0; k < Math.floor((tx1 - tx0) * 3); k++) {
+        var bx = tx0 + 0.2 + (k * 0.37) % (tx1 - tx0 - 0.4), bz = tz0 + 0.18 + (k * 0.23) % (tz1 - tz0 - 0.36);
+        if (k % 2) place(M.tomatoI(0.2), bx, TH, bz); else place(M.carrotX(0.45), bx, TH + 0.06, bz, k % 4 ? 0 : 1);
+        if (k % 3 === 0) vb(bx + 0.12, TH + 0.03, bz - 0.06, 0.12, 0.04, 0.12, '#ffffff');
+      }
+      // a spray pipe along the trough's front rim, its jets arching in
+      vb(tx0, TH + 0.1, tz1 - 0.02, tx1 - tx0, 0.08, 0.08, '#8b93a1');
+      for (var dx = tx0 + 0.2; dx < tx1 - 0.1; dx += 0.3) { vb(dx, TH + 0.2, tz1 - 0.12, 0.04, 0.05, 0.04, '#bff0ff'); vb(dx + 0.02, TH + 0.16, tz1 - 0.25, 0.04, 0.05, 0.04, '#bff0ff'); vb(dx + 0.04, TH + 0.08, tz1 - 0.37, 0.04, 0.04, 0.04, '#e8fbff'); }
     }
-    // a spray pipe along the trough's front rim, its jets arching in
-    vb(tx0, TH + 0.1, tz1 - 0.02, tx1 - tx0, 0.08, 0.08, '#8b93a1');
-    for (var dx = tx0 + 0.2; dx < tx1 - 0.1; dx += 0.3) { vb(dx, TH + 0.2, tz1 - 0.12, 0.04, 0.05, 0.04, '#bff0ff'); vb(dx + 0.02, TH + 0.16, tz1 - 0.25, 0.04, 0.05, 0.04, '#bff0ff'); vb(dx + 0.04, TH + 0.08, tz1 - 0.37, 0.04, 0.04, 0.04, '#e8fbff'); }
     // the washers behind the trough, scrubbing; splashes round their hands
-    (workers || [(tx0 + tx1) / 2]).forEach(function (wx) {
+    (workers || [(X0 + X1) / 2]).forEach(function (wx) {
       person(LOOK.washer, wx, tz0 - 0.32, 0, 'wash', 0.06);
       [[-0.35, 0.95, 0.2], [0.3, 1.05, 0.25], [0.05, 1.15, 0.1], [-0.15, 0.85, 0.35], [0.45, 0.88, 0.05]].forEach(function (s) { vb(wx + s[0], s[1], tz0 + s[2], 0.07, 0.07, 0.07, '#e8fbff'); });
       [[-0.2, 0.2], [0.25, 0.3], [0.0, 0.42]].forEach(function (s) { vb(wx + s[0] - 0.09, TH + 0.04, tz0 + s[1], 0.18, 0.05, 0.14, '#ffffff'); });
     });
-    K.block(x0, z0, x1, z0 + 0.6); K.block(tx0, tz0, tx1, tz1);
+    K.block(x0, z0, x1, z0 + 0.6); K.block(X0, tz0, X1, tz1);
   }
   // the sort: an open shed (red roof strip at the back), a table, the sorter
   // behind it, five grade boxes along the front (blue ★ .. purple ★★★★★)
@@ -4422,11 +4430,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     else place(M.packhouse(W, D, { table: Lg.lv(s, 'sorter') > 0, double: Lg.lv(s, 'belt') > 0, intakes: [] }), pk.x0, 0.03, pk.z0);
     // (the wash shed and the sorter hut block their own footprints: no invisible wall in between)
     if (!LA && !(SHV && (STV === 'd' || STV === 'e'))) BLOCK.push({ x0: pk.x0, z0: pk.z0, x1: pk.x1, z1: pk.z1 - 0.2 });
-    if (Lg.lv(s, 'belt')) {
-      var bp = beltPaths();
-      beltRun(bp.carrot); beltRun(bp.tomato.slice(0, 3));
-      [-0.5, 0.5].forEach(function (dz2) { [-1, 1].forEach(function (sd) { vb(bp.trestle[0] + sd * 1.25 - 0.06, 0, bp.trestle[1] + dz2 - 0.06, 0.12, 2.3, 0.12, '#ffc531'); }); });
-    }
     return { mat: L.washMat };
   }
   // layout A's wash: an open shed with the trough (the washer is the game's,
@@ -4434,7 +4437,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // to the sorting table (a lot until the sorter is bought) and into CROPS
   function washA(s) {
     var LP = layParts(), pk = L.pk, T = L.trough, SS = L.sortShed;
-    LP.wash(pk.x0, pk.z0, pk.x1, pk.z1, T.z0, T.z1, []);
+    // one trough, then the Second and Third trough side by side, a washer at each
+    // (the game's washer works the first; L.washer moves with it)
+    var nt = Lg.troughs(s), tw = (T.x1 - T.x0 - 0.3 * (nt - 1)) / nt, tc = function (i) { return T.x0 + i * (tw + 0.3) + tw / 2; }, extra = [];
+    for (var ti = 1; ti < nt; ti++) extra.push(tc(ti));
+    L.washer.x = tc(0);
+    LP.wash(pk.x0, pk.z0, pk.x1, pk.z1, T.z0, T.z1, extra, nt);
     LP.belt([[L.bin.x0, 0.8, L.washAt.z], [T.x1 + 0.05, 0.8, L.washAt.z]]);
     LP.belt(beltPaths().goods.slice(0, 4));
     if (Lg.lv(s, 'sorter') > 0) LP.sort(SS.x0, SS.z0, SS.x1, SS.z1, SS.tz0, SS.tz1, false, true, [Lg.lv(s, 'lens1'), Lg.lv(s, 'lens2'), Lg.lv(s, 'lens3'), Lg.lv(s, 'lens4'), Lg.lv(s, 'lens5'), Lg.lv(s, 'lens6')]);
@@ -4750,7 +4758,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       info.pk = packhouse(s);
       info.station = station(s);
     }
-    info.belts = Lg.lv(s, 'belt') ? beltPaths() : null;
     info.lab = lab(s);
     // the Contract yard in the west meadow (contracts.js), before the meadow keeps off it
     info.con = FL.contracts ? FL.contracts.build(s, { L: L, reserve: reserve, BLOCK: BLOCK }) : null;
@@ -6867,7 +6874,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     chunky: '<rect x="6" y="14" width="14" height="24" rx="3" fill="#dfe5ec"/><rect x="6" y="20" width="14" height="12" fill="#ff9b1f"/><rect x="24" y="14" width="14" height="24" rx="3" fill="#dfe5ec"/><rect x="24" y="20" width="14" height="12" fill="#ff9b1f"/><text x="30" y="10" font-size="12" font-weight="900" fill="#7b3fbf">x2</text>',
     fine: '<rect x="12" y="10" width="24" height="32" rx="4" fill="#dfe5ec"/><rect x="12" y="18" width="24" height="14" fill="#5fd0ff"/><rect x="17" y="21" width="8" height="8" fill="#ff8a1f"/><circle cx="36" cy="10" r="6" fill="#bff0ff" stroke="#5fd0ff" stroke-width="2"/>',
     prem: '<rect x="12" y="10" width="24" height="32" rx="4" fill="#dfe5ec"/><rect x="12" y="18" width="24" height="14" fill="#ffc531"/><rect x="17" y="21" width="8" height="8" fill="#f2362b"/><path d="M36 2 l3 6 6 1 -4.5 4 1 6 -5.5 -3 -5.5 3 1 -6 -4.5 -4 6 -1 Z" fill="#ffd23a" stroke="#e0a41a" stroke-width="1.5"/>',
-    belt: '<rect x="4" y="22" width="40" height="10" rx="5" fill="#3a3f4d"/><circle cx="9" cy="27" r="3" fill="#8b93a1"/><circle cx="39" cy="27" r="3" fill="#8b93a1"/><rect x="10" y="12" width="8" height="9" fill="#ff8a1f"/><rect x="26" y="12" width="8" height="9" fill="#f2362b"/>',
+    belt: '<rect x="2" y="14" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="16" width="38" height="6" fill="#5fd0ff"/><rect x="2" y="30" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="32" width="38" height="6" fill="#5fd0ff"/><circle cx="14" cy="17" r="3" fill="#ff8a1f"/><circle cx="32" cy="33" r="3" fill="#f2362b"/><path d="M14 4 v6 M24 2 v8 M34 4 v6" stroke="#5fd0ff" stroke-width="3" stroke-linecap="round"/>',
     taste: '<rect x="6" y="24" width="36" height="6" fill="#c98b4e"/><path d="M10 30 V42 M38 30 V42" stroke="#94603a" stroke-width="3"/><circle cx="18" cy="18" r="5" fill="#f2362b"/><rect x="26" y="14" width="10" height="8" fill="#ff8a1f"/>',
     crate: '<rect x="6" y="16" width="36" height="24" fill="#c98b4e" stroke="#94603a" stroke-width="2"/><path d="M6 28 H42" stroke="#94603a" stroke-width="2"/><rect x="12" y="10" width="8" height="8" fill="#ff8a1f"/><circle cx="32" cy="13" r="5" fill="#f2362b"/>',
     board: '<rect x="8" y="8" width="32" height="24" rx="2" fill="#2b3350" stroke="#94603a" stroke-width="3"/><text x="13" y="25" font-size="12" font-weight="900" fill="#ffd23a">A +</text><path d="M16 32 L12 44 M32 32 L36 44" stroke="#94603a" stroke-width="3"/>',
@@ -6909,7 +6916,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       { ic: 'prem', n: 'Premium line', tier: [0, 1, 2], d: 'Cans from Grade A are Premium: +40%. I: +60%, and the Cannery takes Grade A first.', st: 'lock', lock: 'Sell 1,000 Grade A crops', p: [260, 1000] },
       { ic: 'chunky', n: 'Chunky cut', tier: [0, 1, 1], d: 'A Big carrot or Big tomato makes 2 cans, not 1.', st: 'lock', lock: 'Can 500 tins', p: [310, 500] },
       { ic: 'cans', n: 'Rich recipe', tier: [0, 1, 2], d: 'Every can sells x1.6, on top of its grade.', st: 'lock', lock: 'Can 1,000 tins', p: [310, 1000] },
-      { ic: 'belt', n: 'Belts', tier: [0, 1, 1], d: 'Opens the Halt belts: crops ride up to the intake on their own.', st: 'lock', lock: 'Ship 5,000 crops on the line', p: [3900, 5000] }
+      { ic: 'belt', n: 'Second trough', tier: [0, 1, 1], d: 'Opens the Second trough: the wash shed washes twice as much a batch.', st: 'lock', lock: 'Ship 5,000 crops on the line', p: [3900, 5000] }
     ] },
     market: { name: 'Market', icon: 'crate', cards: [
       { ic: 'taste', n: 'Taste table', tier: [0, 0, 2], d: 'A buyer you serve yourself tastes first and takes 1 more.', st: 'later', later: 'Corn Valley', lock: 'Serve 100 buyers yourself' },
@@ -7055,7 +7062,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     chunky: '<rect x="6" y="14" width="14" height="24" rx="3" fill="#dfe5ec"/><rect x="6" y="20" width="14" height="12" fill="#ff9b1f"/><rect x="24" y="14" width="14" height="24" rx="3" fill="#dfe5ec"/><rect x="24" y="20" width="14" height="12" fill="#ff9b1f"/><text x="30" y="10" font-size="12" font-weight="900" fill="#7b3fbf">x2</text>',
     fine: '<rect x="12" y="10" width="24" height="32" rx="4" fill="#dfe5ec"/><rect x="12" y="18" width="24" height="14" fill="#5fd0ff"/><rect x="17" y="21" width="8" height="8" fill="#ff8a1f"/><circle cx="36" cy="10" r="6" fill="#bff0ff" stroke="#5fd0ff" stroke-width="2"/>',
     prem: '<rect x="12" y="10" width="24" height="32" rx="4" fill="#dfe5ec"/><rect x="12" y="18" width="24" height="14" fill="#ffc531"/><rect x="17" y="21" width="8" height="8" fill="#f2362b"/><path d="M36 2 l3 6 6 1 -4.5 4 1 6 -5.5 -3 -5.5 3 1 -6 -4.5 -4 6 -1 Z" fill="#ffd23a" stroke="#e0a41a" stroke-width="1.5"/>',
-    belt: '<rect x="4" y="22" width="40" height="10" rx="5" fill="#3a3f4d"/><circle cx="9" cy="27" r="3" fill="#8b93a1"/><circle cx="39" cy="27" r="3" fill="#8b93a1"/><rect x="10" y="12" width="8" height="9" fill="#ff8a1f"/><rect x="26" y="12" width="8" height="9" fill="#f2362b"/>',
+    belt: '<rect x="2" y="14" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="16" width="38" height="6" fill="#5fd0ff"/><rect x="2" y="30" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="32" width="38" height="6" fill="#5fd0ff"/><circle cx="14" cy="17" r="3" fill="#ff8a1f"/><circle cx="32" cy="33" r="3" fill="#f2362b"/><path d="M14 4 v6 M24 2 v8 M34 4 v6" stroke="#5fd0ff" stroke-width="3" stroke-linecap="round"/>',
     taste: '<rect x="6" y="24" width="36" height="6" fill="#c98b4e"/><path d="M10 30 V42 M38 30 V42" stroke="#94603a" stroke-width="3"/><circle cx="18" cy="18" r="5" fill="#f2362b"/><rect x="26" y="14" width="10" height="8" fill="#ff8a1f"/>',
     crate: '<rect x="6" y="16" width="36" height="24" fill="#c98b4e" stroke="#94603a" stroke-width="2"/><path d="M6 28 H42" stroke="#94603a" stroke-width="2"/><rect x="12" y="10" width="8" height="8" fill="#ff8a1f"/><circle cx="32" cy="13" r="5" fill="#f2362b"/>',
     board: '<rect x="8" y="8" width="32" height="24" rx="2" fill="#2b3350" stroke="#94603a" stroke-width="3"/><text x="13" y="25" font-size="12" font-weight="900" fill="#ffd23a">A +</text><path d="M16 32 L12 44 M32 32 L36 44" stroke="#94603a" stroke-width="3"/>',
@@ -7483,7 +7490,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   };
   var STEP_LABEL = { helper: 'Helper!', cart: 'Hand cart!', seller: 'Seller!', tomatoes: 'Tomatoes!', tHelper: 'Tomato helper!', farmStall: 'Farm stall!', donkey: 'Donkey cart!', horse: 'Horse wagon!', rails: 'Rails!',
     cannery: 'Cannery!', canWorker: 'Cannery worker!', tomCans: 'Tomato cans!', farmShop: 'Farm shop!', oldTrain: 'Old rattler!', train: 'Steam train!', corn: 'Corn Valley!',
-    wash: 'Wash trough!', lab: 'Lab!', sorter: 'Sorting table!', belt: 'Belts!' };
+    wash: 'Wash trough!', lab: 'Lab!', sorter: 'Sorting table!', belt: 'Second trough!', beltUp: 'Third trough!' };
   // where each thing appears ("Show the way" and the STEP fly-to)
   var WHERE = {
     helper: { x: L.pads.carrot.x, z: L.pads.carrot.z }, helper2: { x: L.pads.carrot.x, z: L.pads.carrot.z }, hbasket: { x: L.pads.carrot.x, z: L.pads.carrot.z }, htool: { x: L.pads.carrot.x, z: L.pads.carrot.z },
@@ -7493,7 +7500,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     rails: { x: -5, z: -10 + DZ }, donkey: { x: L.haltX.carrot - 1.6, z: L.haltZ + 1 }, donkeyUp: { x: -3, z: -8 + DZ }, horse: { x: L.haltX.carrot - 1.6, z: L.haltZ + 1 }, horseUp: { x: -3, z: -8 + DZ }, oldTrain: { x: 0, z: -6 + DZ }, cannery: { x: (L.lot.x0 + L.lot.x1) / 2, z: L.lot.z1 }, canWorker: { x: L.worker.x, z: L.worker.z }, tomCans: { x: L.machine.x, z: L.machine.z + 0.5 }, canSpeed: { x: (L.lot.x0 + L.lot.x1) / 2, z: L.lot.z1 },
     train: { x: 0, z: -6 + DZ }, wagon: { x: 0, z: -8 + DZ }, corn: { x: L.lock.x, z: L.lock.z }, fieldC: { x: L.carrotX0 + 4, z: L.fieldBottom - 9 },
     wash: { x: (L.pk.x0 + L.pk.x1) / 2, z: L.pk.z1 }, pkWorker: { x: L.pkWorker.x, z: L.pkWorker.z },
-    sorter: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens1: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens2: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, belt: { x: -14.3, z: -30 }, beltUp: { x: -14.3, z: -30 },
+    sorter: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens1: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens2: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, belt: { x: (L.pk.x0 + L.pk.x1) / 2, z: L.pk.z1 }, beltUp: { x: (L.pk.x0 + L.pk.x1) / 2, z: L.pk.z1 },
     lab: { x: (L.lab.x0 + L.lab.x1) / 2, z: L.lab.z1 }, conYard: { x: -19, z: -8 }, conBuyers: { x: -19, z: -8 }, conCrane: { x: -19, z: -8 }, rSoap: { x: L.labMat.x, z: L.labMat.z }, rSort: { x: L.labMat.x, z: L.labMat.z }, rBelt: { x: L.labMat.x, z: L.labMat.z }
   };
 
@@ -7506,7 +7513,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       golden: null, bus: null, busPending: 0, incLog: [], incT: 0, cut: null, fogZ: -38 + DZ, fogTrunk: -20 + DZ, fogAll: 1,
       canBatch: 0, canT: 0, canFlip: false, onServe: false, onCan: false, restockT: 0, hintT: {}, pilesDirty: true, offT: 0, offs: [],
       menu: null, hopIn: 0, haltIn: {}, layout: '', marketSig: '', marketPop: 0, stats: { ft: 0, n: 0 }, haptics: true,
-      chipRects: [], chipTaps: [], pkW: null, labA: null, washIn: 0, washSettle: 0, sortSettle: 0, canSettle: 0, labIn: 0, beltAcc: 0, beltT: 0, done: {}
+      chipRects: [], chipTaps: [], pkW: null, labA: null, washIn: 0, washSettle: 0, sortSettle: 0, canSettle: 0, labIn: 0, done: {}
     };
   }
   function loadState() {
@@ -7531,7 +7538,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // what the Lab's badge dots show: the research ready to start, by tab and
   // chip, and a running one whose crate is empty
   function labReadySig() { return Lg.RES_IDS.filter(function (id) { return Lg.resReady(S, id); }).join(',') + (Lg.labPaused(S) ? '!' : ''); }
-  function layoutSig() { var lv = function (id) { return Lg.lv(S, id); }; return [lv('fieldC'), lv('fieldT'), lv('tomatoes'), Lg.line(S), lv('rails'), lv('cannery'), lv('canSpeed') >= 2, lv('canSpeed') >= 4, lv('tomCans'), lv('corn'), lv('helper') > 0, lv('tHelper') > 0, lv('wash'), lv('sorter'), lv('lens1'), lv('lens2'), lv('belt'), lv('pkWorker'), lv('canWorker'), lv('lab'), labLookSig(), Lg.resLv(S, 'rBees'), lv('conYard'), lv('conCrane')].join(',') + ',' + Lg.farmTier(S, 'carrot') + ',' + Lg.farmTier(S, 'tomato'); }
+  function layoutSig() { var lv = function (id) { return Lg.lv(S, id); }; return [lv('fieldC'), lv('fieldT'), lv('tomatoes'), Lg.line(S), lv('rails'), lv('cannery'), lv('canSpeed') >= 2, lv('canSpeed') >= 4, lv('tomCans'), lv('corn'), lv('helper') > 0, lv('tHelper') > 0, lv('wash'), lv('sorter'), lv('lens1'), lv('lens2'), lv('belt'), lv('beltUp'), lv('pkWorker'), lv('canWorker'), lv('lab'), labLookSig(), Lg.resLv(S, 'rBees'), lv('conYard'), lv('conCrane')].join(',') + ',' + Lg.farmTier(S, 'carrot') + ',' + Lg.farmTier(S, 'tomato'); }
   function marketSig() { return [Lg.stage(S), Lg.lv(S, 'ad'), Lg.lv(S, 'shelves'), Lg.lv(S, 'tomatoes')].join(','); }
   function rebuildWorld(opts) {
     opts = opts || {};
@@ -8626,30 +8633,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function batchWord(gr) { var kinds = gr.filter(function (n) { return n > 0; }).length; return kinds > 1 ? 'mixed ' : gr[5] ? 'Champion ' : gr[4] ? 'Prize ' : gr[3] ? '\u2605\u2605\u2605 ' : gr[2] ? '\u2605\u2605 ' : gr[1] ? 'Fine ' : ''; }
   function chimney() { var sp = Lg.lv(S, 'canSpeed'); return { x: L.chimney.x, y: sp >= 4 ? 5.8 : sp >= 2 ? 5.2 : 3.5, z: L.chimney.z }; }
 
-  // ---- the Packhouse: wash trough, then the sorting table, belts from the halts ----
-  function beltTravel(key) { var P = info.belts[key], n = 0; for (var i = 1; i < P.length; i++) n += Math.hypot(P[i][0] - P[i - 1][0], P[i][2] - P[i - 1][2]); return n; }
-  var BELT_SPEED = 2.6;
+  // ---- the Packhouse: wash troughs, then the sorting table ----
   function updatePackhouse(dt) {
     G.washRun = false; G.sortRun = false;
     if (G.secondsFly > 0) G.secondsFly = Math.max(0, G.secondsFly - dt * 2);
     if (!Lg.lv(S, 'wash')) return;
     var W = S.mach, ib = S.stock.intake, gd = S.stock.goods, B = Lg.washBatch(S), icap = Lg.intakeCap(S), gs = info.station ? info.station.goods : { x: L.shelf.x0, z: L.shelf.z0 };
     G.washSettle += dt; G.sortSettle += dt;
-    // belts: crops ride from both halts up to the INTAKE bin
-    G.beltItems = G.beltItems || [];
-    if (Lg.lv(S, 'belt') && info.belts) {
-      G.beltAcc = Math.min(3, G.beltAcc + dt * Lg.beltRate(S));
-      while (G.beltAcc >= 1 && ib.carrot + ib.tomato + G.beltItems.length + G.washIn < icap) {
-        var from = G.beltFlip ? [['tomato', S.stock.haltT], ['carrot', S.stock.halt]] : [['carrot', S.stock.halt], ['tomato', S.stock.haltT]], got = null;
-        for (var hi = 0; hi < 2 && !got; hi++) { var pool = from[hi][1]; var cr = Lg.RAW.filter(function (k) { return pool[k] > 0; })[0]; if (cr) { pool[cr]--; got = { k: cr, belt: from[hi][0] }; } }
-        G.beltFlip = !G.beltFlip;
-        if (!got) break;
-        G.beltAcc -= 1; G.pilesDirty = true;
-        G.beltItems.push({ k: got.k, belt: got.belt, s: 0, len: G.beltLen && G.beltLen[got.belt] || (G.beltLen = { carrot: beltTravel('carrot'), tomato: beltTravel('tomato') })[got.belt] });
-      }
-      G.beltAcc = Math.min(G.beltAcc, 1.5);
-      for (var bi = G.beltItems.length - 1; bi >= 0; bi--) { var it = G.beltItems[bi]; it.s += dt * BELT_SPEED; if (it.s >= it.len) { G.beltItems.splice(bi, 1); ib[Lg.cropOf(it.k)] += Lg.rawN(it.k); G.washSettle = 0; G.pilesDirty = true; } }
-    }
     // a batch: what the GOODS shelf (or the sorting table) has room for, up to
     // the trough's batch; tomatoes and carrots in the share they wait in
     function take(pool, bt) {
@@ -9353,6 +9343,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     G.customers.forEach(placeActor);
     G.sellers.forEach(function (sg) { sg.a.g.position.set(sg.x, 0.14 + Math.abs(Math.sin(sg.bob)) * 0.04, sg.z); sg.a.g.rotation.y = 0; });
     if (G.worker) placeWorker(G.worker);
+    if (G.washer) G.washer.x = L.washer.x;
     placeStaff(G.washer, G.washRun, true); placeStaff(G.sorter, G.sortRun, false);
     if (G.pkW) { var pw = G.pkW, pwBusy = G.veh && G.veh.st.state === 'station'; pw.bob += (pwBusy ? 9 : 2) / 60; pw.a.g.position.set(pw.x, 0.42 + Math.abs(Math.sin(pw.bob)) * (pwBusy ? 0.08 : 0.03), pw.z); pw.a.g.rotation.y = Math.PI / 2; animLegs(pw.a, false, 0); }
     placeVehicle(1 / 60);
@@ -9390,10 +9381,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var gp = WD.beltPaths().goods, gl = pathLen(gp);
       for (var gi = 0; gi < Math.min(4, Math.ceil(G.goodsFly)); gi++) { var gu = ((G.t * 0.5 + gi / 4) % 1) * gl, gq = alongPath(gp, gu); RD.dynModel(gi % 2 ? ITEM.tomatoW || ITEM.tomato : ITEM.carrotW || ITEM.carrot, gq[0], gq[1] + 0.12, gq[2], gu, 0, 0.85); }
     }
-    // crops riding the belts from the halts, seconds sliding down the chute
-    if (G.beltItems && info.belts) G.beltItems.forEach(function (it, bi) { if (bi % Math.ceil(G.beltItems.length / 70)) return; var q = alongPath(info.belts[it.belt], it.s); RD.dynModel(ITEM[it.k], q[0], q[1] + 0.12, q[2], it.s * 0.7, 0, 0.9); });
+    // seconds sliding down the chute
     if (G.secondsFly > 0 && (Lg.lv(S, 'sorter') || L.oneIn)) {
-      var sp = Lg.lv(S, 'belt') && info.belts && !L.oneIn ? info.belts.seconds : WD.beltPaths().seconds, sl = pathLen(sp);
+      var sp = WD.beltPaths().seconds, sl = pathLen(sp);
       for (var si = 0; si < Math.min(4, Math.ceil(G.secondsFly)); si++) { var su = ((G.t * 0.6 + si / 4) % 1) * sl, sq2 = alongPath(sp, su); RD.dynModel(si % 2 ? ITEM.tomato : ITEM.carrot, sq2[0], sq2[1] + 0.12, sq2[2], su, 0, 0.85); }
     }
     if (G.golden && !LK) { var gg = G.golden, pulseS = 0.9 + Math.sin(G.t * 8) * 0.12; RD.dynBox(gg.x, 0.03, gg.z, pulseS, 0.04, pulseS, '#fff3a0'); }
@@ -9983,7 +9973,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     lab: '<path d="M18 4 H30 M20 4 V18 L8 40 a3 3 0 0 0 3 4 H37 a3 3 0 0 0 3 -4 L28 18 V4" fill="#ffffff" stroke="#7b3fbf" stroke-width="3"/><path d="M12 32 H36 L40 40 a3 3 0 0 1 -3 4 H11 a3 3 0 0 1 -3 -4 Z" fill="#9b6bff"/><circle cx="22" cy="36" r="2.5" fill="#d9c8ff"/><circle cx="29" cy="38" r="2" fill="#d9c8ff"/>',
     soap: '<rect x="8" y="18" width="32" height="20" rx="6" fill="#ffd3ec" stroke="#d96aa7" stroke-width="2"/><circle cx="14" cy="10" r="5" fill="#bff0ff" stroke="#5fd0ff" stroke-width="2"/><circle cx="26" cy="7" r="3.5" fill="#bff0ff" stroke="#5fd0ff" stroke-width="2"/><circle cx="36" cy="12" r="4" fill="#bff0ff" stroke="#5fd0ff" stroke-width="2"/>',
     sorter: '<rect x="4" y="20" width="40" height="8" fill="#c98b4e"/><rect x="8" y="28" width="4" height="14" fill="#94603a"/><rect x="36" y="28" width="4" height="14" fill="#94603a"/><rect x="8" y="12" width="8" height="8" fill="#ff8a1f"/><rect x="20" y="12" width="8" height="8" fill="#ff8a1f"/><circle cx="36" cy="14" r="7" fill="#ffd23a" stroke="#e0a41a" stroke-width="2"/><text x="36" y="18" font-size="10" font-weight="bold" text-anchor="middle" fill="#7a4a10">A</text>',
-    belt: '<rect x="4" y="22" width="40" height="10" rx="5" fill="#3a3f4d"/><circle cx="9" cy="27" r="3" fill="#8b93a1"/><circle cx="39" cy="27" r="3" fill="#8b93a1"/><rect x="10" y="12" width="8" height="9" fill="#ff8a1f"/><rect x="26" y="12" width="8" height="9" fill="#f2362b"/><path d="M8 40 H40 M34 36 l6 4 l-6 4" stroke="#ffd23a" stroke-width="3" fill="none" stroke-linecap="round"/>'
+    belt: '<rect x="2" y="14" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="16" width="38" height="6" fill="#5fd0ff"/><rect x="2" y="30" width="44" height="12" rx="3" fill="#8b93a1"/><rect x="5" y="32" width="38" height="6" fill="#5fd0ff"/><circle cx="14" cy="17" r="3" fill="#ff8a1f"/><circle cx="32" cy="33" r="3" fill="#f2362b"/><path d="M14 4 v6 M24 2 v8 M34 4 v6" stroke="#5fd0ff" stroke-width="3" stroke-linecap="round"/>'
   };
   function icon(id, s) { s = s || 40; return '<svg viewBox="0 0 48 48" width="' + s + '" height="' + s + '">' + (ICONS[id] || ICONS.basket) + '</svg>'; }
 
