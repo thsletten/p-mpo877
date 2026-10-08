@@ -307,14 +307,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // wash shed (+25%: a washed crop is ★, washing gives no more stars, Tom
     // 2026-10-08); the Sorting table (Tom 2026-10-07: after the washer, the
     // shed grows into the Packhouse) finds each washed crop's real grade, ugly,
-    // broken or perfect: `split` of them ★, ★★, ★★★.
+    // broken or perfect. Good grades are rare (Tom 2026-10-08: "very few should
+    // be good graded, a mid to end game thing, like in factorio"): a crop beats
+    // ★ by the `find` chance (the bare table, + its lenses, + compost) and each
+    // star after that climbs one more by `climb` (+ Quality seed research).
+    // `first`: the first ★★ turns up within this many sorted crops.
     // The Halt belts come with the second trough (batch[1]).
     // Batches: a trough load washes in `cycle` s (Soap: `soap` s).
     wash: { batch: [80, 160], cycle: 16, soap: 10, settle: 1.5 },
     // the 5 star grades (Lab thread's numbers, 2026-10-07): what ★ .. ★★★★★ multiply
     // a washed crop or a Fine can by, and how the Sorting table splits Home's crops
     grades: [1, 1.5, 2.25, 3.5, 6],
-    sort: { cycle: 10, split: [0.65, 0.22, 0.09, 0.03, 0.01] },
+    sort: { cycle: 10, find: 0.02, climb: 0.10, first: 30 },
+    // lens slots on the Sorting table (Tom 2026-10-08 "B", Factorio's quality
+    // modules): slot 1 comes with the table, one more per valley (up to 6);
+    // each slot's lens goes I..V, `find` it adds a tier; `cost`: slot 1's
+    // tiers, x `slotX` for each later slot
+    lens: { find: [0.01, 0.02, 0.035, 0.055, 0.08], cost: [2800, 4400, 7000, 11000, 18000], slotX: 4, slots: 6 },
     // the FACTORY station where the line runs through the district: raw crops
     // go into the INTAKE bin (the trough's feed), washed and graded crops and
     // the cans wait on the GOODS shelf. `trip`: tiles from the market to the
@@ -369,9 +378,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       rPrize: { tab: 'factory', grp: 'sorting', slot: 'prize', of: 1, valley: 3, tiers: [] },
       rChamp: { tab: 'factory', grp: 'sorting', slot: 'champ', of: 1, valley: 4, tiers: [] },
       rFine: { tab: 'factory', grp: 'cannery', slot: 'fine', of: 3, f: [1.5, 1.6, 1.7], tiers: [], later: '+3%' },
-      rPrem: { tab: 'factory', grp: 'cannery', slot: 'prem', of: 2, f: [1.6, 1.8], tiers: [], later: '+2%' },
       rChunky: { tab: 'factory', grp: 'cannery', slot: 'chunky', of: 1, tiers: [], later: '+3%' },
-      rRecipe: { tab: 'factory', grp: 'cannery', slot: 'recipe', of: 2, f: [1.6, 1.8], tiers: [{ cost: 4200, n: 120, kind: 'tomato' }] }
+      rRecipe: { tab: 'factory', grp: 'cannery', slot: 'recipe', of: 2, f: [1.6, 1.8], tiers: [{ cost: 4200, n: 120, kind: 'tomato' }] },
+      // Premium line also opens graded cans (Tom 2026-10-08): before it the
+      // Cannery takes ★ crops only, graded crops go fresh to the stall
+      rPrem: { tab: 'factory', grp: 'cannery', slot: 'prem', of: 2, f: [1.6, 1.8], tiers: [{ cost: 3600, n: 120, kind: 'crop' }] }
     },
     // the Lab sheet's chips (labsheet.js): a tab's groups, each shown once its
     // part of the game is open (need: an item id). Later valleys add theirs.
@@ -397,8 +408,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     //            XI-XX, Giant (x20) XXI-XXX: `share` a tier; your own cuts
     //            reach the next share step first
     //   growth   regrow, from each crop's own: -step a tier, x mile; instant at XXX
-    //   quality  the sorting split moves up one star, `step` a tier (the
-    //            star grades belong to the factory station rework; dashed here)
+    //   quality  the sorting table's climb chance (each found crop going one
+    //            more star up): +`step` a tier
     //   opens    the valley a card's first tier comes in (Growth and Quality: Corn)
     //   time     minutes fed per tier, by valley; samples: first, x grow a tier
     //   coins    carrots' tier I, x grow a tier, x mile at a milestone (it
@@ -411,7 +422,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       price: { first: 1.2, step: [0.06, 0.04, 0.06, 0.08, 0.10, 0.12], mile: [1.2, 1.2, 1.3, 1.5, 1.6, 1.8] },
       size: { share: 0.1, per: 10, classes: [{ name: 'Big', x: 2 }, { name: 'Huge', x: 5 }, { name: 'Giant', x: 20 }] },
       growth: { step: [0.03, 0.05, 0.08, 0.12, 0.16, 0.20], mile: [0.85, 0.8, 0.7, 0.6, 0.5, 0.4] },
-      quality: { step: 0.05 },
+      quality: { step: 0.01 },
       opens: { yield: 1, price: 1, size: 1, growth: 2, quality: 2 },
       time: [[2.5, 4, 6, 8, 10], [15, 20, 25, 30, 40], [45, 60, 72, 90, 120], [150, 180, 240, 300, 360], [480, 600, 720, 960, 1200], [1440, 1872, 2304, 2880, 4320]],
       samples: { first: 100, grow: 1.4 },
@@ -523,6 +534,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // ---- the price list (doc section 4). Each line: costs per level, the tab it
   // sits in, and when it is for sale. `of` is the thing it upgrades (its first
   // level never costs less than that thing).
+  function lensCost(k) { var C = config.lens; return C.cost.map(function (c) { return c * Math.pow(C.slotX, k - 1); }); }
   var ITEMS = [
     { id: 'gloves', tab: 'you', icon: 'gloves', cost: [10], need: function (s) { return tier(s) === 0; } },
     { id: 'sickle', tab: 'you', icon: 'sickle', cost: [15], need: function (s) { return tier(s) === 0; } },
@@ -560,6 +572,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'sorter', tab: 'line', icon: 'sorter', step: 1, cost: [2600], need: function (s) { return researched(s, 'rSort'); }, needs: 'Research: Sorting' },
     // Rich compost (Tom 2026-10-08): the COMPOST heap's fertilised crops find a better grade
     { id: 'compost', tab: 'fields', icon: 'sorter', cost: [900, 2200, 4800, 9500, 18000], need: function (s) { return lv(s, 'sorter') > 0; }, needs: 'Sorting table' },
+    // the Sorting table's lens slots (Tom 2026-10-08 "B"): slot 1 with the
+    // table, one more per valley; config.lens
+    { id: 'lens1', tab: 'line', icon: 'sorter', of: 'sorter', cost: lensCost(1), need: function (s) { return lv(s, 'sorter') > 0; }, needs: 'Sorting table' },
+    { id: 'lens2', tab: 'line', icon: 'sorter', of: 'sorter', cost: lensCost(2), need: function (s) { return lv(s, 'sorter') > 0 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
     { id: 'belt', tab: 'line', icon: 'belt', step: 1, cost: [5000], need: function (s) { return researched(s, 'rBelt'); }, needs: 'Research: Belts' },
     { id: 'beltUp', tab: 'line', icon: 'belt', of: 'belt', cost: [5500], need: function (s) { return lv(s, 'belt') > 0 && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
     { id: 'canWorker', tab: 'line', icon: 'worker', step: 1, of: 'cannery', cost: [1350], need: function (s) { return lv(s, 'cannery') > 0; }, needs: 'Cannery' },
@@ -629,7 +645,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     train: 'Steam train', wagon: 'Wagon', seller: 'Seller', farmStall: 'Farm stall', farmShop: 'Farm shop', sellSpeed: 'Faster sellers',
     corn: 'Clear the track to Corn Valley',
     wash: 'Wash trough', pkWorker: 'Packhouse worker', lab: 'Lab',
-    sorter: 'Sorting table', belt: 'Halt belts', beltUp: 'Faster belts', conYard: 'Contract yard', conBuyers: 'Better buyers', conCrane: 'Steel crane', compost: 'Rich compost'
+    sorter: 'Sorting table', lens1: 'Sorting lens', lens2: 'Second lens', belt: 'Halt belts', beltUp: 'Faster belts', conYard: 'Contract yard', conBuyers: 'Better buyers', conCrane: 'Steel crane', compost: 'Rich compost'
   };
   var BELT_NAMES = ['Wide belts'];
   var AD_NAMES = ['Signboard I', 'Signboard II', 'Signboard III', 'Chalkboard I', 'Chalkboard II', 'Chalkboard III', 'Flyers I', 'Flyers II', 'Flyers III', 'Bunting I', 'Bunting II', 'Bunting III'];
@@ -654,7 +670,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // research: the running id, samples it has eaten (fed, fractional), the
       // crate (box, fractional; boxK the crop on top), tiers done by id
       lab: { cur: '', fed: 0, box: 0, boxK: '', done: {} },
-      canGrades: [true, false, false, false, false], // the grades the Cannery takes in (★ .. ★★★★★): Tom 2026-10-07 "accept this grade"
       veh: null,                                    // { s, state, load: {kind: n}, cans: {canC, canT} }
       stats: { cut: 0, cutYou: { carrot: 0, tomato: 0 }, cutHelp: { carrot: 0, tomato: 0 }, golden: 0, sold: 0, earned: 0,
         washed: 0, graded: 0,
@@ -707,9 +722,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var STAR_KIND = ['', 'W', 'A', 'S', 'X', 'Z'];
   function starKind(c, n) { return c + STAR_KIND[Math.max(1, Math.min(5, n))]; }
   function canOf(k) { var c = cropOf(k); return c ? (c === 'carrot' ? 'canC' : 'canT') + CAN_SUFFIX[gradeOf(k)] : null; }
-  // does the hopper take this crop? Its crop (tomatoes once it cans them),
-  // and its grade is one you ticked in the Cannery menu
-  function hopTakes(s, k) { var c = cropOf(k); return (c === 'carrot' || (c === 'tomato' && lv(s, 'tomCans') > 0)) && !!(s.canGrades || [true])[stars(k) - 1]; }
+  // does the hopper take this crop? Its crop (tomatoes once it cans them):
+  // ★ crops always, graded ones once Premium line is researched (Tom
+  // 2026-10-08: graded cans locked behind research; the picker is gone)
+  function hopTakes(s, k) { var c = cropOf(k); return (c === 'carrot' || (c === 'tomato' && lv(s, 'tomCans') > 0)) && (stars(k) === 1 || gradedCans(s)); }
+  function gradedCans(s) { return !!s && researched(s, 'rPrem'); }
   function hopRoom(s) { return Math.max(0, config.cannery.hopper - hopN(s)); }
   // the Packhouse's crops go into the Cannery by themselves (Tom 2026-10-07)
   // while it has room and takes their grade; the rest wait on its OUT shelf
@@ -859,19 +876,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // a share that comes out of the wash trough ★★ (the old Pretty carrots;
   // none now: the Quality research takes its place at the Sorting table)
   function prettyShare() { return 0; }
-  // the Sorting table's split of washed crops into ★ .. ★★★★★. Quality (seed
-  // research, from Corn Valley) moves its share of each grade up one star
+  // the lenses' find chance: each slot's lens tier
+  function lensFind(s) { var F = config.lens.find, f = 0; if (s) for (var k = 1; k <= config.lens.slots; k++) { var n = lv(s, 'lens' + k); if (n) f += F[Math.min(n, F.length) - 1]; } return f; }
+  function findChance(s, extra) { return Math.min(0.95, config.sort.find + lensFind(s) + (extra || 0)); }
+  function climbChance(s, crop) { return Math.min(0.9, config.sort.climb + (s && crop && config.crops[crop] ? qualityShift(seedLv(s, 'quality', crop)) : 0)); }
+  // the Sorting table's split of washed crops into ★ .. ★★★★★: a crop beats ★
+  // by the find chance (extra: compost), then climbs a star at a time by the
+  // climb chance (Quality, seed research from Corn Valley)
   function sortSplit(s, crop, extra) {
-    var p = config.sort.split.slice(), q = s && crop && config.crops[crop] ? qualityShift(seedLv(s, 'quality', crop)) : 0;
-    if (extra) for (var e = p.length - 2; e >= 0; e--) { var me = p[e] * extra; p[e] -= me; p[e + 1] += me; }
-    if (q) for (var i = p.length - 2; i >= 0; i--) { var m = p[i] * q; p[i] -= m; p[i + 1] += m; }
+    var f = findChance(s, extra), c = climbChance(s, crop);
+    var p = [1 - f, f * (1 - c), f * c * (1 - c), f * c * c * (1 - c), f * c * c * c];
     var top = maxStar(s); for (var j = p.length - 1; j >= top; j--) { p[top - 1] += p[j]; p[j] = 0; }
     return p;
   }
   // the best grade the Sorting table can find: ★★★, Prize ★★★★ and Champion
   // ★★★★★ come with their research (no save: all five, the old tests)
   function maxStar(s) { return !s || !s.lab ? 5 : 3 + (researched(s, 'rPrize') ? 1 + (researched(s, 'rChamp') ? 1 : 0) : 0); }
-  function sortWords(s) { var p = s ? sortSplit(s).filter(function (x, i) { return i < maxStar(s); }) : config.sort.split; return p.map(function (x, i) { return +(100 * x).toFixed(1) + '% ' + '★★★★★'.slice(0, i + 1); }).join(', '); }
+  function sortWords(s) { var p = sortSplit(s).filter(function (x, i) { return i < maxStar(s); }); return p.map(function (x, i) { return +(100 * x).toFixed(1) + '% ' + '★★★★★'.slice(0, i + 1); }).join(', '); }
   // the share of sorted crops above one star
   function aShare(s, crop) { return 1 - sortSplit(s, crop)[0]; }
   // seconds a plant takes to grow back (Growth, Beehives, Sprinklers)
@@ -1117,9 +1138,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'wash': return { name: 'Wash shed', text: 'A wash shed up behind the fields, at the FACTORY station. Drop crops on WASH (IN), take them washed off its OUT shelf: washed crops are \u2605 and sell for 25% more. Later the Sorting table finds the better ones.', from: '', to: 'Washed +25%' };
       case 'pkWorker': return { name: 'Packhouse worker', text: 'The line calls at the FACTORY station: crops off at the IN stop, goods on at the OUT stop, and down to the stall.', from: 'You only', to: 'Worker' };
       case 'lab': return { name: 'Lab', text: 'A Seed shed Lab by the road. Pay for a research and it starts; keep its crate fed with crops on the LAB mat and a test plot grows it: better seeds, farm, shop and factory.', from: '', to: 'Research' };
-      case 'sorter': return { name: 'Sorting table', text: 'The wash shed grows into the Packhouse. The table checks every washed crop, ugly, broken or perfect, and gives it its stars: ' + sortWords(s) + '. Prize and Champion grades come with Lab research in Sunflower and Berry Valley. The Cannery takes the grades you pick, the rest go to the stall.', from: 'All \u2605', to: 'Up to ' + STARS[maxStar(s) - 1] + ' x' + config.grades[maxStar(s) - 1] };
+      case 'sorter': return { name: 'Sorting table', text: 'The wash shed grows into the Packhouse. The table checks every washed crop, ugly, broken or perfect, and gives it its stars: ' + sortWords(s) + '. Good grades are rare: lenses on the table find more. Prize and Champion grades come with Lab research in Sunflower and Berry Valley.', from: 'All \u2605', to: 'Up to ' + STARS[maxStar(s) - 1] + ' x' + config.grades[maxStar(s) - 1] };
       case 'belt': return { name: 'Halt belts', text: 'Belts carry the crops from both halts up to the intake, and a second trough washes twice as much a batch.', from: 'Cart only, batch ' + washBatch(s), to: C.belt.rate[0] + ' a second, batch ' + C.wash.batch[1] };
-      case 'compost': var cs0 = compostShift(s), cs1 = C.compost.shift[Math.min(n + 1, C.compost.shift.length - 1)]; return { name: 'Rich compost ' + ROMAN[n], text: 'Each crop you dump on the COMPOST heap fertilises one crop: at the Sorting table it has a better chance of a higher grade.', from: '+' + Math.round(cs0 * 100) + '% up a grade', to: '+' + Math.round(cs1 * 100) + '% up a grade' };
+      case 'compost': var cs0 = compostShift(s), cs1 = C.compost.shift[Math.min(n + 1, C.compost.shift.length - 1)]; return { name: 'Rich compost ' + ROMAN[n], text: 'Each crop you dump on the COMPOST heap fertilises one crop: at the Sorting table it has a better chance to beat \u2605.', from: '+' + Math.round(cs0 * 100) + '% find', to: '+' + Math.round(cs1 * 100) + '% find' };
+      case 'lens1': case 'lens2': var LF = C.lens.find, lf0 = n ? LF[n - 1] : 0, lf1 = LF[Math.min(n, LF.length - 1)], fc = function (x) { return +(100 * x).toFixed(1) + '%'; };
+        return { name: (id === 'lens1' ? 'Sorting lens ' : 'Second lens ') + ROMAN[n], text: n ? 'A stronger lens: the table spots more good crops. Find chance ' + fc(findChance(s)) + ' now.' : 'A brass lens on the Sorting table: it spots more good crops. Find chance ' + fc(findChance(s)) + ' now.', from: '+' + fc(lf0) + ' find', to: '+' + fc(lf1) + ' find' };
       case 'beltUp': return { name: BELT_NAMES[n], text: 'The belts run faster.', from: beltRate(s) + ' a second', to: C.belt.rate[n + 1] + ' a second' };
       case 'conYard': return { name: 'Contract yard', text: 'A crane yard in the meadow by the tomatoes. Buyers drive up for big orders of one thing: pick one of three, fill it in time for a bonus. Carry it onto LOAD, or RUSH it and the cart runs it down its own siding.', from: '', to: 'Orders' };
       case 'conBuyers': var cb0 = C.contracts ? C.contracts.buyersBonus : 0.15; return { name: 'Better buyers ' + ROMAN[n], text: 'Every order pays more when it is full in time.', from: 'Bonus +' + Math.round(n * cb0 * 100) + '%', to: 'Bonus +' + Math.round((n + 1) * cb0 * 100) + '%' };
@@ -1156,7 +1179,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'growth': var g = growthMult(t), r0 = C.regrow * growthMult(t - 1), r = C.regrow * g;
         return { name: nm, text: mile + C.name + ' grow back ' + (g ? 'in ' + r.toFixed(1).replace(/\.0$/, '') + ' s' : 'at once') + ' (now ' + r0.toFixed(1).replace(/\.0$/, '') + ' s).', to: g ? r.toFixed(1).replace(/\.0$/, '') + ' s' : 'Instant' };
       case 'quality': var q = qualityShift(t);
-        return { name: nm, text: mile + 'The sorting table finds better ' + cs + ': ' + pcs(q) + ' of them move up one star (' + STARS[0] + ' to ' + STARS[1] + ', ' + STARS[1] + ' to ' + STARS[2] + ').', to: '+' + pcs(q) + ' a star' };
+        return { name: nm, text: mile + 'Better ' + cs + ' at the sorting table: a good one has ' + pcs(q) + ' more chance to climb each star (' + STARS[1] + ' to ' + STARS[2] + ' and up).', to: '+' + pcs(q) + ' climb' };
     }
     return { name: nm, text: '', to: '' };
   }
@@ -1172,7 +1195,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'soap': return { name: nm, text: 'Washed and sorted crops sell x' + f + ', and a trough batch washes in ' + config.wash.soap + ' s (was ' + config.wash.cycle + ').', to: 'x' + f };
       case 'sort': return { name: nm, text: 'Opens the Sorting table: it finds each crop\'s stars (' + sortWords(s) + ').', to: 'Sorting table' };
       case 'fine': return { name: nm, text: 'Fine cans (from washed crops): +25% becomes +' + pc(f) + '.', to: 'Fine +' + pc(f) };
-      case 'prem': return { name: nm, text: 'Cans of \u2605\u2605 and better sell ' + pc(f / 1.4) + ' more.', to: '\u2605\u2605 cans +' + pc(f / 1.4) };
+      case 'prem': return n ? { name: nm, text: 'Cans of \u2605\u2605 and better sell ' + pc(f / 1.4) + ' more.', to: '\u2605\u2605 cans +' + pc(f / 1.4) }
+        : { name: nm, text: 'Graded cans: the Cannery takes \u2605\u2605 and better crops too (best first) and makes cans of their grade, ' + pc(f / 1.4) + ' more again. Until then graded crops go to the stall fresh.', to: 'Graded cans' };
       case 'chunky': return { name: nm, text: 'A Big carrot or a Big tomato makes 2 cans, not 1.', to: 'Big = 2 cans' };
       case 'recipe': return { name: nm, text: 'Every can sells x' + f + ', on top of its grade.', to: 'Cans x' + f };
       case 'labhalt': return { name: nm, text: 'A stop for the Lab on the line: the cart, later the train, drops ' + pcs(f) + ' of each load into the Lab silo, so a long research keeps going.', to: 'Lab silo' };
@@ -1380,7 +1404,6 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     s.coins = num(o.coins, 0, 1e12, 0);
     // the Cannery's grade picker (a v9 save: it takes one star, the Packhouse feeds it by itself)
     if (o.compost && typeof o.compost === 'object') s.compost.left = Math.floor(num(o.compost.left, 0, config.compost.cap, 0));
-    if (Array.isArray(o.canGrades)) s.canGrades = [0, 1, 2, 3, 4].map(function (i) { return !!o.canGrades[i]; });
     // the Cannery takes its crops off the wash shed's CROPS shelf (one IN): an
     // old save with a Cannery and no wash shed gets the shed (set before the
     // levels load, so the save's key order round-trips)
@@ -1517,7 +1540,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     intakeCap: intakeCap, goodsCap: goodsCap, goodsN: goodsN, stationOn: stationOn, stationStep: stationStep, GOODS_ORDER: GOODS_ORDER, lineTrip: lineTrip,
     beltRate: beltRate, pkAuto: pkAuto, pkMult: pkMult, pkRate: pkRate, canBatch: canBatch, canCycle: canCycle,
     HOP_KINDS: HOP_KINDS, GRADE_WORD: GRADE_WORD, hopEmpty: hopEmpty, hopN: hopN, hopCrop: hopCrop, hopRoom: hopRoom, hopTakes: hopTakes, isCan: isCan, gradeOf: gradeOf, canOf: canOf,
-    feedCan: feedCan, pkToHop: pkToHop, hopPull: hopPull, canKeep: canKeep, goodsFree: goodsFree, stars: stars, starKind: starKind, sortSplit: sortSplit, maxStar: maxStar, canTake: canTake, canOut: canOut, batchN: batchN, batchGrades: batchGrades
+    feedCan: feedCan, pkToHop: pkToHop, hopPull: hopPull, canKeep: canKeep, goodsFree: goodsFree, stars: stars, starKind: starKind, sortSplit: sortSplit, findChance: findChance, climbChance: climbChance, lensFind: lensFind, gradedCans: gradedCans, maxStar: maxStar, canTake: canTake, canOut: canOut, batchN: batchN, batchGrades: batchGrades
   };
 })(this.FL = this.FL || {});
 
@@ -3384,7 +3407,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   // the sort: an open shed (red roof strip at the back), a table, the sorter
   // behind it, five grade boxes along the front (blue ★ .. purple ★★★★★)
-  function sort(x0, z0, x1, z1, tz0, tz1, noRoof, noPerson) {
+  function sort(x0, z0, x1, z1, tz0, tz1, noRoof, noPerson, lenses) {
     vb(x0, 0, z0, x1 - x0, 0.06, z1 - z0, '#e6dcc4');
     if (!noRoof) {
     [[x0, z0], [x1 - 0.14, z0], [x0, z0 + 0.5], [x1 - 0.14, z0 + 0.5]].forEach(function (q) { vb(q[0], 0, q[1], 0.14, 1.7, 0.14, C.woodD); });
@@ -3397,6 +3420,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     vb(ax0 - 0.05, 0.62, tz0 - 0.05, ax1 - ax0 + 0.1, 0.08, tz1 - tz0 + 0.1, C.woodL);
     for (var k = 0; k < 9; k++) { var cx = ax0 + 0.2 + (k * 0.41) % (ax1 - ax0 - 0.4), cz = tz0 + 0.12 + (k * 0.17) % (tz1 - tz0 - 0.25); if (k % 2) place(M.tomatoI(0.2), cx, 0.7, cz); else place(M.carrotX(0.45), cx, 0.76, cz, k % 4 ? 0 : 1); }
     if (!noPerson) person(LOOK.sorter, (ax0 + ax1) / 2, tz0 - 0.3, 0, 'sort', 0.06);
+    // the lens slots (Tom 2026-10-08 "B"): per slot a brass post at the back
+    // with an arm and a flat magnifier over the table; an empty slot is a
+    // bare wooden post with an empty ring; a bigger, brighter glass a tier,
+    // tier V a gold rim and a lamp
+    var LG = ['#cdeeff', '#aee3ff', '#8ed7ff', '#6ecbff', '#b6fff2'];
+    (lenses || []).forEach(function (t, i) {
+      if (i > 0 && !t && !(lenses[i - 1])) return;                  // one empty slot past the fitted ones
+      var lx = ax0 + 0.45 + i * 0.7, pz = tz0 + 0.02, cz = (tz0 + tz1) / 2;
+      if (lx > ax1 - 0.3) return;
+      var wood = !t, metal = t >= 5 ? '#ffd23a' : '#c8922e', post = wood ? C.woodD : metal, r = t ? 0.16 + t * 0.03 : 0.16, y = 1.12;
+      vb(lx - 0.05, 0.7, pz, 0.1, y - 0.6, 0.1, post);                          // post
+      vb(lx - 0.04, y, pz, 0.08, 0.06, cz - r - pz, post);                         // arm over the table
+      vb(lx - r, y, cz - r, 2 * r, 0.06, 0.06, post); vb(lx - r, y, cz + r - 0.06, 2 * r, 0.06, 0.06, post);   // ring
+      vb(lx - r, y, cz - r, 0.06, 0.06, 2 * r, post); vb(lx + r - 0.06, y, cz - r, 0.06, 0.06, 2 * r, post);
+      if (t) vb(lx - r + 0.06, y + 0.01, cz - r + 0.06, 2 * r - 0.12, 0.03, 2 * r - 0.12, LG[t - 1]);   // glass
+      if (t >= 3) vb(lx - 0.03, y + 0.06, cz - 0.03, 0.06, 0.04, 0.06, '#ffffff');                       // glint
+      if (t >= 5) vb(lx - 0.08, y + 0.3, pz - 0.02, 0.16, 0.12, 0.16, '#fff6a8');                         // lamp
+    });
     // five grade boxes along the front edge, filled by the sorter's hands
     var bw = (ax1 - ax0) / 5;
     for (var g = 0; g < 5; g++) {
@@ -4396,7 +4437,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     LP.wash(pk.x0, pk.z0, pk.x1, pk.z1, T.z0, T.z1, []);
     LP.belt([[L.bin.x0, 0.8, L.washAt.z], [T.x1 + 0.05, 0.8, L.washAt.z]]);
     LP.belt(beltPaths().goods.slice(0, 4));
-    if (Lg.lv(s, 'sorter') > 0) LP.sort(SS.x0, SS.z0, SS.x1, SS.z1, SS.tz0, SS.tz1, false, true);
+    if (Lg.lv(s, 'sorter') > 0) LP.sort(SS.x0, SS.z0, SS.x1, SS.z1, SS.tz0, SS.tz1, false, true, [Lg.lv(s, 'lens1'), Lg.lv(s, 'lens2'), Lg.lv(s, 'lens3'), Lg.lv(s, 'lens4'), Lg.lv(s, 'lens5'), Lg.lv(s, 'lens6')]);
     else {
       vb(SS.x0 + 0.2, 0, SS.z0 + 0.2, SS.x1 - SS.x0 - 0.4, 0.03, SS.z1 - SS.z0 - 1.0, '#d9cfae');
       [[SS.x0 + 0.2, SS.z0 + 0.2], [SS.x1 - 0.2, SS.z0 + 0.2], [SS.x0 + 0.2, SS.z1 - 0.8], [SS.x1 - 0.2, SS.z1 - 0.8]].forEach(function (c) { vb(c[0] - 0.06, 0, c[1] - 0.06, 0.12, 0.6, 0.12, '#ffd23a'); vb(c[0] - 0.07, 0.45, c[1] - 0.07, 0.14, 0.08, 0.14, C.red); });
@@ -7280,15 +7321,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     cannery: { ic: 'cannery', cards: [
       { t: 'The Cannery', d: 'Cans sell for more than crops. A carrot can sells for 5.', at: function () { return { x: L().can.x, z: L().can.z - 1.5 }; } },
       { t: 'Make cans', d: 'Stand on <b>CAN</b> and it fills its kettle from your basket. Washed crops go in by themselves and make <b>Fine</b> cans (+25%).', at: function () { return { x: L().can.x, z: L().can.z }; } },
-      { t: 'Pick what goes in', d: function () { return 'Tap the Cannery to pick the grades it takes. It starts on ★ only, so your best crops still go to the stall.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().hopper.x, z: L().hopper.z }; } }] },
+      { t: 'Graded crops', d: function () { return 'The Cannery takes ★ crops. Your rare ★★ and better crops go to the stall fresh, until you research <b>Premium line</b> in the Lab: then they make graded cans.'; }, at: function () { return { x: L().hopper.x, z: L().hopper.z }; } }] },
     lab: { ic: 'lab', cards: [
       { t: 'The Lab', d: 'Research makes the farm better for good: seeds, fields, the shop and the factories.', at: function () { return { x: (L().lab.x0 + L().lab.x1) / 2, z: L().lab.z1 }; } },
       { t: 'Feed it crops', d: 'Pay to start a research. It eats crops from its crate: fill the crate on the <b>LAB</b> mat. An empty crate only pauses it.', at: function () { return { x: L().labMat.x, z: L().labMat.z }; } },
       { t: 'One at a time', d: 'One research runs at a time, and it keeps going while you are away as long as the crate has crops. Tap the purple <b>Lab</b> button to choose.', at: function () { return { x: L().labMat.x, z: L().labMat.z - 6 }; }, ui: 'labBtn' }] },
     conYard: { ic: 'contracts', cards: [{ t: 'Contract yard', d: 'Buyers drive up for big orders of one thing. Pick one of three and fill it in time for <b>+30% to +80%</b>. Carry it onto LOAD, or RUSH it and the cart takes it.', at: at(-19, -8) }] },
-    sorter: { ic: 'sorter', cards: [{ t: 'Sorting table', d: function () { return 'It checks every washed crop, ugly, broken or perfect, and gives it its stars. The Cannery takes the grades you pick, the rest go to the stall. The top two grades come with Lab research in later valleys.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
-    prize: { ic: 'sorter', cards: [{ t: 'First Prize crop!', d: function () { return '★★★★ Prize crops sell <b>x' + F.CFG.grades[3] + '</b>. About 3 in 100 sorted crops are Prize.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
-    champ: { ic: 'sorter', cards: [{ t: 'A Champion!', d: function () { return '★★★★★ Champion crops sell <b>x' + F.CFG.grades[4] + '</b>. Only 1 in 100 is one.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] }
+    sorter: { ic: 'sorter', cards: [{ t: 'Sorting table', d: function () { return 'It checks every washed crop, ugly, broken or perfect, and gives it its stars. Good grades are <b>rare</b>: tap the table to fit a <b>lens</b> and it finds more. The top two grades come with Lab research in later valleys.' + grades(F.Lg.maxStar(S())); }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
+    prize: { ic: 'sorter', cards: [{ t: 'First Prize crop!', d: function () { return '★★★★ Prize crops sell <b>x' + F.CFG.grades[3] + '</b>. Only a few sorted crops ever are.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] },
+    champ: { ic: 'sorter', cards: [{ t: 'A Champion!', d: function () { return '★★★★★ Champion crops sell <b>x' + F.CFG.grades[4] + '</b>. They are very rare.'; }, at: function () { return { x: L().pk.x1 - 1.5, z: L().pk.z1 }; } }] }
   };
   var css = [
     '#tip { position: fixed; inset: 0; z-index: 7; pointer-events: auto; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding: 0 12px calc(18px + var(--safe-bottom, 0px)); }',
@@ -7452,7 +7493,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     rails: { x: -5, z: -10 + DZ }, donkey: { x: L.haltX.carrot - 1.6, z: L.haltZ + 1 }, donkeyUp: { x: -3, z: -8 + DZ }, horse: { x: L.haltX.carrot - 1.6, z: L.haltZ + 1 }, horseUp: { x: -3, z: -8 + DZ }, oldTrain: { x: 0, z: -6 + DZ }, cannery: { x: (L.lot.x0 + L.lot.x1) / 2, z: L.lot.z1 }, canWorker: { x: L.worker.x, z: L.worker.z }, tomCans: { x: L.machine.x, z: L.machine.z + 0.5 }, canSpeed: { x: (L.lot.x0 + L.lot.x1) / 2, z: L.lot.z1 },
     train: { x: 0, z: -6 + DZ }, wagon: { x: 0, z: -8 + DZ }, corn: { x: L.lock.x, z: L.lock.z }, fieldC: { x: L.carrotX0 + 4, z: L.fieldBottom - 9 },
     wash: { x: (L.pk.x0 + L.pk.x1) / 2, z: L.pk.z1 }, pkWorker: { x: L.pkWorker.x, z: L.pkWorker.z },
-    sorter: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, belt: { x: -14.3, z: -30 }, beltUp: { x: -14.3, z: -30 },
+    sorter: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens1: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, lens2: { x: L.pk.x1 - 1.5, z: L.pk.z1 }, belt: { x: -14.3, z: -30 }, beltUp: { x: -14.3, z: -30 },
     lab: { x: (L.lab.x0 + L.lab.x1) / 2, z: L.lab.z1 }, conYard: { x: -19, z: -8 }, conBuyers: { x: -19, z: -8 }, conCrane: { x: -19, z: -8 }, rSoap: { x: L.labMat.x, z: L.labMat.z }, rSort: { x: L.labMat.x, z: L.labMat.z }, rBelt: { x: L.labMat.x, z: L.labMat.z }
   };
 
@@ -7490,7 +7531,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // what the Lab's badge dots show: the research ready to start, by tab and
   // chip, and a running one whose crate is empty
   function labReadySig() { return Lg.RES_IDS.filter(function (id) { return Lg.resReady(S, id); }).join(',') + (Lg.labPaused(S) ? '!' : ''); }
-  function layoutSig() { var lv = function (id) { return Lg.lv(S, id); }; return [lv('fieldC'), lv('fieldT'), lv('tomatoes'), Lg.line(S), lv('rails'), lv('cannery'), lv('canSpeed') >= 2, lv('canSpeed') >= 4, lv('tomCans'), lv('corn'), lv('helper') > 0, lv('tHelper') > 0, lv('wash'), lv('sorter'), lv('belt'), lv('pkWorker'), lv('canWorker'), lv('lab'), labLookSig(), Lg.resLv(S, 'rBees'), lv('conYard'), lv('conCrane')].join(',') + ',' + Lg.farmTier(S, 'carrot') + ',' + Lg.farmTier(S, 'tomato'); }
+  function layoutSig() { var lv = function (id) { return Lg.lv(S, id); }; return [lv('fieldC'), lv('fieldT'), lv('tomatoes'), Lg.line(S), lv('rails'), lv('cannery'), lv('canSpeed') >= 2, lv('canSpeed') >= 4, lv('tomCans'), lv('corn'), lv('helper') > 0, lv('tHelper') > 0, lv('wash'), lv('sorter'), lv('lens1'), lv('lens2'), lv('belt'), lv('pkWorker'), lv('canWorker'), lv('lab'), labLookSig(), Lg.resLv(S, 'rBees'), lv('conYard'), lv('conCrane')].join(',') + ',' + Lg.farmTier(S, 'carrot') + ',' + Lg.farmTier(S, 'tomato'); }
   function marketSig() { return [Lg.stage(S), Lg.lv(S, 'ad'), Lg.lv(S, 'shelves'), Lg.lv(S, 'tomatoes')].join(','); }
   function rebuildWorld(opts) {
     opts = opts || {};
@@ -8672,6 +8713,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
             var n = [0, 0, 0, 0, 0, 0], left = nn;
             for (var g = 5; g >= 2; g--) { n[g] = Math.min(left, rnd(nn * sp[g - 1])); left -= n[g]; }
             n[1] = left;
+            // the first good crop turns up early (within CFG.sort.first sorted), so the fun moment comes
+            if (!S.hints.lucky) { if (n[2] + n[3] + n[4] + n[5]) S.hints.lucky = 1; else if ((S.stats.graded || 0) + nn >= CFG.sort.first && n[1]) { n[1]--; n[2]++; S.hints.lucky = 1; } }
             for (var g3 = 1; g3 <= 5; g3++) {
               if (!n[g3]) continue; var k = Lg.starKind(crop, g3), nh = Lg.pkToHop(S, k, n[g3]);
               hop[k] += nh; gd[k] += n[g3] - nh; secs += nh; best[g3] += n[g3];
@@ -8684,7 +8727,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           W.sort = null; G.pilesDirty = true;
           sparkle(sx, 1.2, sz, 10, '#ffd23a');
           var gsp = info.station && info.station.pkGoods || gs;
-          for (var gi = 0; gi < 4; gi++) flyer(gi % 2 && so.tomato ? 'tomatoA' : 'carrotA', L.la ? sx : L.pk.x1 - 0.5, 1.0, L.la ? sz + 0.6 : L.pkShelf ? -39.5 : -43.4, function () { return { x: gsp.x, y: 1.0, z: gsp.z }; }, 0.3 + gi * 0.08, null, false);
+          var gk = best[3] || best[4] || best[5] ? 'S' : best[2] ? 'A' : 'W';
+          for (var gi = 0; gi < 4; gi++) flyer((gi % 2 && so.tomato ? 'tomato' : 'carrot') + (gi ? 'W' : gk), L.la ? sx : L.pk.x1 - 0.5, 1.0, L.la ? sz + 0.6 : L.pkShelf ? -39.5 : -43.4, function () { return { x: gsp.x, y: 1.0, z: gsp.z }; }, 0.3 + gi * 0.08, null, false);
           if (near(G.player, sx, sz, 12)) text(sx, 2.4, sz, best[5] ? best[5] + ' Champion!' : best[4] ? best[4] + ' Prize!' : best[3] ? best[3] + ' \u2605\u2605\u2605!' : best[2] ? best[2] + ' \u2605\u2605!' : 'Sorted!', best[4] || best[5] ? '#ff8ac4' : '#ffd23a', best[5] ? 22 : 17, best[5] ? 2.0 : 1.2);
         }
       }
@@ -10062,7 +10106,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     field: { carrot: ['fieldC', 'helper', 'helper2', 'hbasket', 'htool'], tomato: ['fieldT', 'tHelper', 'tHelper2', 'hbasket', 'htool'] },
     helper: ['hbasket', 'htool', 'helper2', 'tHelper2'], halt: ['cart', 'cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'], vehicle: ['cartUp', 'donkey', 'donkeyUp', 'horse', 'horseUp', 'rails', 'oldTrain', 'train', 'wagon'],
     stall: ['ad', 'shelves', 'seller', 'sellSpeed', 'farmStall', 'farmShop'], cannery: ['cannery', 'canWorker', 'tomCans', 'canSpeed'],
-    packhouse: ['wash', 'pkWorker', 'sorter', 'belt', 'beltUp'], bulk: ['compost'], lab: ['lab'], con: ['conYard', 'conBuyers', 'conCrane'], corn: ['corn'], you: ['gloves', 'sickle', 'sharpS', 'scythe', 'sharpY', 'carry', 'boots']
+    packhouse: ['wash', 'pkWorker', 'sorter', 'lens1', 'lens2', 'belt', 'beltUp'], bulk: ['compost'], lab: ['lab'], con: ['conYard', 'conBuyers', 'conCrane'], corn: ['corn'], you: ['gloves', 'sickle', 'sharpS', 'scythe', 'sharpY', 'carry', 'boots']
   };
   function groundAt(sx, sy) {
     // invert toScreen on the ground plane with a few Newton steps
@@ -10180,24 +10224,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var nm = { canC: 'Carrot cans', canT: 'Tomato cans' }, gw = ['plain', 'Fine', '\u2605\u2605', '\u2605\u2605\u2605', 'Prize', 'Champion'];
     return fam.map(function (f) { return nm[f] + ': ' + Lg.FAMILY[f].slice().reverse().map(function (k, i) { return gw[i] + ' <b>' + +Lg.price(k, S).toFixed(2) + '</b>'; }).join(', '); }).join('<br>');
   }
-  // "accept this grade" (Tom 2026-10-07): the Cannery takes in only the star
-  // grades you switch on; the Packhouse sends those over by itself, the rest
-  // stay on its shelf for the stall
-  var STAR_W = ['\u2605', '\u2605\u2605', '\u2605\u2605\u2605', '\u2605\u2605\u2605\u2605', '\u2605\u2605\u2605\u2605\u2605'];
-  function gradeLine() { var on = STAR_W.filter(function (w, i) { return S.canGrades[i]; }); return 'Takes in: <b>' + (on.length ? on.join(', ') : 'nothing') + '</b>'; }
-  function gradeButtons(m) {
-    if (m.kind !== 'cannery' || !Lg.lv(S, 'cannery')) return '';
-    return '<small class="gpick">Cannery takes in</small><div class="gpick">' + STAR_W.map(function (w, i) {
-      // Prize and Champion: locked until the Sorting table can find them
-      if (i >= Lg.maxStar(S)) return '<button type="button" class="mbtn" disabled style="opacity:.45" title="Research it in the Lab">' + w + '</button>';
-      return '<button type="button" class="mbtn' + (S.canGrades[i] ? ' gold' : '') + '" data-grade="' + i + '" aria-pressed="' + !!S.canGrades[i] + '">' + w + '</button>';
-    }).join('') + '</div>';
-  }
-  function setGrade(i, on) {
-    S.canGrades[i] = on == null ? !S.canGrades[i] : !!on; S.hints.grades = 1;
-    text(L.hopper.x, 2.6, L.hopper.z, (S.canGrades[i] ? 'Takes ' : 'No more ') + STAR_W[i], '#ffd23a', 16, 1.4);
-    refreshMenu(true); save();
-  }
+  // what the Cannery takes in (Tom 2026-10-08: no picker; graded crops only
+  // once Premium line is researched)
+  function gradeLine() { return 'Takes in: <b>' + (Lg.gradedCans(S) ? 'every grade, best first' : '\u2605 only') + '</b>' + (Lg.gradedCans(S) ? '' : ' (graded crops go to the stall until <b>Premium line</b> in the Lab)'); }
   function openMenu(m) { G.menu = m; refreshMenu(true); $('tap').hidden = false; placeMenu(); }
   function closeMenu() { if (!G || !G.menu) return; G.menu = null; $('tap').hidden = true; }
   var menuSig = '';
@@ -10209,12 +10238,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (!force && sig === menuSig) return; menuSig = sig;
     var html = '<h3>' + menuTitle(m) + '</h3><div class="so"><small>' + (m.kind === 'fix' ? (m.stock ? 'On hand' : 'What is jamming') : m.kind === 'store' ? 'Stored' : 'So far') + '</small>' + menuStats(m).filter(Boolean).map(function (s) { return '<p>' + s + '</p>'; }).join('') + '</div>';
     if (m.kind === 'vehicle') html += '<button type="button" class="mbtn gold send" id="sendNow">Send now</button>';
-    html += gradeButtons(m) + conH;
+    html += conH;
     html += offs.map(function (o) { return cardHtml(o, true); }).join('');
     $('tapBody').innerHTML = html;
     Array.prototype.forEach.call($('tapBody').querySelectorAll('button[data-id]'), function (b) { b.addEventListener('click', function () { buyItem(b.dataset.id); }); });
     var sn = $('sendNow'); if (sn) sn.addEventListener('click', function () { sendNow(); });
-    Array.prototype.forEach.call($('tapBody').querySelectorAll('button[data-grade]'), function (b) { b.addEventListener('click', function () { setGrade(+b.dataset.grade); }); });
     if (CN && conH) CN.bind($('tapBody'), function () { refreshMenu(true); placeMenu(); });
   }
   function placeMenu() {
@@ -10327,7 +10355,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       labFinish: function () { return Lg.labFinish(S); }, openLab: openLab, closeLab: closeLab, sendNow: sendNow, tapAt: tapAt, openMenu: function (kind, key) { var w = { field: G.fields[key || 'carrot'] && G.fields[key || 'carrot'].f }; openMenu({ kind: kind, key: key || 0, x: w.field ? w.field.x0 + 4 : G.player.x, y: 0.6, z: w.field ? w.field.z0 + 3 : G.player.z }); }, closeMenu: closeMenu,
       openSheet: openSheet, closeSheet: closeSheet, setTab: function (t) { G.tab = t; refreshSheet(true); }, showWay: showWay,
       vehScreen: function () { if (!G.veh) return null; var q = carPos(G.veh, 0); return RD.toScreen(q.x, 0.7, q.z); },
-      icon: icon, sparkle: sparkle, income: incomeRate, idle: function () { return Lg.idleRate(S); }, con: function () { return CN; }, setGrade: setGrade, summary: showSummary, uiBlocked: uiBlocked, blocked: function (x, z, r) { return blocked(x, z, r); }
+      icon: icon, sparkle: sparkle, income: incomeRate, idle: function () { return Lg.idleRate(S); }, con: function () { return CN; }, summary: showSummary, uiBlocked: uiBlocked, blocked: function (x, z, r) { return blocked(x, z, r); }
     };
     // test: put a golden crop on a tile (shots of the ?golden= looks)
     window.__fl.goldenAt = function (crop, x, z) { if (G.golden) tintGolden(false); G.golden = { crop: crop, x: x, z: z, t: CFG.golden.life, idx: -1 }; tintGolden(true); if (G.golden && LK) LK.spawn(G.golden); return !!G.golden; };
