@@ -123,6 +123,19 @@ div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-
 #next.ready { box-shadow: 0 0 0 3px #ffc531, 0 3px 0 var(--ink); animation: glow 1.1s ease-in-out infinite; }
 #next.ready #nextBar { background: #5fe05c; }
 #nextIc { width: 26px; height: 26px; flex: none; }
+/* the Farm jobs card (tester 2026-10-15: the start was unclear): one job at a time, under the carry bar */
+#job { top: calc(118px + var(--safe-top)); right: 12px; max-width: 420px; padding: 7px 12px 9px; flex-direction: column; align-items: stretch; gap: 2px; pointer-events: auto; cursor: pointer; }
+#job[hidden] { display: none; }
+#job .jh { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+#jobN { font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #ffd23a; }
+#jobPay { font-size: 12px; background: #2fa34f; border-radius: 9px; padding: 1px 8px; text-shadow: none; }
+#jobT { font-size: 16px; font-weight: 800; text-shadow: 0 1px 0 var(--ink); }
+#jobD { font-size: 12px; opacity: .85; }
+#job .nb { height: 6px; border-radius: 3px; background: var(--ink); margin-top: 4px; overflow: hidden; }
+#jobBar { height: 100%; width: 0; background: #ffc531; transition: width .3s; }
+#job.done { box-shadow: 0 0 0 3px #5fe05c, 0 3px 0 var(--ink); }
+#job.done #jobBar { background: #5fe05c; }
+body.hasJob #rush { top: calc(206px + var(--safe-top)); }
 #rush { top: calc(118px + var(--safe-top)); height: 32px; padding: 0 12px; background: #ff9b1f; border-color: #b8650a; font-weight: 800; font-size: 14px; }
 #rush[hidden] { display: none; }
 #tabs { flex: none; display: flex; gap: 6px; padding: 8px 12px 6px; overflow-x: auto; scrollbar-width: none; }
@@ -190,7 +203,16 @@ div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-
 #tap .ptabs button { position: relative; flex: 1; border: 0; border-radius: 12px; padding: 8px 6px; font-weight: 800; font-size: 14px; color: var(--navy); background: #ead9b8; cursor: pointer; }
 #tap .ptabs button.on { background: var(--navy2); color: #fff; }
 #tap .ptabs em { position: absolute; right: -4px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px; background: #ff4a3d; color: #fff; font-style: normal; font-size: 11px; display: grid; place-items: center; padding: 0 4px; }
-#tap.psheet { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: 520px; margin: 0 auto; border-radius: 22px 22px 0 0; max-height: 50vh; overflow-y: auto; padding: 12px 12px calc(8px + var(--safe-bottom)); box-shadow: 0 -4px 0 #e6d2ae, 0 -6px 18px rgba(31,36,56,.25); z-index: 6; transform: none !important; }
+#tap.psheet { left: 0; right: 0; top: auto; bottom: 0; width: auto; max-width: 520px; margin: 0 auto; border-radius: 22px 22px 0 0; height: min(46vh, 420px); max-height: none; overflow: hidden; display: flex; flex-direction: column; padding: 12px 12px calc(8px + var(--safe-bottom)); box-shadow: 0 -4px 0 #e6d2ae, 0 -6px 18px rgba(31,36,56,.25); z-index: 6; transform: none !important; }
+/* one size and place for every panel (tester 2026-10-15 "the menus move with how much is in them"):
+   the head and tabs stay put at the top, only the part under the tabs scrolls */
+#tap.psheet #tapBody { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#tap.psheet .ph, #tap.psheet .ptabs { flex: none; }
+#tap.psheet .ph { height: 46px; }
+#tap.psheet .pt { min-width: 0; }
+#tap.psheet .pt h3 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#tap.psheet .pbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+#tap .ptabs button:disabled { opacity: .4; cursor: default; }
 .big { text-align: center; }
 .big .ttl { font-size: 15px; color: #6b6f85; margin: 4px 0; }
 .big .num { font-size: 40px; font-weight: 900; color: #e8a412; text-shadow: 0 2px 0 #fff3a8; margin: 4px 0; }
@@ -231,6 +253,7 @@ div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-
   <button type="button" id="upBtn" aria-label="Upgrades"><svg viewBox="0 0 40 40" width="36" height="36"><path d="M20 4 L35 21 H26 V34 H14 V21 H5 Z" fill="#fff" stroke="#1d6b2c" stroke-width="3.5" stroke-linejoin="round"/></svg><span>Upgrades</span><em id="upDot" hidden></em></button>
   <button type="button" id="labBtn" aria-label="Lab" hidden><svg viewBox="0 0 48 48" width="30" height="30"><path d="M18 4 H30 M20 4 V18 L8 40 a3 3 0 0 0 3 4 H37 a3 3 0 0 0 3 -4 L28 18 V4" fill="#ffffff" stroke="#4a2380" stroke-width="3"/><path d="M12 32 H36 L40 40 a3 3 0 0 1 -3 4 H11 a3 3 0 0 1 -3 -4 Z" fill="#9b6bff"/></svg><span>Lab</span><em id="labDot" hidden></em></button>
   <div id="next" class="panel" hidden><span id="nextIc"></span><div class="nx"><span id="nextT"></span><span class="np"><i class="coin"></i><span id="nextP"></span></span><div class="nb"><div id="nextBar"></div></div></div></div>
+  <div id="job" class="panel" hidden><div class="jh"><span id="jobN">FARM JOB</span><b id="jobPay"></b></div><span id="jobT"></span><span id="jobD"></span><div class="nb"><div id="jobBar"></div></div></div>
   <div id="rush" class="panel" hidden><span id="rushT">Rush x3</span></div>
 </div>
 <div id="sheet" class="sheet" hidden>
@@ -247,6 +270,7 @@ div.gpick .mbtn { margin: 6px 0 9px; padding: 10px 2px; font-size: 13px; letter-
     <div class="row"><h2>Settings</h2><button type="button" class="x" id="setClose" aria-label="Close">&times;</button></div>
     <button type="button" class="mbtn" id="setSound">Sound: on</button>
     <button type="button" class="mbtn" id="setBuzz">Haptics: on</button>
+    <button type="button" class="mbtn" id="setSaver">Battery saver: off</button>
     <div id="testTools"><small>Testing tools</small>
       <button type="button" class="mbtn gold" id="setCoins">+1,000 coins (test)</button>
       <button type="button" class="mbtn" id="setLens">Balance lens: off</button>
@@ -339,9 +363,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         items: { field: 'fieldC', helper: 'helper', helper2: 'helper2' } },
       tomato: { name: 'Tomatoes', one: 'tomato', price: 2, regrow: 13, can: 'canT', canPrice: 10, haltKey: 'haltT', idle: 0.7, bees: true, share: 0.4, burst: ['#3b9f3b', '#f2362b', '#4dba45', '#8c5430'], chip: '#c9261e',
         items: { open: 'tomatoes', field: 'fieldT', helper: 'tHelper', helper2: 'tHelper2', cans: 'tomCans' } },
-      corn: { name: 'Corn', one: 'corn', price: 5, regrow: 12, can: 'canK', canPrice: 22, haltKey: 'haltK', idle: 0.6, share: 0.2, valley: 2, burst: ['#3f9a3c', '#ffd335', '#4fbf46', '#e8c24a'], chip: '#d9a514',
+      corn: { name: 'Corn', one: 'corn', price: 4, regrow: 12, can: 'canK', canPrice: 18, haltKey: 'haltK', idle: 0.6, share: 0.2, valley: 2, burst: ['#3f9a3c', '#ffd335', '#4fbf46', '#e8c24a'], chip: '#d9a514',
         items: { open: 'corn', field: 'fieldK', helper: 'kHelper', helper2: 'kHelper2', cans: 'cornCans' } },
-      pumpkin: { name: 'Pumpkins', one: 'pumpkin', price: 11, regrow: 18, can: 'canU', canPrice: 45, haltKey: 'haltP', idle: 0.7, share: 0.12, valley: 2, burst: ['#3b9f3b', '#ff8a1f', '#5fae36', '#e0670f'], chip: '#e0670f',
+      pumpkin: { name: 'Pumpkins', one: 'pumpkin', price: 8, regrow: 18, can: 'canU', canPrice: 34, haltKey: 'haltP', idle: 0.7, share: 0.12, valley: 2, burst: ['#3b9f3b', '#ff8a1f', '#5fae36', '#e0670f'], chip: '#e0670f',
         items: { open: 'pumpkins', field: 'fieldP', helper: 'pHelper', helper2: 'pHelper2', cans: 'pumpCans' } },
       sunflower: { name: 'Sunflowers', one: 'sunflower', price: 80, regrow: 14, can: 'canO', canPrice: 350, haltKey: 'haltN', idle: 0.6, share: 0.12, valley: 3, nocan: true, burst: ['#3f9a3c', '#ffd23a', '#6b4423', '#ffe34d'], chip: '#f2b705' },
       wheat: { name: 'Wheat', one: 'wheat sheaf', price: 175, regrow: 16, can: 'canH', canPrice: 770, haltKey: 'haltH', idle: 0.65, share: 0.1, valley: 3, nocan: true, burst: ['#e8c24a', '#f4d77a', '#c9a227', '#fff1b8'], chip: '#d9b24a' },
@@ -385,7 +409,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     field: { width: 8, d0: 8, step: 2, maxLevel: { carrot: 6, tomato: 4, corn: 4, pumpkin: 3, sunflower: 4, wheat: 3, strawberry: 4, watermelon: 3, grape: 4, cocoa: 3, coffee: 4, apple: 3 } },
     helper: { speed: 2.6, carry: [4, 6, 9, 13, 18, 26, 38, 55] },
     // what a halt (and the market platform) holds, per line level (line())
-    halt: { dropSpot: 40, cart: 150, donkey: 400, horse: 500, tractor: 800, oldtrain: 1200, train: 2200, diesel: 4000, electric: 10000 },
+    halt: { dropSpot: 40, cart: 150, donkey: 400, horse: 600, tractor: 900, oldtrain: 1200, train: 2200, diesel: 4000, electric: 10000 },
     // vehicles per line level: [cap, speed (tiles/s)] per upgrade level; stop = seconds a round trip spends stopped.
     // Valley 1 runs on the dirt track to its very end (Tom 2026-10-06: the
     // railway comes later, right before valley 3): hand cart, donkey cart,
@@ -397,14 +421,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // (2026-10-12 review: the donkey line was the cap 50-76% of the time from 40 to 70 min, so field, helper
       // and shop buys did nothing; each step now carries more: income +20% at 65-70 min, Corn at the same time)
       donkey: { name: 'Donkey cart', levels: [[200, 9], [260, 9.6], [290, 11], [340, 11.4], [380, 11.8], [400, 12]], stop: 4, leaveAfter: 10, railMult: 1.25 },
-      horse: { name: 'Horse wagon', levels: [[430, 11.4], [480, 11.4], [500, 13.2]], stop: 4, leaveAfter: 10, railMult: 1.25 },
+      horse: { name: 'Horse wagon', levels: [[430, 11.4], [500, 12.2], [580, 13.2]], stop: 4, leaveAfter: 10, railMult: 1.25 },
       // Railway day (Tom 2026-10-12, the long plan): "a cart is the same as a
       // train, just upgraded". Each wagon slot is one vehicle all game: hand
       // cart, donkey, horse, then the tractor with trailers at the end of Corn,
       // then (Railways research, Lay rails) the Old rattler, the steam train
       // (Sunflower), the diesel (Berry) and the electric express (Vine; Gold
       // lengthens it). Each new type beats the best level of the one before.
-      tractor: { name: 'Tractor', levels: [[600, 13.5], [700, 14], [800, 14.5]], stop: 4, leaveAfter: 10, railMult: 1.1 },
+      tractor: { name: 'Tractor', levels: [[680, 13.5], [770, 14], [860, 14.5]], stop: 4, leaveAfter: 10, railMult: 1.1 },
       oldtrain: { name: 'Old rattler', levels: [[900, 13], [1050, 13.5], [1200, 14]], stop: 5, leaveAfter: 14 },
       handcar: { name: 'Handcar', levels: [[180, 9], [230, 9], [280, 9]], stop: 4, leaveAfter: 10 },
       train: { name: 'Steam train', levels: [[1400, 15], [1650, 15.5], [1900, 16], [2200, 16.5]], stop: 6, leaveAfter: 15 },
@@ -416,7 +440,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     rail: { passWait: 6 },
     // (flags.steamTrain: only the v3 save converter reads it now; Railway day is built, see ITEMS)
     flags: { steamTrain: false },
-    customers: { interval: 4.5, adMult: 0.85, takeMin: 2, takeMax: 4, bulkPer: 0.3, stageMult: [1, 1.3, 1.6, 2.0, 2.6, 3.4, 4.4, 5.6],
+    // interval0: the Roadside stall's (stage 0) gap, shorter so the carrot-only start has buyers to serve (tester 2026-10-15 "boring").
+    // byStage: the gap at the next stages, so a bigger stall never brings fewer buyers than the one before
+    // (gap / stageMult never grows; with 4.5 from stage 1 the Farm stall measured -15% income at the merge)
+    customers: { interval: 4.5, interval0: 2.5, byStage: [2.5, 2.5, 3.0, 3.6], adMult: 0.85, takeMin: 2, takeMax: 4, bulkPer: 0.3, stageMult: [1, 1.3, 1.6, 2.0, 2.6, 3.4, 4.4, 5.6],
       serveYou: 1, serveSeller: 2, sellSpeedMult: 0.85, patience: 25, noStockWait: 6,
       queue0: 5, queueMax: 12, speed: 2.4, canShare: 0.3, bagShare: 0.15, maxActors: 26 },
     stages: [
@@ -919,13 +946,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the crops' own items (config.crops items: field, helper, helper2, open,
     // cans): a later crop adds its rows here, in NAMES and in describe()
     { id: 'fieldC', tab: 'fields', icon: 'field-carrot', cost: [150, 300, 520, 800, 1150, 1650] },
-    { id: 'helper', tab: 'fields', icon: 'helper', step: 1, cost: [80] },
+    { id: 'helper', tab: 'fields', icon: 'helper', step: 1, cost: [50] },
     { id: 'hbasket', tab: 'fields', icon: 'hbasket', of: 'helper', cost: [100, 200, 380, 700, 1000, 1700, 2900], need: function (s) { return lv(s, 'helper') > 0; } },
     { id: 'htool', tab: 'fields', icon: 'htool', of: 'helper', cost: [220, 1300], need: function (s) { return lv(s, 'helper') > 0 && lv(s, 'htool') < tier(s); } },
     // a second helper on each field, and late a third one: the late game is capped by
     // what you and the helpers cut, and more pickers measure +5-7% there (rails rework)
     { id: 'helper2', tab: 'fields', icon: 'helper3', of: 'helper', cost: [500, 2500], need: function (s) { return lv(s, 'helper2') === 0 ? line(s) >= 1 : lv(s, 'farmShop') > 0; } },
-    { id: 'tomatoes', tab: 'fields', icon: 'tomato', step: 1, cost: [380], need: function (s) { return sellers(s) >= 1; }, needs: 'Seller' },
+    // (the quicker start, Tom 2026-10-15: 380 -> 150; it still comes after the Seller, "wagon and seller should be before tomatoes")
+    { id: 'tomatoes', tab: 'fields', icon: 'tomato', step: 1, cost: [150], need: function (s) { return sellers(s) >= 1; }, needs: 'Seller' },
     { id: 'tHelper', tab: 'fields', icon: 'helper2', step: 1, of: 'tomatoes', cost: [460], need: function (s) { return lv(s, 'tomatoes') > 0; }, needs: 'Tomato field' },
     { id: 'tHelper2', tab: 'fields', icon: 'helper2', of: 'tHelper', cost: [1100, 3100], need: function (s) { return lv(s, 'tHelper') > 0 && (lv(s, 'tHelper2') === 0 ? line(s) >= 2 : lv(s, 'farmShop') > 0); } },
     { id: 'fieldT', tab: 'fields', icon: 'field-tomato', of: 'tomatoes', cost: [700, 1000, 1500, 2200], need: function (s) { return lv(s, 'tomatoes') > 0; } },
@@ -939,13 +967,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'fieldP', tab: 'fields', icon: 'pumpkin', of: 'pumpkins', cost: [10000, 14000, 20000], need: function (s) { return lv(s, 'pumpkins') > 0; }, needs: 'Pumpkin field' },
     { id: 'pHelper', tab: 'fields', icon: 'helper2', of: 'pumpkins', cost: [9500], need: function (s) { return lv(s, 'pumpkins') > 0; }, needs: 'Pumpkin field' },
     { id: 'pHelper2', tab: 'fields', icon: 'helper3', of: 'pHelper', cost: [12000, 24000], need: function (s) { return lv(s, 'pHelper') > 0; }, needs: 'Pumpkin helper' },
+    // (Tom 2026-10-15: the order is Helper, Hand cart, Seller, Tomato field)
     { id: 'cart', tab: 'line', icon: 'cart', step: 1, cost: [115], need: function (s) { return lv(s, 'helper') > 0; }, needs: 'Helper' },
     { id: 'cartUp', tab: 'line', icon: 'cart', of: 'cart', cost: [200, 330, 480], need: function (s) { return line(s) === 1; } },
-    { id: 'donkey', tab: 'line', icon: 'donkey', step: 1, cost: [900], need: function (s) { return line(s) === 1 && lv(s, 'tHelper') > 0; }, needs: 'Tomato helper' },
+    // (unlocks that made sense to nobody, Tom 2026-10-15: the donkey waited for the Tomato helper, now for the Big hand cart, the cart's last upgrade)
+    { id: 'donkey', tab: 'line', icon: 'donkey', step: 1, cost: [900], need: function (s) { return line(s) === 1 && lv(s, 'cartUp') >= 3; }, needs: 'Big hand cart' },
     { id: 'donkeyUp', tab: 'line', icon: 'donkey', of: 'donkey', cost: [950, 1250, 1650, 2150, 2800], need: function (s) { return line(s) === 2; } },
     // the Packhouse (world plan section 3): you carry to its station until its
     // worker comes, then the line drops the crops in and takes the goods
-    { id: 'wash', tab: 'line', icon: 'wash', step: 1, cost: [300], need: function (s) { return lv(s, 'farmStall') > 0; }, needs: 'Farm stall' },
+    { id: 'wash', tab: 'line', icon: 'wash', step: 1, cost: [300], need: function (s) { return line(s) >= 1; }, needs: 'Hand cart' },
     { id: 'pkWorker', tab: 'line', icon: 'hauler', of: 'wash', cost: [500], need: function (s) { return lv(s, 'wash') > 0 && line(s) >= 2; }, needs: 'Donkey cart' },
     { id: 'cannery', tab: 'line', icon: 'cannery', step: 1, cost: [1200], need: function (s) { return line(s) >= 2 && lv(s, 'wash') > 0; }, needs: 'Donkey cart and Wash shed' },
     // the Lab in the bottom-right corner by the road: research takes samples and minutes
@@ -968,10 +998,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'pumpCans', tab: 'line', icon: 'cans', of: 'cannery', cost: [12000], need: function (s) { return lv(s, 'pumpkins') > 0 && lv(s, 'canWorker') > 0; }, needs: 'Pumpkin field' },
     // (the Drying house's stages are made from config.dryer.stages below the list)
     // the end of the dirt-track ladder: a horse and a big wagon (Tom 2026-10-06).
-    // It waits for the Farm shop and Taller sides: when the donkeys are at their
+    // It waits for Taller sides (and until 2026-10-15 the Farm shop): when the donkeys are at their
     // limit, so the line is the cap when it comes (a horse bought over a small
     // donkey wagon measured 1-3% and left the donkey upgrades unbought)
-    { id: 'horse', tab: 'line', icon: 'horse', step: 1, cost: [4300], need: function (s) { return line(s) === 2 && lv(s, 'farmShop') > 0 && lv(s, 'donkeyUp') >= 3; }, needs: 'Farm shop, Taller sides' },
+    { id: 'horse', tab: 'line', icon: 'horse', step: 1, cost: [4300], need: function (s) { return line(s) === 2 && lv(s, 'donkeyUp') >= 3; }, needs: 'Taller sides' },
     // the horse wagon's upgrades belong to Corn Valley (Tom 2026-10-06 "B"): in
     // valley 1 they measured 0-1%, the wagon already out-carries the harvest
     { id: 'horseUp', tab: 'line', icon: 'horse', of: 'horse', cost: [4800, 5500], need: function (s) { return hasKind(s, 'horse') && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
@@ -990,14 +1020,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // third helpers the customers are the late cap again
     { id: 'ad', tab: 'shop', icon: 'sign', cost: [22, 35, 55, 85, 140, 220, 350, 530, 800, 1000, 1350, 2000] },
     { id: 'shelves', tab: 'shop', icon: 'shelves', cost: [32, 50, 80, 135, 230, 370, 570, 900, 1050, 1500, 2400, 4000] },
-    { id: 'seller', tab: 'shop', icon: 'seller', step: 1, cost: [150], need: function (s) { return line(s) >= 1; }, needs: 'Hand cart' },
-    { id: 'farmStall', tab: 'shop', icon: 'market', step: 1, cost: [660], need: function (s) { return sellers(s) >= 1 && lv(s, 'tomatoes') > 0; }, needs: 'Tomato field' },
+    // (needed the Hand cart until 2026-10-15: a tester found a seller behind a cart odd; now it waits only for the first Helper)
+    { id: 'seller', tab: 'shop', icon: 'seller', step: 1, cost: [150], need: function (s) { return lv(s, 'helper') > 0; }, needs: 'Helper' },
+    { id: 'farmStall', tab: 'shop', icon: 'market', step: 1, cost: [660], need: function (s) { return lv(s, 'seller') > 0; }, needs: 'Seller' },
     { id: 'farmShop', tab: 'shop', icon: 'shop', step: 1, of: 'farmStall', cost: [3000], need: function (s) { return stage(s) === 1 && lv(s, 'cannery') > 0; }, needs: 'Cannery' },
     // Faster sellers wait for the Cannery: before it the tills are seldom the cap, so they bought nothing (rails rework)
     { id: 'sellSpeed', tab: 'shop', icon: 'seller', of: 'seller', cost: [800, 1200], need: function (s) { return sellers(s) >= 2 && lv(s, 'cannery') > 0; } },
     // the Contract yard in the west meadow (contracts.js, Tom 2026-10-07):
     // buyers come for big orders of one thing; a board of three to pick from
-    { id: 'conYard', tab: 'line', icon: 'contracts', cost: [1500], need: function (s) { return lv(s, 'lab') > 0; }, needs: 'Lab' },
+    { id: 'conYard', tab: 'line', icon: 'contracts', cost: [1500], need: function (s) { return lv(s, 'cannery') > 0; }, needs: 'Cannery' },
     { id: 'conBuyers', tab: 'line', icon: 'contracts', of: 'conYard', cost: [2000, 3500, 6000], need: function (s) { return lv(s, 'conYard') > 0; } },
     { id: 'conCrane', tab: 'line', icon: 'contracts', of: 'conYard', cost: [4500], need: function (s) { return lv(s, 'conYard') > 0; } },
     { id: 'corn', tab: 'line', icon: 'corn', step: 1, cost: [5500], need: function (s) { return line(s) >= 3; }, needs: 'Horse wagon' }
@@ -1010,7 +1041,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // (`up`) raise every vehicle of its kind. `at`: its line() number;
   // `open`: what else it needs (the valley it comes with)
   var SLOT_STEPS = [
-    { id: 'tractor', kind: 'tractor', at: 4, cost: 12000, up: 'tractorUp', upCost: [14000, 17000], icon: 'tractor',
+    { id: 'tractor', kind: 'tractor', at: 4, cost: 24000, up: 'tractorUp', upCost: [28000, 34000], icon: 'tractor',
       open: function (s) { return dryStage(s) >= 3; }, needs: 'Roaster and bagging line' },
     { id: 'oldTrain', kind: 'oldtrain', at: 5, cost: 20000, up: 'oldTrainUp', upCost: [26000, 32000], icon: 'oldTrain',
       open: function (s) { return rails(s); }, needs: 'Lay rails' },
@@ -1122,7 +1153,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // the STEPs in their order (banner numbers)
   // (rails, oldTrain and train only with flags.steamTrain: see stepList)
   // (Railway day and the later valleys go on after Corn, so the banner numbers up to Corn stay)
-  var STEPS = ['helper', 'cart', 'seller', 'wash', 'tomatoes', 'tHelper', 'farmStall', 'donkey', 'cannery', 'canWorker', 'lab', 'sorter', 'tomCans', 'farmShop', 'belt', 'horse', 'corn',
+  var STEPS = ['helper', 'cart', 'seller', 'tomatoes', 'wash', 'tHelper', 'farmStall', 'donkey', 'cannery', 'canWorker', 'lab', 'sorter', 'tomCans', 'farmShop', 'belt', 'horse', 'corn',
     'tractor', 'rails', 'oldTrain', 'sunValley', 'train', 'berryValley', 'diesel', 'vineValley', 'electric', 'goldValley'];
   var STEPS_ALL = STEPS;
   function stepList() { return STEPS; }
@@ -2074,7 +2105,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return v;
   }
   function vtext(v) { return v.cap + ' a trip, speed ' + String(v.speed); }
-  function customerInterval(s) { return config.customers.interval * Math.pow(config.customers.adMult, lv(s, 'ad')); }
+  function customerInterval(s) { var C = config.customers, g = C.byStage && C.byStage[stage(s)]; return (g || C.interval) * Math.pow(C.adMult, lv(s, 'ad')); }
   // Farm crates (Lab, Shop): every buyer takes more
   function bulk(s) { var c = config.customers; return (1 + c.bulkPer * lv(s, 'shelves')) * c.stageMult[stage(s)] * (rf(s, 'rCrates') || 1) * (lv(s, 'bagging') ? config.extras.bagging : 1); }
   // how much a customer wants: 2-4 x bulk, rounded, at least 1. r in [0, 1)
@@ -5409,7 +5440,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the road, then back up beside it (queueCols columns, queueDX apart)
     queueZ: -2.5, queueStep: 0.82, queueRows: 4, queueDX: 0.7,
     forecourtZ1: 0.42, // the forecourt's front edge (the verge runs from here to the road)
-    plat: { x0: 0.6, x1: 1.8, z0: -5.0 + MZ, z1: -0.8 + MZ },
+    plat: { x0: 0.6, x1: 1.8, z0: -6.3 + MZ, z1: -2.6 + MZ },   // (ends behind the stall: the way into the serve lane stays open, tester 2026-10-15)
     stopZ: -2.9 + MZ,       // where a cart / handcar stops at the market (beside platform and dock)
     // the factory district (z -45.6 .. -37.6): the branch runs through its
     // middle to the FACTORY station. Left of the line: the INTAKE platform
@@ -7025,6 +7056,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       for (var fx = 0; fx <= 8; fx++) { vb(tf.x0 + fx - 0.06, 0, tf.z0 - 0.06, 0.12, 0.5, 0.12, '#b07a44'); vb(tf.x0 + fx - 0.06, 0, tf.z0 + 8 - 0.06, 0.12, 0.5, 0.12, '#b07a44'); }
       for (var fz = 0; fz <= 8; fz++) { vb(tf.x0 - 0.06, 0, tf.z0 + fz - 0.06, 0.12, 0.5, 0.12, '#b07a44'); vb(tf.x0 + 8 - 0.06, 0, tf.z0 + fz - 0.06, 0.12, 0.5, 0.12, '#b07a44'); }
       vb(tf.x0, 0.3, tf.z0 - 0.03, 8, 0.07, 0.06, '#b07a44'); vb(tf.x0, 0.3, tf.z0 + 7.97, 8, 0.07, 0.06, '#b07a44'); vb(tf.x0 - 0.03, 0.3, tf.z0, 0.06, 0.07, 8, '#b07a44'); vb(tf.x0 + 7.97, 0.3, tf.z0, 0.06, 0.07, 8, '#b07a44');
+      // for sale, and plain to see from the farm (tester 2026-10-15 "did not know they could
+      // buy tomatoes"): a red FOR SALE board at its front and a few young plants of the crop
+      M.signBoard(tf.x0 + 4, tf.z0 + 7.3, 'FOR SALE', '#e8402f', '#ffffff', 0.06);
+      var pc = FL.config.crops[c].chip || '#e8402f';
+      for (var sq = 0; sq < 6; sq++) { var sx = tf.x0 + 1.4 + (sq % 3) * 2.6, sz = tf.z0 + 2.2 + Math.floor(sq / 3) * 2.6; vb(sx, 0, sz, 0.5, 0.35, 0.5, '#4fae3e'); vb(sx + 0.1, 0.35, sz + 0.1, 0.3, 0.12, 0.3, '#66c24a'); vb(sx + 0.15, 0.2, sz + 0.42, 0.2, 0.2, 0.12, pc); }
       BLOCK.push({ x0: tf.x0 - 0.1, z0: tf.z0 - 0.1, x1: tf.x0 + 8.1, z1: tf.z0 + 8.1 });
       info.plots[c] = tf;
     });
@@ -7102,13 +7138,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // bottom of the screen is not a slab of wasted forest (Tom review)
       var dens = cz < -47 ? 1.6 : (cx < -25 || cx > (cz > -8 ? 21 : 14) ? 1.5 : (cz > 10 ? 1.5 : (cz > 2 ? 0.8 : 0.55))), tdens = dens;
       if (cz < -31 && cx > -3 && cx < 14) dens = tdens = 1.5;
-      // Corn Valley: an open valley floor round its fields, a few trees
-      if (HOME && cz < -59 && cz > -96 && cx > -4 && cx < 27) { dens = 0.7; tdens = 0.12; }
+      // Corn Valley: an open valley floor round its fields, no trees (tester 2026-10-15)
+      if (HOME && cz < -59 && cz > -96 && cx > -4 && cx < 27) { dens = 0.7; tdens = 0; }
       // (a later valley: the same, moved up; open once bought)
-      if (HOME && cz < -96 && cx > -4 && cx < 27) { var vk = Math.ceil((-96 - cz) / L.VG) + 2, vz = cz + L.VG * (vk - 2); if (vk <= 6 && vz < -59 && vOpen(s, vk)) { dens = 0.7; tdens = 0.12; } }
+      if (HOME && cz < -96 && cx > -4 && cx < 27) { var vk = Math.ceil((-96 - cz) / L.VG) + 2, vz = cz + L.VG * (vk - 2); if (vk <= 6 && vz < -59 && vOpen(s, vk)) { dens = 0.7; tdens = 0; } }
       // south of the road, between the tree line and the valley: open meadow,
       // flowers and bushes rather than a slab of forest (Tom review)
       if (cz > 2 && cz <= 10 && cx > -26 && cx < 21) tdens = 0.22;
+      // no trees where you walk (tester 2026-10-15 "annoying to get stuck in
+      // trees in the middle of the map"): the Home farm between its woods, from
+      // the road up past the fields, and every open valley floor, keep only
+      // bushes, flowers and rocks; the woods round the edges (and the wood
+      // the carrot field grows into) stay
+      if (HOME && cz > -46 && cz < 0 && cx > -25 && cx < 14 && !(cz < -31 && cx > 2)) tdens = 0;
       if (gy) { dens *= 0.45; tdens *= 0.45; }   // terrace tops (?ground=b) are more open
       if (v < 0.26 * tdens) { var tx = cx + (M.hash(x * 7 + 3, z * 5 + 11) - 0.5) * 0.4, tz = cz + (M.hash(x * 3 + 13, z * 7 + 2) - 0.5) * 0.4; place(M.tree(M.hash(x, z) < 0.35 ? 1 : (M.hash(z, x) < 0.1 ? 3 : 0)), tx, 0, tz); info.trees.push([tx, tz]); }
       else if (v < 0.36 * dens) place(M.bush(), cx, 0, cz);
@@ -7856,7 +7898,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 (function (FL) {
   'use strict';
   var THREE = window.THREE, M = FL.M;
-  var R = { W: 13, elev: 50, shear: 0.3 };
+  var R = { W: 13, elev: 50, shear: 0.3, maxDpr: 2, maxPx: 2.4e6 };
   var renderer, scene, camera, sun, hemi, canvas, groundMesh;
   var staticGroup, cropGroup, actorGroup, dynMesh, railMesh, transMesh, marketGroup;
   var BOX = null, MAT = null, MAT_T = null, awnMesh = null;
@@ -7871,11 +7913,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     canvas = cv;
     renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.shadowMap.autoUpdate = false;   // render() redraws the shadow map every other frame
     renderer.setClearColor('#8fd655');
     scene = new THREE.Scene();
     hemi = new THREE.HemisphereLight('#eaf6ff', '#9a8a5a', 1.35); scene.add(hemi);
     sun = new THREE.DirectionalLight('#fff2d8', 2.5);
-    sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+    // (1024: the same look as 2048 on a phone, a quarter of the work - tester 2026-10-15)
+    sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
     var sc = sun.shadow.camera; sc.left = -17; sc.right = 17; sc.top = 19; sc.bottom = -19; sc.near = -40; sc.far = 80;
     sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.02;
     scene.add(sun); scene.add(sun.target);
@@ -7905,7 +7949,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   function resize() {
-    SW = window.innerWidth; SH = window.innerHeight; DPR = Math.min(2, window.devicePixelRatio || 1);
+    SW = window.innerWidth; SH = window.innerHeight; DPR = Math.min(R.maxDpr, window.devicePixelRatio || 1);
+    // a pixel budget: a tablet at 2x has three times a phone's pixels and ran
+    // hot (tester 2026-10-15), so big screens get a little less sharpness;
+    // phones stay at 2x (a 430x932 phone is 1.6M pixels)
+    DPR = Math.min(DPR, Math.max(1, Math.sqrt(R.maxPx / (SW * SH))));
     renderer.setPixelRatio(DPR); renderer.setSize(SW, SH, false);
     canvas.style.width = SW + 'px'; canvas.style.height = SH + 'px';
     project();
@@ -7961,10 +8009,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // ---- the static world, in chunks of 12 rows so off-screen ones are skipped ----
   function setStatic(V, VR) {
     while (staticGroup.children.length) freeGL(staticGroup.children.pop());
+    // (square chunks, not whole rows: the screen is ~13 tiles wide and the
+    // world ~96, so a row chunk drew everything left and right of the view,
+    // in the picture and again in the shadow map - phones ran hot, tester 2026-10-15)
     var CH = 12, chunks = {}, trans = [];
-    function key(z) { return Math.floor(z / CH); }
-    V.forEach(function (b) { if (b[6][0] === '~') { trans.push(b); return; } var k = key(b[2] + b[5] / 2); (chunks[k] = chunks[k] || { a: [], r: [] }).a.push(b); });
-    VR.forEach(function (b) { var k = key(b[2]); (chunks[k] = chunks[k] || { a: [], r: [] }).r.push(b); });
+    function key(x, z) { return Math.floor(x / CH) + ':' + Math.floor(z / CH); }
+    V.forEach(function (b) { if (b[6][0] === '~') { trans.push(b); return; } var k = key(b[0] + b[3] / 2, b[2] + b[5] / 2); (chunks[k] = chunks[k] || { a: [], r: [] }).a.push(b); });
+    VR.forEach(function (b) { var k = key(b[0], b[2]); (chunks[k] = chunks[k] || { a: [], r: [] }).r.push(b); });
     Object.keys(chunks).forEach(function (k) {
       var ch = chunks[k], n = ch.a.length + ch.r.length, im = newMesh(n), a = im.instanceMatrix.array, c = im.instanceColor.array, i = 0;
       ch.a.forEach(function (b) { writeBox(a, i * 16, b[0] + b[3] / 2, b[1] + b[4] / 2, b[2] + b[5] / 2, b[3], b[4], b[5]); setCol(c, i++, b[6]); });
@@ -8216,7 +8267,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     dynMesh.count = dynN; dynMesh.instanceMatrix.needsUpdate = true; dynMesh.instanceColor.needsUpdate = true; dynWas = dynN;
   }
 
-  function render() { renderer.render(scene, camera); }
+  // the shadow map is the biggest single cost on a phone: redraw it every
+  // other frame (a moving shadow trails by one frame, which nobody sees)
+  var shadowN = 0;
+  function render() { renderer.shadowMap.needsUpdate = (shadowN++ & 1) === 0; renderer.render(scene, camera); }
+  // battery saver: a lower screen sharpness cap (Settings)
+  function setMaxDpr(d, px) { if (R.maxDpr === d && R.maxPx === px) return; R.maxDpr = d; R.maxPx = px; if (renderer) resize(); }
 
   // a ground look (ground.js, ?ground=...): swap the plane's texture, same plane
   function setGround(g) {
@@ -8231,7 +8287,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
   FL.render = {
     R: R, init: init, resize: resize, lookAt: lookAt, toScreen: toScreen, screenToGroundDir: screenToGroundDir,
-    setStatic: setStatic, setGround: setGround, setMarket: setMarket, setAwning: setAwning, setRails: setRails, setWidth: setWidth, tintTile: tintTile, updateRails: updateRails,
+    setStatic: setStatic, setMaxDpr: setMaxDpr, setGround: setGround, setMarket: setMarket, setAwning: setAwning, setRails: setRails, setWidth: setWidth, tintTile: tintTile, updateRails: updateRails,
     makeField: makeField, clearFields: clearFields, writeTile: writeTile,
     makePerson: makePerson, setTool: setTool, setStack: setStack, makeModel: makeModel, makeRig: makeRig, poseRig: poseRig, onScreen: onScreen, makePile: makePile, setPile: setPile, remove: remove,
     dynBegin: dynBegin, dynBox: dynBox, dynModel: dynModel, dynEnd: dynEnd, render: render,
@@ -10187,7 +10243,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function arrow() { return '<i class="ar">›</i>'; }
 
   // ---- the panel ----
-  var sig = '', tab = 'in';
+  var sig = '', tab = 'in', shown = '';
   // other threads add a block to a panel: FL.panels.slot('vehicle', function (m, v) { return html; })
   var SLOTS = {};
   function head(o) {
@@ -10209,12 +10265,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var send = o.send !== undefined ? '<button type="button" class="mbtn gold send" id="sendNow"' + (o.send ? '' : ' disabled') + '>Send now</button>' : '';
     var canN = up.list.filter(function (x) { return x.cost <= coins; }).length;
     // a jam card's fixes belong next to the jam: no Upgrades tab there
-    var fix = m.kind === 'fix', tabs = fix ? [['in', 'What is jamming']] : [['in', 'Inside'], ['up', 'Upgrades' + (canN ? ' <em>' + canN + '</em>' : '')]];
-    if (o.stats.filter(Boolean).length) tabs.push(['sf', 'So far']);
-    if (!tabs.some(function (t) { return t[0] === tab; })) tab = 'in';
+    // every panel shows the same three tabs in the same place (tester 2026-10-15);
+    // one with nothing behind it stays, greyed out, so the others never shift
+    var fix = m.kind === 'fix', hasSf = o.stats.filter(Boolean).length > 0;
+    var tabs = [['in', fix ? 'What is jamming' : 'Inside'], ['up', 'Upgrades' + (canN && !fix ? ' <em>' + canN + '</em>' : ''), fix], ['sf', 'So far', !hasSf]];
+    if (tabs.some(function (t) { return t[0] === tab && t[2]; })) tab = 'in';
     var body = tab === 'in' ? (o.now || '<p class="mute">Nothing inside.</p>') + send + (o.slot || '') + extra + (fix ? up.html : '')
       : tab === 'up' ? (up.html || '<p class="mute">Nothing to buy here right now.</p>') : '<div class="sf">' + soFar(o) + '</div>';
-    return head(o) + '<div class="ptabs">' + tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div><div class="pbody">' + body + '</div>';
+    return head(o) + '<div class="ptabs">' + tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '"' + (t[2] ? ' disabled' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div class="pbody">' + body + '</div>';
   }
   var down = null;   // the element a pointer is down on (pointerdown..pointerup)
   if (typeof document !== 'undefined') {
@@ -10231,16 +10289,17 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     on: on,
     slot: function (kind, fn) { SLOTS[kind] = fn; sig = ''; },
     sheet: function () { return on(); },
-    open: function () { tab = 'in'; sig = ''; },
+    open: function () { tab = 'in'; sig = ''; shown = ''; },
     // fill the panel body; returns true when it changed
     fill: function (el, m, force) {
       // no rebuild while a finger is down on the panel (it would eat the tap); the next refresh applies it
       if (!force && down && el.contains(down)) return false;
       var h = render(m, force); if (h === false) return false;
-      var sc = el.closest ? el.closest('.psheet') : null, y0 = el.scrollTop, y1 = sc ? sc.scrollTop : 0;   // a rebuild must not jump the scroll
+      // a rebuild must not jump the scroll (only the part under the tabs scrolls); a new tab starts at its top
+      var pb = el.querySelector('.pbody'), at = tab + (m.kind + m.key), y0 = pb && at === shown ? pb.scrollTop : 0; shown = at;
       el.innerHTML = h;
-      el.scrollTop = y0; if (sc) sc.scrollTop = y1;
-      Array.prototype.forEach.call(el.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { tab = b.dataset.tab; A.refresh(true); }); });
+      pb = el.querySelector('.pbody'); if (pb) pb.scrollTop = y0;
+      Array.prototype.forEach.call(el.querySelectorAll('[data-tab]'), function (b) { b.addEventListener('click', function () { if (b.disabled) return; tab = b.dataset.tab; A.refresh(true); }); });
       return true;
     }
   };
@@ -10723,7 +10782,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // scrubbing (washer) or picking into the grade boxes (sorter) while the batch runs
   function placeStaff(w, run, scrub) {
     if (!w) return;
-    w.t += 1 / 60; var g = w.a.g, r = w.a.body.rig;
+    w.t += animDt(); var g = w.a.g, r = w.a.body.rig;
     g.position.set(w.x, 0.06 + (run ? Math.abs(Math.sin(w.t * (scrub ? 7 : 5))) * 0.04 : Math.abs(Math.sin(w.t * 1.5)) * 0.015), w.z); g.rotation.y = 0;
     animLegs(w.a, false, 0);
     if (r) {
@@ -10948,10 +11007,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var lists = [info.block, mk ? mk.blocks : []];
     for (var l = 0; l < 2; l++) { var B = lists[l]; for (var i = 0; i < B.length; i++) { var b = B[i]; if (x > b.x0 - r && x < b.x1 + r && z > b.z0 - r && z < b.z1 + r) return true; } }
     if (info.raised && info.raised(x, z, r)) return true;
-    var T = info.trees;
-    for (var j = 0; j < T.length; j++) { var dx = x - T[j][0], dz = z - T[j][1]; if (dx * dx + dz * dz < (0.38 + r) * (0.38 + r)) return true; }
+    if (treeAt(x, z, r)) return true;
     var bd = L.bounds; if (x < bd.x0 || x > bd.x1 || z < bd.z0 || z > bd.z1) return true;
     return false;
+  }
+  function treeAt(x, z, r) {
+    var T = info.trees;
+    for (var j = 0; j < T.length; j++) { var dx = x - T[j][0], dz = z - T[j][1]; if (dx * dx + dz * dz < (0.38 + r) * (0.38 + r)) return T[j]; }
+    return null;
   }
   function near(a, x, z, r) { return (a.x - x) * (a.x - x) + (a.z - z) * (a.z - z) < r * r; }
   // walk anywhere on a store or the drop pallet (layout A)
@@ -11136,8 +11199,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // a piece that pops in on top of you (a new sign, a bigger stall) must not
     // trap you: from inside a blocked spot you can always walk out
     if (collide && !blocked(p.x, p.z, r)) {
-      if (!blocked(nx, p.z, r)) p.x = nx; else p.vx *= 0.3;
-      if (!blocked(p.x, nz, r)) p.z = nz; else p.vz *= 0.3;
+      // head-on into a tree: slide round it rather than stop dead (tester
+      // 2026-10-15 "annoying to get stuck in trees"): try the step turned
+      // away from it before falling back to moving an axis at a time
+      var mx = nx - p.x, mz = nz - p.z, slid = false, tr = (mx || mz) && treeAt(nx, nz, r);
+      if (tr) {
+        // turn away from the tree's middle, a little more each try
+        var sd = (mx * (tr[1] - p.z) - mz * (tr[0] - p.x)) > 0 ? -1 : 1, turns = [0.45, 0.9, 1.3];
+        for (var ti = 0; ti < turns.length && !slid; ti++) {
+          var ca = Math.cos(turns[ti] * sd), sa = Math.sin(turns[ti] * sd), tx = p.x + mx * ca - mz * sa, tz = p.z + mx * sa + mz * ca;
+          if (!blocked(tx, tz, r)) { p.x = tx; p.z = tz; slid = true; }
+        }
+      }
+      if (!slid) {
+        if (!blocked(nx, p.z, r)) p.x = nx; else p.vx *= 0.3;
+        if (!blocked(p.x, nz, r)) p.z = nz; else p.vz *= 0.3;
+      }
     } else { p.x = nx; p.z = nz; }
     var sp = Math.hypot(p.vx, p.vz);
     if (sp > 0.3) { var tfx = p.vx / sp, tfz = p.vz / sp, kk = 1 - Math.exp(-dt * 18); p.fx += (tfx - p.fx) * kk; p.fz += (tfz - p.fz) * kk; }
@@ -12778,8 +12855,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.worker) placeWorker(G.worker);
     if (G.washer) G.washer.x = L.washer.x;
     placeStaff(G.washer, G.washRun, true); placeStaff(G.sorter, G.sortRun, false); Object.keys(G.mkW || {}).forEach(function (k) { placeStaff(G.mkW[k], mkRt(k).run, false); });
-    if (G.pkW) { var pw = G.pkW, pwBusy = G.vehs.some(function (q) { return q.st.state === 'station'; }); pw.bob += (pwBusy ? 9 : 2) / 60; pw.a.g.position.set(pw.x, 0.42 + Math.abs(Math.sin(pw.bob)) * (pwBusy ? 0.08 : 0.03), pw.z); pw.a.g.rotation.y = Math.PI / 2; animLegs(pw.a, false, 0); }
-    placeVehicle(1 / 60);
+    if (G.pkW) { var pw = G.pkW, pwBusy = G.vehs.some(function (q) { return q.st.state === 'station'; }); pw.bob += (pwBusy ? 9 : 2) * animDt(); pw.a.g.position.set(pw.x, 0.42 + Math.abs(Math.sin(pw.bob)) * (pwBusy ? 0.08 : 0.03), pw.z); pw.a.g.rotation.y = Math.PI / 2; animLegs(pw.a, false, 0); }
+    placeVehicle(animDt());
     if (G.marketG) { var k = G.marketPop > 0 ? G.marketPop / 0.6 : 0, sy = 1 - Math.sin(k * Math.PI) * 0.12; G.marketG.scale.set(1, sy, 1); }
     RD.dynBegin();
     if (G.veh && isTrain(G.veh)) trainRods(G.veh);
@@ -13191,7 +13268,21 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // line across the valley. The deep part of a fogged region is still a flat
   // fill, but it is clipped well inside the soft edge and faded into it.
   var FOGC = '240,248,236';
-  function softBlob(x, y, r, a, col) { var FC = col || FOGC, g = ox.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(' + FC + ',' + a + ')'); g.addColorStop(0.45, 'rgba(' + FC + ',' + a * 0.72 + ')'); g.addColorStop(0.75, 'rgba(' + FC + ',' + a * 0.3 + ')'); g.addColorStop(1, 'rgba(' + FC + ',0)'); ox.fillStyle = g; ox.fillRect(x - r, y - r, r * 2, r * 2); }
+  // (the fog's own colour comes from one pre-drawn blob, stretched and faded
+  // with globalAlpha - the same picture as a fresh gradient, which cost as
+  // much as the whole 3D world on a phone; blobs off the screen are skipped)
+  var blobImg = null;
+  function fogSprite() {
+    if (blobImg) return blobImg;
+    var c = document.createElement('canvas'), x = c.getContext('2d'), R = 128; c.width = c.height = R * 2;
+    var g = x.createRadialGradient(R, R, 0, R, R, R); g.addColorStop(0, 'rgba(' + FOGC + ',1)'); g.addColorStop(0.45, 'rgba(' + FOGC + ',0.72)'); g.addColorStop(0.75, 'rgba(' + FOGC + ',0.3)'); g.addColorStop(1, 'rgba(' + FOGC + ',0)');
+    x.fillStyle = g; x.fillRect(0, 0, R * 2, R * 2);
+    return (blobImg = c);
+  }
+  function softBlob(x, y, r, a, col) {
+    var sz = RD.size; if (x + r < 0 || y + r < 0 || x - r > sz.W || y - r > sz.H || a <= 0) return;
+    if (!col) { var ga = ox.globalAlpha; ox.globalAlpha = ga * Math.min(1, a); ox.drawImage(fogSprite(), x - r, y - r, r * 2, r * 2); ox.globalAlpha = ga; return; }
+    var FC = col, g = ox.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, 'rgba(' + FC + ',' + a + ')'); g.addColorStop(0.45, 'rgba(' + FC + ',' + a * 0.72 + ')'); g.addColorStop(0.75, 'rgba(' + FC + ',' + a * 0.3 + ')'); g.addColorStop(1, 'rgba(' + FC + ',0)'); ox.fillStyle = g; ox.fillRect(x - r, y - r, r * 2, r * 2); }
   // a band of drifting puffs along the segment a -> b, `rows` deep towards -y
   function cloudEdge(a, b, seed, rows, a0) {
     var len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(2, Math.round(len / 30));
@@ -13296,7 +13387,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var f = G.fields[c].f, p = P(f.x0 + f.w / 2, 0.6, f.z0 - 0.2);
       chip(p.x, p.y, [[CFG.crops[c].name, '#ffffff'], ['8x' + f.d, '#ffe46b']], CFG.crops[c].chip, 13, 0.92);
     });
-    Object.keys(info.plots || {}).forEach(function (c) { var pl = info.plots[c], tp = P(pl.x0 + 4, 0.6, pl.z0 - 0.2); chip(tp.x, tp.y, [['lock'], [CFG.crops[c].name, '#ffffff']], '#6b5a4a', 12, 0.85); });
+    // a field for sale: its price, and a tap buys it (tester 2026-10-15: the plot did not look buyable)
+    Object.keys(info.plots || {}).forEach(function (c) {
+      var pl = info.plots[c], tp = P(pl.x0 + 4, 1.9, pl.z0 + 7.3), id = Lg.cropItem(c, 'open'), it = id && Lg.BY[id];
+      if (!it) { chip(tp.x, tp.y, [['lock'], [CFG.crops[c].name, '#ffffff']], '#6b5a4a', 12, 0.85); return; }
+      var ok = !it.need || it.need(S), cost = it.cost[0], rich = ok && S.coins >= cost, nm = Lg.describe(S, id).name, C0 = CFG.crops[CROPS[0]];
+      chip(tp.x, tp.y, [['lock'], ['For sale: ' + nm, '#ffffff'], ['coin'], [Lg.fmt(cost), '#ffd23a']], rich ? '#2fa34f' : '#e8402f', rich ? 14 : 13, 1,
+        { ids: [id], title: nm, lines: [CFG.crops[c].name + ' sell for ' + Math.round(CFG.crops[c].price / C0.price * 10) / 10 + 'x ' + C0.name.toLowerCase() + '.', ok ? '' : 'Needs: ' + it.needs].filter(Boolean) });
+    });
     // the Corn factory district's lot in the woods north of the creek, once Corn Valley is open (Tom 2026-10-09 10:04)
     var d0 = Lg.DRY_STAGES[0];
     if (info.cdLot && !Lg.dryStage(S)) { var lt = info.cdLot, dsp = P((lt.x0 + lt.x1) / 2, 0.5, (lt.z0 + lt.z1) / 2); chip(dsp.x, dsp.y, [['lock'], ['Corn factory', '#ffffff'], ['coin'], [Lg.fmt(d0.cost), '#ffd23a']], '#a8693b', 12, 0.95, { ids: [d0.id], title: 'Corn factory', lines: ['Its own wash trough and sorter, and a Drying shed.', 'Dries washed crops into bags: ' + Lg.DRY_CROPS.map(function (c) { return CFG.dryer.recipes[c].name.toLowerCase(); }).join(', ') + '.'] }); }
@@ -13314,7 +13412,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       chip(gp.x + 30, gp.y, [['lock'], [V.name, '#ffffff'], ['coin'], [Lg.fmt(it.cost[0]), '#ffd23a']], '#2a3150', 13, 1, { ids: [V.open], title: V.name, lines: [V.short + ' and ' + CFG.crops[V.crops[1]].name.toLowerCase() + ', and a ' + CFG.makers[V.maker].name + '.', it.need && !it.need(S) ? 'Needs: ' + it.needs : 'Open the gate to the next valley.'] });
     });
     if (!Lg.lv(S, 'cannery') && Lg.line(S) >= 1) { var cs = P((L.lot.x0 + L.lot.x1) / 2, 0.5, L.lot.z1); chip(cs.x, cs.y, [['lock'], ['Cannery', '#ffffff'], ['coin'], [Lg.fmt(Lg.BY.cannery.cost[0]), '#ffd23a']], '#4aa8ff', 12, 0.9); }
-    if (!Lg.lv(S, 'wash') && Lg.lv(S, 'seller')) { var ps = P((L.pk.x0 + L.pk.x1) / 2, 0.6, L.pk.z1); chip(ps.x, ps.y, [['lock'], ['Packhouse', '#ffffff'], ['coin'], [Lg.fmt(Lg.BY.wash.cost[0]), '#ffd23a']], '#2f6fb8', 12, 0.9, { ids: ['wash'], title: 'Packhouse', lines: ['Washed crops sell for 25% more.'] }); }
+    if (!Lg.lv(S, 'wash') && Lg.line(S) >= 1) { var ps = P((L.pk.x0 + L.pk.x1) / 2, 0.6, L.pk.z1); chip(ps.x, ps.y, [['lock'], ['Packhouse', '#ffffff'], ['coin'], [Lg.fmt(Lg.BY.wash.cost[0]), '#ffd23a']], '#2f6fb8', 12, 0.9, { ids: ['wash'], title: 'Packhouse', lines: ['Washed crops sell for 25% more.'] }); }
     if (!Lg.lv(S, 'lab') && Lg.lv(S, 'cannery')) { var ls = P((L.lab.x0 + L.lab.x1) / 2, 0.6, L.lab.z1); chip(ls.x, ls.y, [['lock'], ['Lab', '#ffffff'], ['coin'], [Lg.fmt(Lg.BY.lab.cost[0]), '#ffd23a']], '#7b3fbf', 12, 0.9, { ids: ['lab'], title: 'Lab', lines: ['Research: better seeds, farm, shop and factory.'] }); }
     // helpers waiting at a full halt: "!"
     G.helpers.forEach(function (h) { if (!h.stuck) return; var p = P(h.x, 2.1, h.z); ox.fillStyle = '#ffffff'; ox.beginPath(); ox.arc(p.x, p.y - 8, 11, 0, 7); ox.fill(); txt('!', p.x, p.y - 7, 16, '#e8402f', 'center'); });
@@ -13388,7 +13486,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function measureHud() {
     try {
       var c = $('coins').querySelector('.coin').getBoundingClientRect(), cr = $('carry').getBoundingClientRect(), u = $('upBtn').getBoundingClientRect(), nx = $('next').getBoundingClientRect();
-      HR.coinX = c.left + c.width / 2; HR.coinY = c.top + c.height / 2; HR.top = cr.bottom + 14; HR.upX = u.left + u.width / 2; HR.upY = u.top; HR.bottom = u.top - 10; HR.nextX = nx.left + nx.width / 2; HR.nextY = nx.bottom;
+      HR.coinX = c.left + c.width / 2; HR.coinY = c.top + c.height / 2; HR.top = ($('job').hidden ? cr : $('job').getBoundingClientRect()).bottom + 14; HR.upX = u.left + u.width / 2; HR.upY = u.top; HR.bottom = u.top - 10; HR.nextX = nx.left + nx.width / 2; HR.nextY = nx.bottom;
     } catch (e) { /* keep defaults */ }
   }
   function initHud() {
@@ -13413,6 +13511,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     $('settings').addEventListener('pointerdown', function (e) { if (e.target === $('settings')) $('settings').hidden = true; });
     $('setSound').addEventListener('click', function () { snd.muted = !snd.muted; try { localStorage.setItem(CFG.save.key + '-sound', snd.muted ? '0' : '1'); } catch (e) { /* ignore */ } refreshSettings(); });
     $('setBuzz').addEventListener('click', function () { G.haptics = !G.haptics; try { localStorage.setItem(CFG.save.key + '-buzz', G.haptics ? '1' : '0'); } catch (e) { /* ignore */ } refreshSettings(); });
+    $('setSaver').addEventListener('click', function () { setSaver(!G.saver); try { localStorage.setItem(CFG.save.key + '-saver', G.saver ? '1' : '0'); } catch (e) { /* ignore */ } refreshSettings(); });
     if (!TEST && !CFG.devTools) $('testTools').hidden = true; // test coins and the lens: on while this is a test build
     $('setLens').addEventListener('click', function () { if (FL.lens) FL.lens.setOn(!FL.lens.isOn()); refreshSettings(); });
     $('setCoins').addEventListener('click', function () { S.coins += 1000; G.coinShown = S.coins - 1000; snd.coin(0, 0); pulse('coins'); save(); refreshSettings(); });
@@ -13423,17 +13522,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       setTimeout(function () { b.dataset.armed = ''; b.textContent = 'Start over'; b.classList.remove('armed'); }, 3000);
     });
     $('next').addEventListener('click', function () { var n = Lg.nextStep(S); if (n) showWay(n.id); });
+    $('job').addEventListener('click', jobWay);
     $('awayBtn').addEventListener('click', collectAway);
     $('summary').addEventListener('click', function () { $('summary').hidden = true; });
     $('tapClose').addEventListener('click', closeMenu);
     // the stop list editor's buttons, wherever it is shown (the wagon menu, or a tap panel hosting routeHtml)
     document.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('[data-sop]'); if (b && !b.disabled) editStops(+b.dataset.w, b.dataset.sop, b.dataset); if (e.target && e.target.closest && e.target.closest('[data-rmap]')) routeMap(true); });
     if (FL.panels && FL.panels.slot) FL.panels.slot('vehicle', function (m) { return routeHtml(m.wagon != null ? m.wagon : m.key); });
-    try { snd.muted = localStorage.getItem(CFG.save.key + '-sound') === '0'; G.haptics = localStorage.getItem(CFG.save.key + '-buzz') !== '0'; } catch (e) { /* ignore */ }
+    try { snd.muted = localStorage.getItem(CFG.save.key + '-sound') === '0'; G.haptics = localStorage.getItem(CFG.save.key + '-buzz') !== '0'; setSaver(localStorage.getItem(CFG.save.key + '-saver') === '1'); } catch (e) { /* ignore */ }
   }
+  // Battery saver (Settings): 30 frames a second and a softer screen (1.5x
+  // pixels at most, not 2x, and half the pixel budget on a tablet) for
+  // devices that run warm; the look stays the same
+  function setSaver(on) { G.saver = !!on; RD.setMaxDpr(on ? 1.5 : 2, on ? 1.2e6 : 2.4e6); sizeOverlay(); }
   function refreshSettings() {
     $('setSound').textContent = 'Sound: ' + (snd.muted ? 'off' : 'on');
     $('setBuzz').textContent = 'Haptics: ' + (G.haptics ? 'on' : 'off');
+    $('setSaver').textContent = 'Battery saver: ' + (G.saver ? 'on' : 'off');
     $('setLens').textContent = 'Balance lens: ' + (FL.lens && FL.lens.isOn() ? 'on' : 'off');
     var st = S.stats;
     $('setStats').innerHTML = 'Played <b>' + Math.floor(st.time / 60) + ' min</b> &middot; cut by you <b>' + Lg.fmt(st.cut) + '</b> &middot; sold <b>' + Lg.fmt(st.sold) + '</b> &middot; earned <b>' + Lg.fmt(st.earned) + '</b> &middot; cans <b>' + Lg.fmt(st.cans) + '</b> &middot; best haul <b>' + st.bestHaul + '</b>';
@@ -13462,6 +13567,54 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (Lg.DISTS.some(function (d) { return d.id !== 'home' && distFull(d.id); })) sig.push('cdFull');
     return sig;
   }
+  // ---- Farm jobs (tester 2026-10-15 "boring and don't know what to do", Tom
+  // picked B): one job at a time under the carry bar, a few coins for each,
+  // a tap shows the way. They run up to the Tomato field, then the card goes.
+  // A job: t title, d how, n() progress against goal, or buy (an item id: done
+  // once bought), pay, way (a WHERE id or a function giving {x, z})
+  function jobList() {
+    var c0 = CROPS[0], C0 = CFG.crops[c0], c1 = CROPS[1], C1 = CFG.crops[c1];
+    return [
+      { t: 'Pick 12 ' + C0.name.toLowerCase(), d: 'Walk through the field: you pick as you go.', n: function () { return S.stats.cut; }, goal: 12, pay: 5, way: function () { var f = G.fields[c0] && G.fields[c0].f; return f && { x: f.x0 + f.w / 2, z: f.z0 + f.d / 2 }; } },
+      { t: 'Drop them behind the stall', d: 'Walk into the marked yard behind the stall.', n: function () { return S.hints.dropped ? 1 : 0; }, goal: 1, pay: 5, way: function () { var z = L.dropZone && L.dropZone[0]; return z ? { x: (z.x0 + z.x1) / 2, z: (z.z0 + z.z1) / 2 } : { x: L.serve.x, z: L.serve.z }; } },
+      { t: 'Serve 3 buyers', d: 'Walk behind the counter. You sell faster than anyone.', n: function () { return S.hints.served || 0; }, goal: 3, pay: 10, way: function () { return { x: L.serve.x, z: L.serve.z }; } },
+      { t: 'Buy Gloves', d: 'Open Upgrades. You pick faster.', buy: 'gloves', pay: 5 },
+      { t: 'Hire a Helper', d: 'Picks ' + C0.name.toLowerCase() + ' and leaves them at the halt.', buy: 'helper', pay: 10 },
+      { t: 'Get a Hand cart', d: 'It takes the crates from the halts to the stall.', buy: 'cart', pay: 20 },
+      { t: 'Hire a Seller', d: 'Sells at the stall while you farm, and while you are away.', buy: 'seller', pay: 25 },
+      { t: 'Open the ' + Lg.describe(S, Lg.cropItem(c1, 'open')).name, d: C1.name + ' sell for ' + C1.price / C0.price + 'x ' + C0.name.toLowerCase() + '. Its plot is marked FOR SALE.', buy: Lg.cropItem(c1, 'open'), pay: 30 }
+    ];
+  }
+  function jobDone(j) { return j.buy ? Lg.lv(S, j.buy) > 0 : j.n() >= j.goal; }
+  function jobsTick() {
+    var J = G.jobs || (G.jobs = jobList()), h = S.hints, el = $('job');
+    // a save from before the jobs (or one already past some): skip what is done, unpaid
+    if (h.job == null) { h.job = 0; while (h.job < J.length && jobDone(J[h.job])) h.job++; }
+    var j = J[h.job];
+    if (j && jobDone(j) && !G.jobPaid) {
+      // done: a moment in green, then the coins and the next job
+      G.jobPaid = G.t; el.classList.add('done'); $('jobT').textContent = j.t + '  \u2713'; if (el.hidden) { el.hidden = false; document.body.classList.add('hasJob'); } $('jobBar').style.width = '100%';
+      S.coins += j.pay; S.stats.earned += j.pay; text(G.player.x, 2.2, G.player.z, '+' + j.pay + ' job done!', '#5fe05c', 15, 1.2); snd.fanfare(); pulse('coins');
+      return;
+    }
+    if (G.jobPaid) { if (G.t - G.jobPaid < 1.4) return; G.jobPaid = 0; h.job++; j = J[h.job]; el.classList.remove('done'); lastHud.job = ''; }
+    if (!j) { if (!el.hidden) { el.hidden = true; document.body.classList.remove('hasJob'); HR.top = $('carry').getBoundingClientRect().bottom + 14; } return; }
+    var have = j.buy ? Math.min(S.coins, Lg.BY[j.buy].cost[0]) : Math.min(j.n(), j.goal), need = j.buy ? Lg.BY[j.buy].cost[0] : j.goal;
+    var sig = h.job + ':' + have;
+    if (lastHud.job === sig) return; lastHud.job = sig;
+    $('jobN').textContent = 'FARM JOB ' + (h.job + 1) + ' OF ' + J.length;
+    $('jobPay').textContent = '+' + j.pay + ' coins';
+    $('jobT').textContent = j.t + (j.buy || need < 2 ? '' : '  (' + have + ' / ' + need + ')');
+    $('jobD').textContent = j.buy && have < need ? j.d + ' Costs ' + Lg.fmt(need) + '.' : j.d;
+    $('jobBar').style.width = Math.min(100, have / need * 100) + '%';
+    if (el.hidden) { el.hidden = false; document.body.classList.add('hasJob'); }
+    HR.top = el.getBoundingClientRect().bottom + 14;
+  }
+  function jobWay() {
+    var j = (G.jobs || [])[S.hints.job]; if (!j) return;
+    if (j.buy) { if (S.coins >= Lg.BY[j.buy].cost[0] && (!Lg.BY[j.buy].need || Lg.BY[j.buy].need(S))) { G.tab = 'all'; openSheet(); return; } showWay(j.buy); return; }
+    var w = j.way && j.way(); if (w) { G.focus = { x: w.x, z: w.z, t: 0, dur: 2.4 }; sparkle(w.x, 1, w.z, 16, '#ffe34d'); }
+  }
   function uiBlocked() { return !$('sheet').hidden || !$('labSheet').hidden || !$('settings').hidden || !$('away').hidden || !$('summary').hidden || !!G.cut || !!(FL.tips && FL.tips.isOpen()); }
   var lastHud = {};
   function drawHud() {
@@ -13482,6 +13635,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (lastHud.lab !== Lg.lv(S, 'lab') + ':' + ld) { lastHud.lab = Lg.lv(S, 'lab') + ':' + ld; $('labBtn').hidden = !Lg.lv(S, 'lab'); $('labDot').hidden = !ld; $('labDot').textContent = ld; }
       if (!$('labSheet').hidden) refreshLab();
       if (lastHud.aff !== aff) { hud.upDot.hidden = !aff; hud.upDot.textContent = aff > 9 ? '9+' : aff; $('upBtn').classList.toggle('glow', aff > 0 && !S.hints.shop); lastHud.aff = aff; }
+      jobsTick();
       // the next STEP chip
       var nx = Lg.nextStep(S), sig = nx ? nx.id + ':' + nx.cost : 'none';
       if (lastHud.next !== sig) { lastHud.next = sig; if (nx) { $('nextIc').innerHTML = icon(nx.icon, 26); $('nextT').textContent = shortName(nx); $('nextP').textContent = Lg.fmt(nx.cost); $('next').hidden = false; } else $('next').hidden = true; }
@@ -14111,7 +14265,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     try { localStorage.removeItem(CFG.save.key); } catch (e) { /* ignore */ }
     S = n || Lg.newState(); S.pos = null;
     if (CN) CN.reset();
-    var prev = G; G = newRuntime(); G.player = prev.player; G.helpers = prev.helpers; G.customers = prev.customers; G.veh = prev.veh; G.vehs = prev.vehs; G.sellers = prev.sellers; G.worker = prev.worker; G.piles = prev.piles; G.haptics = prev.haptics;
+    var prev = G; G = newRuntime(); G.player = prev.player; G.helpers = prev.helpers; G.customers = prev.customers; G.veh = prev.veh; G.vehs = prev.vehs; G.sellers = prev.sellers; G.worker = prev.worker; G.piles = prev.piles; G.haptics = prev.haptics; G.saver = prev.saver;
     if (prev.bus) RD.remove(prev.bus.g);
     G.lastLayoutSig = function () { return G.layout; };
     S.pos = L.start;
@@ -14123,10 +14277,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
 
   // ------------------------------------------------------------------ loop
+  // At most 60 frames a second (30 with Battery saver on): a 120 Hz phone
+  // otherwise draws everything twice as often and runs hot (tester 2026-10-15).
   var last = 0;
   function frame(nowMs) {
     requestAnimationFrame(frame);
     if (G.paused) { last = nowMs; return; }
+    if (last && nowMs - last < (G.saver ? 1000 / 30 : 1000 / 60) - 3) return;
     var dt = last ? (nowMs - last) / 1000 : 1 / 60; last = nowMs;
     var t0 = performance.now();
     tick(dt);
@@ -14159,6 +14316,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the test hooks (give, setClock, buy...) only exist in a ?test page or a devTools build; the tips get the same object either way
     var FLX = {
       get S() { return S; }, get G() { return G; }, tick: tick, draw: draw, routeMap: function (on) { routeMap(on); }, menu: function (k, key) { var m = { kind: k, key: key == null ? '' : key }; if (k === 'vehicle' && G.vehs[key]) { var q = carPos(G.vehs[key], 0); m.x = q.x; m.y = 0.7; m.z = q.z; m.wagon = key; } openMenu(m); }, buy: buyItem, info: function () { return info; }, mk: function () { return mk; }, Lg: Lg, CFG: CFG,
+      jobs: function () { jobsTick(); },   // (the Farm jobs card's check, for tests)
       setInput: function (dx, dy, m) { input.forced = m ? { x: dx, y: dy, m: m } : null; },
       toScreen: RD.toScreen, carPos: function () { var v = G.veh; return v ? carPos(v, Math.min(v.cars.length - 1, v.loadCar || 0)) : null; }, give: function (n) { S.coins += n; }, save: save, L: L, cubes: function () { return RD.R.cubes; },
       // clock and away earnings: shift the clock, or pretend you were away for n seconds
