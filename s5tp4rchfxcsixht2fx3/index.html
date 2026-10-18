@@ -2706,6 +2706,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     });
     if (o.hints && typeof o.hints === 'object') Object.keys(o.hints).forEach(function (k) { var v = o.hints[k]; if (typeof v === 'number' || typeof v === 'boolean') s.hints[k] = v; });
     if (o.con && FL.contracts) s.con = FL.contracts.load(o.con);
+    if (o.sales && FL.sales) s.sales = FL.sales.load(o.sales);
     s.goldenNext = num(o.goldenNext, 0, 1e9, s.goldenNext);
     s.rushT = num(o.rushT, 0, config.golden.rushT, 0);
     s.lastSeen = num(o.lastSeen, 0, 1e15, 0);
@@ -7366,14 +7367,26 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // it starts at the back of the stall (the farm shop's building runs further back)
     // and is deep enough that its far half shows past the roof
     var back = [-2.6, -3.6, -6.0][Math.max(0, Math.min(2, (out.shopStage || 1) - 1))] + MZ;
-    var bz1 = back - 0.05, bz0 = bz1 - 3.0, yx0 = 1.0, yx1 = out.x1 + 0.4;
+    var bz1 = back - 0.05, bz0 = bz1 - 3.0;
+    dropYard(1.0, out.x1 + 0.4, bz0, bz1, 1.2);
+  }
+  // a drop-off yard: trodden ground inside a blue dashed line, DROP painted on
+  // it dz from its far edge; L.dropZone a little bigger (world coordinates)
+  function dropYard(yx0, yx1, bz0, bz1, dz, ts) {
     L.dropZone = [{ x0: yx0 - 0.3, x1: yx1 + 0.3, z0: bz0 - 0.3, z1: bz1 + 0.35 }];
     vb(yx0, -0.02, bz0, yx1 - yx0, 0.04, bz1 - bz0, '#b99b6b');
     for (var i = 0; i < 24; i++) { var px = yx0 + 0.2 + M.hash(i, 7) * (yx1 - yx0 - 0.6), pz = bz0 + 0.2 + M.hash(3, i) * (bz1 - bz0 - 0.5); vb(px, 0.02, pz, 0.3, 0.01, 0.2, '#a88a5c'); }
     for (var dx = yx0 + 0.1; dx < yx1 - 0.3; dx += 0.55) { vb(dx, 0.025, bz0 + 0.05, 0.3, 0.01, 0.09, '#5fc4ff'); vb(dx, 0.025, bz1 - 0.14, 0.3, 0.01, 0.09, '#5fc4ff'); }
-    for (var dz = bz0 + 0.1; dz < bz1 - 0.3; dz += 0.55) { vb(yx0 + 0.05, 0.025, dz, 0.09, 0.01, 0.3, '#5fc4ff'); vb(yx1 - 0.14, 0.025, dz, 0.09, 0.01, 0.3, '#5fc4ff'); }
-    var dm = Mdl(); M.signText(dm, 'DROP', 0, 0, 0, 0.07, '#5fc4ff', 0.03);
-    dm.L.forEach(function (b) { vb((yx0 + yx1) / 2 + b[0], 0.03, bz0 + 1.2 - b[1] - b[4], b[3], 0.01, b[4], b[6]); });
+    for (var ez = bz0 + 0.1; ez < bz1 - 0.3; ez += 0.55) { vb(yx0 + 0.05, 0.025, ez, 0.09, 0.01, 0.3, '#5fc4ff'); vb(yx1 - 0.14, 0.025, ez, 0.09, 0.01, 0.3, '#5fc4ff'); }
+    var dm = Mdl(); M.signText(dm, 'DROP', 0, 0, 0, ts || 0.07, '#5fc4ff', 0.03);
+    dm.L.forEach(function (b) { vb((yx0 + yx1) / 2 + b[0], 0.03, bz0 + dz - b[1] - b[4], b[3], 0.01, b[4], b[6]); });
+  }
+  // the bigger shops (stage 4 on, Village grocer .. Mega mall) fill the ground
+  // behind the stall up to the fields: their drop-off yard is the goods-in bay
+  // at the shop's left end, between the cart platform's end and the forecourt,
+  // right beside SERVE (Tom 2026-10-16 "a bigger farm shop: no drop off spot")
+  function dropBay(out) {
+    dropYard(0.45, 2.25, -2.5 + MZ, 0.35 + MZ, 1.75, 0.045);
   }
   // Corn Valley's families at the stall (stage 3, Tom 2026-10-09: corn and
   // pumpkins go from the wash plant to the stall and sell raw): a crate stand
@@ -7437,6 +7450,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     out.lanes = Math.min(3, T.length, useA ? Math.max(Lg.tills(s), (out.tills || []).length) : Lg.tills(s));
     var ad = Lg.lv(s, 'ad'), sh = Lg.lv(s, 'shelves');
     forecourt(out, useA ? out.x1 : [6.0, 9.0, 12.0][st], useA ? Math.max(0, Math.min(6, ad) - 3) : 0, useA ? sh : 0);
+    if (SRV === 'd' && useA && !home) dropBay(out);
     if (SRV === 'd' && useA && home) serveZones(out);
     else if (useA) wordMat(L.serve.x, L.serve.z, SRV ? 0.15 : 0.02, 'SERVE', null, null, SRV ? 1.6 : 1.5, SRV ? 1.0 : 1.2);
     if (useA && SRV && L.drop) serveExtras(out);
@@ -7553,6 +7567,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // the factory stop; crops: only those of the Home halts (Corn Valley's ride
   // the Corn run to ARRIVALS, so they come by LOAD only)
   function canRush(f) { var c = Lg.cropOf(f); return !c || Lg.stopCrops('halts').indexOf(c) >= 0; }
+  // and can the first vehicle take the siding? It is a dirt track: the carts
+  // and the tractor run it, a train can't (no RUSH button then)
+  var SIDING = ['cart', 'donkey', 'horse', 'tractor'];
+  function sidingVeh(v) { return !!v && SIDING.indexOf(v.kind) >= 0; }
   function bonus(s, size) { return CC.sizes[size].bonus + CC.buyersBonus * Lg.lv(s, 'conBuyers'); }
   // what the farm makes a minute, per family: crops cut (you and the helpers),
   // cans made (split by the crops the Cannery cans, in the share they are cut)
@@ -7750,6 +7768,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var s = X.S(), c = con(), o = c.order; if (!o) return 0;
       var pay = Math.round(o.val * (full ? 1 + o.bonus : 1)), P = Y.park;
       if (pay > 0) { s.coins += pay; s.stats.earned += pay; c.earned += pay; X.coins(P.x, 1.2, P.z, pay); }
+      if (FL.sales && o.kn && o.val > 0) Object.keys(o.kn).forEach(function (k) { FL.sales.sale(s, k, o.kn[k], pay * (o.kv[k] || 0) / o.val); });
       X.text(P.x, 2.6, P.z, full ? 'Order filled! +' + Lg.fmt(pay) : (pay > 0 ? 'Time up: +' + Lg.fmt(pay) : 'Time up'), full ? '#ffd23a' : '#ffffff', full ? 20 : 16, 1.8);
       if (full) { X.burst(P.x, 1.2, P.z, 'confetti', 30); X.snd.fanfare(); c.full++; } else X.snd.thud(0);
       c.done++;
@@ -7762,7 +7781,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var R = {
       // the order, when its buyer is parked and the clock runs
       order: function () { var o = con().order; return o && van && van.state === 'park' ? o : null; },
-      rush: function () { return con().rush && !!R.order() && canRush(R.order().fam); },
+      rush: function () { return con().rush && !!R.order() && canRush(R.order().fam) && sidingVeh(X.G().veh); },
       // what is still wanted (less what is on its way)
       left: function () { var o = R.order(); return o ? Math.max(0, o.n - o.have - inbound) : 0; },
       takes: function (k) { var o = R.order(); return !!o && takes(o, k) && o.have + inbound < o.n; },
@@ -7770,6 +7789,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       land: function (k) {
         var o = R.order(); if (!o || !takes(o, k)) return false;
         var s = X.S(); var u = units(k), got = Math.min(u, o.n - o.have); o.have += got; o.val += Lg.price(k, s) * got / u;
+        // the sales book: what went in, by kind, and its value (paid when the order closes)
+        o.kv = o.kv || {}; o.kn = o.kn || {}; o.kn[k] = (o.kn[k] || 0) + 1; o.kv[k] = (o.kv[k] || 0) + Lg.price(k, s) * got / u;
         fillBed();
         if (o.have >= o.n) close(true);
         return true;
@@ -7852,7 +7873,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       },
       // the RUSH button (the yard's menu and the cart's)
       rushHtml: function () {
-        var s = X.S(), o = R.order(); if (!o || !Lg.vehicle(s) || !canRush(o.fam)) return '';
+        var s = X.S(), o = R.order(); if (!o || !Lg.vehicle(s) || !canRush(o.fam) || !sidingVeh(X.G().veh)) return '';
         var on = R.rush(), vn = Lg.vehicle(s).name.toLowerCase();
         return '<button type="button" class="mbtn ' + (on ? 'red armed' : 'gold') + ' send" data-con="rush">' + (on ? 'Rush is on: stop it' : 'Rush: the ' + vn + ' brings ' + FAM_NAME[o.fam] + ' first') + '</button>';
       },
@@ -7883,7 +7904,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return R;
   }
 
-  FL.contracts = { build: build, load: load, attach: attach, newState: newState, makeBoard: makeBoard, famsOpen: famsOpen, byValue: byValue, canRush: canRush, spur: spur, Y: Y, FAM_NAME: FAM_NAME };
+  FL.contracts = { build: build, load: load, attach: attach, newState: newState, makeBoard: makeBoard, famsOpen: famsOpen, byValue: byValue, canRush: canRush, sidingVeh: sidingVeh, spur: spur, Y: Y, FAM_NAME: FAM_NAME };
 })(this.FL = this.FL || {});
 
 </script>
@@ -10062,6 +10083,208 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 })(this.FL = this.FL || {});
 
 </script>
+<script>/* src/farmline/sales.js */
+// Farm Line: the sales book (Tom 2026-10-16 "I want somewhere to see how many
+// of each thing is sold and at what grade. For all time and time periods",
+// and "% of time customers is served ... 100% is perfect flow").
+// What is sold (kind, items, coins) and how the shop flows (served, gave up,
+// turned away, no stock, till seconds staffed and busy) go into buckets: one
+// for all time, one for today (local date) and one per minute for the last
+// hour. A save from before this update starts counting at the update.
+// game.js records (sale, ev, tills) and hands the api (attach). Tom picked C
+// (2026-10-17): a Flow pill under the top bar (the last 10 minutes) opens the
+// Sales sheet with the book.
+(function (FL) {
+  'use strict';
+  var A = null;
+  var PERIODS = [['m10', '10 min'], ['h1', 'Hour'], ['day', 'Today'], ['all', 'All time']];
+  var period = 'h1';
+  function now() { return Date.now(); }
+  function dayOf(t) { var d = new Date(t); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function bucket() { return { n: {}, c: {}, sv: 0, gu: 0, ta: 0, ns: 0, st: 0, bu: 0 }; }
+  function fresh(t) { t = t || now(); return { from: t, all: bucket(), day: { d: dayOf(t), b: bucket() }, min: [] }; }
+  function num(v) { v = +v; return isFinite(v) && v > 0 ? Math.min(v, 1e15) : 0; }
+  function cleanB(o) {
+    var b = bucket(); if (!o || typeof o !== 'object') return b;
+    ['sv', 'gu', 'ta', 'ns', 'st', 'bu'].forEach(function (k) { b[k] = num(o[k]); });
+    ['n', 'c'].forEach(function (k) { var m = o[k]; if (m && typeof m === 'object') Object.keys(m).forEach(function (kind) { if (typeof kind === 'string' && kind.length < 24) { var v = num(m[kind]); if (v) b[k][kind] = v; } }); });
+    return b;
+  }
+  function load(o) {
+    if (!o || typeof o !== 'object') return fresh();
+    var s = fresh(num(o.from) || now());
+    s.all = cleanB(o.all);
+    if (o.day && typeof o.day.d === 'string') s.day = { d: o.day.d, b: cleanB(o.day.b) };
+    if (Array.isArray(o.min)) s.min = o.min.slice(-60).filter(function (x) { return x && isFinite(+x.m); }).map(function (x) { return { m: Math.floor(+x.m), b: cleanB(x.b) }; });
+    return s;
+  }
+  // the buckets a record goes into right now (a new day or minute starts its own)
+  function live(S, t) {
+    var B = S.sales || (S.sales = fresh(t)), m = Math.floor(t / 60000), d = dayOf(t);
+    if (B.day.d !== d) B.day = { d: d, b: bucket() };
+    var last = B.min[B.min.length - 1];
+    if (!last || last.m !== m) { last = { m: m, b: bucket() }; B.min.push(last); }
+    while (B.min.length && B.min[0].m <= m - 60) B.min.shift();
+    return [B.all, B.day.b, last.b];
+  }
+  // a sale: items of kind for coins
+  function sale(S, kind, n, coins) {
+    if (!(n > 0)) return;
+    live(S, now()).forEach(function (b) { b.n[kind] = (b.n[kind] || 0) + n; b.c[kind] = (b.c[kind] || 0) + (coins || 0); });
+  }
+  // a shop event: sv served, gu gave up waiting, ta turned away (every queue
+  // full), ns walked off with nothing on the shelf
+  function ev(S, k, n) { live(S, now()).forEach(function (b) { b[k] += n == null ? 1 : n; }); }
+  // till seconds: staffed (a till with a seller or you) and busy (a buyer in its line)
+  function tills(S, st, bu) { if (!(st > 0)) return; live(S, now()).forEach(function (b) { b.st += st; b.bu += bu; }); }
+  // the sums for a period: a bucket, and since when it counts
+  function sum(S, p) {
+    var B = S.sales || (S.sales = fresh()), t = now();
+    if (p === 'all') return { b: B.all, since: B.from };
+    if (p === 'day') { var d0 = new Date(t); d0.setHours(0, 0, 0, 0); return { b: B.day.d === dayOf(t) ? B.day.b : bucket(), since: Math.max(B.from, d0.getTime()), start: d0.getTime() }; }
+    var mins = p === 'm10' ? 10 : 60, m = Math.floor(t / 60000), o = bucket();
+    B.min.forEach(function (x) {
+      if (x.m <= m - mins) return;
+      ['sv', 'gu', 'ta', 'ns', 'st', 'bu'].forEach(function (k) { o[k] += x.b[k]; });
+      ['n', 'c'].forEach(function (k) { for (var kind in x.b[k]) o[k][kind] = (o[k][kind] || 0) + x.b[k][kind]; });
+    });
+    return { b: o, since: Math.max(B.from, (m - mins + 1) * 60000), start: (m - mins + 1) * 60000 };
+  }
+  // flow: how busy the tills are, times how many more buyers came than were
+  // served. 100% = the tills always busy and nobody gives up; under: too few
+  // buyers (tills stand idle); over: too many (buyers give up or turn away).
+  // A buyer who walks off at an empty shelf is a stock problem, not flow.
+  function flow(b) {
+    if (b.st < 20) return null;
+    var busy = b.bu / b.st, want = b.sv + b.gu + b.ta;
+    return busy * (b.sv > 0 ? want / b.sv : want > 0 ? 3 : 1);
+  }
+  function flowWord(f) { return f == null ? ['Not enough yet', '#7d8597'] : f < 0.85 ? ['Too few customers', '#1d8fd0'] : f > 1.15 ? ['Too many customers', '#d63a2a'] : ['Good flow', '#2d9a3e']; }
+
+  // ---- the book ----
+  function clock(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  function html(S) {
+    var Lg = A.Lg, f = Lg.fmt, P = sum(S, period), b = P.b;
+    var h = '<div class="sbk"><div class="spd">' + PERIODS.map(function (p) { return '<button type="button" data-sp="' + p[0] + '" class="' + (period === p[0] ? 'on' : '') + '">' + p[1] + '</button>'; }).join('') + '</div>';
+    if (P.start && P.since > P.start + 60000) h += '<p class="since">Counting since ' + clock(P.since) + ' (the update).</p>';
+    else if (!P.start) h += '<p class="since">Counting since ' + clock(P.since) + ', ' + new Date(P.since).toLocaleDateString() + '.</p>';
+    // flow
+    var fl = flow(b), w = flowWord(fl), pct = fl == null ? '–' : Math.round(fl * 100) + '%', k = fl == null ? 0 : Math.min(2, fl) / 2;
+    h += '<div class="sfl"><div class="flt"><small>FLOW</small><b style="color:' + w[1] + '">' + pct + '</b><span style="color:' + w[1] + '">' + w[0] + '</span></div>' +
+      '<div class="flb"><i style="left:' + Math.round(k * 100) + '%;background:' + w[1] + '"></i><em></em></div>' +
+      '<div class="fll"><span>too few</span><span>100%</span><span>too many</span></div>' +
+      '<p>Served <b>' + f(b.sv) + '</b> · gave up <b>' + f(b.gu) + '</b> · queue full <b>' + f(b.ta) + '</b>' + (b.ns ? ' · no stock <b>' + f(b.ns) + '</b>' : '') + '<br>Tills busy <b>' + (b.st ? Math.round(b.bu / b.st * 100) : 0) + '%</b> of the time</p></div>';
+    // sold, by family and grade
+    var groups = [['Crops', Lg.CROPS], ['Cans', Lg.CAN_FAMS], ['Factory goods', Lg.BAG_FAMS]], items = 0, coins = 0, rows = [];
+    for (var kind in b.n) { items += b.n[kind]; coins += b.c[kind] || 0; }
+    groups.forEach(function (g) {
+      var rs = g[1].filter(function (fam) { return Lg.FAMILY[fam].some(function (kk) { return b.n[kk] > 0; }); }).map(function (fam) {
+        var c = 0; Lg.FAMILY[fam].forEach(function (kk) { c += b.c[kk] || 0; });
+        return { name: A.famName(fam), g: A.gradeCounts(b.n, [fam]), c: c };
+      });
+      if (rs.length) rows.push([g[0], rs]);
+    });
+    h += '<div class="stot">Sold <b>' + f(items) + '</b> for <b><i class="coin"></i>' + f(Math.round(coins)) + '</b></div>';
+    if (!rows.length) return h + '<p class="mute">Nothing sold in this time yet.</p></div>';
+    var NS = Lg.maxStar(S), D = false;
+    rows.forEach(function (g) { g[1].forEach(function (r) { for (var q = 4; q >= NS; q--) if (r.g[q]) { NS = q + 1; break; } if (r.g.d) D = true; }); });
+    var head = '<tr><th></th>' + (D ? '<th><i style="background:' + A.RAW + '">☆</i></th>' : '');
+    for (var i = 0; i < NS; i++) head += '<th><i style="background:' + A.GC[i] + '">' + (i + 1) + '★</i></th>';
+    head += '<th>all</th></tr>';
+    h += '<table class="gt sgt">';
+    rows.forEach(function (g) {
+      h += '<tr class="sg"><td colspan="' + (NS + 2 + (D ? 1 : 0)) + '">' + g[0] + '</td></tr>' + head;
+      g[1].forEach(function (r) {
+        var t = r.g.reduce(function (a, n) { return a + n; }, 0) + (r.g.d || 0);
+        h += '<tr><td>' + r.name + '<small><i class="coin"></i>' + f(Math.round(r.c)) + '</small></td>' + (D ? '<td' + (r.g.d ? ' style="color:#7d8597"' : ' class="z"') + '>' + (r.g.d ? f(r.g.d) : '·') + '</td>' : '');
+        for (var j = 0; j < NS; j++) h += '<td' + (r.g[j] ? ' style="color:' + A.dark(A.GC[j]) + '"' : ' class="z"') + '>' + (r.g[j] ? f(r.g[j]) : '·') + '</td>';
+        h += '<td><b>' + f(t) + '</b></td></tr>';
+      });
+    });
+    return h + '</table></div>';
+  }
+  // the Flow pill: the last 10 minutes
+  function pill(S) { var b = sum(S, 'm10').b, fl = flow(b), w = flowWord(fl); return { t: fl == null ? 'Flow –' : 'Flow ' + Math.round(fl * 100) + '%', col: w[1] }; }
+
+  var CSS = [
+    '.sbk .spd { display: flex; gap: 6px; margin: 2px 0 8px; }',
+    '.sbk .spd button { flex: 1; border: 0; border-radius: 12px; padding: 7px 2px; font: inherit; font-size: 13px; font-weight: 800; background: #ead9b8; color: var(--navy); box-shadow: 0 2px 0 #d9c39c; cursor: pointer; }',
+    '.sbk .spd button.on { background: #2a3150; color: #fff; box-shadow: 0 2px 0 #12162a; }',
+    '.sbk .since { margin: -2px 0 6px; font-size: 12px; color: #7d8597; }',
+    '.sbk .sfl { background: #fffaf0; border-radius: 14px; padding: 8px 12px 6px; box-shadow: 0 2px 0 #e3d2b0; margin-bottom: 8px; }',
+    '.sbk .flt { display: flex; align-items: baseline; gap: 8px; }',
+    '.sbk .flt small { font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #7d8597; }',
+    '.sbk .flt b { font-size: 26px; }',
+    '.sbk .flt span { font-weight: 800; font-size: 14px; }',
+    '.sbk .flb { position: relative; height: 10px; border-radius: 5px; margin: 4px 0 2px; background: linear-gradient(90deg, #7fd3ff, #7fe08a 42%, #7fe08a 58%, #ff8a7a); }',
+    '.sbk .flb em { position: absolute; left: 50%; top: -3px; width: 2px; height: 16px; margin-left: -1px; background: #2a3150; }',
+    '.sbk .flb i { position: absolute; top: -4px; width: 12px; height: 12px; margin-left: -8px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 1px 2px rgba(0,0,0,.4); }',
+    '.sbk .fll { display: flex; justify-content: space-between; font-size: 11px; color: #7d8597; }',
+    '.sbk .sfl p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; }',
+    '.sbk .stot { font-size: 14px; margin: 2px 2px 4px; }',
+    '.sbk .stot .coin { width: 13px; height: 13px; vertical-align: -2px; margin-right: 2px; }',
+    '.sbk .sgt td small { display: block; font-size: 11px; color: #7d8597; font-weight: 700; }',
+    '.sbk .sgt td small .coin { width: 10px; height: 10px; vertical-align: -1px; margin-right: 2px; }',
+    '.sbk .sgt tr.sg td { padding-top: 8px; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: #7d8597; text-align: left; }',
+    // the Sales sheet: the Lab sheet's size
+    '#salesSheet .sheetBox { height: 78%; max-height: 78%; display: flex; flex-direction: column; }',
+    '#salesSheet .hd { display: flex; align-items: center; gap: 8px; padding: 12px 16px 4px 16px; }',
+    '#salesSheet .hd h2 { margin: 0; font-size: 22px; color: var(--navy); flex: 1; }',
+    // the Sales sheet's table: the shop panel's (#tap .gt in farmline.html)
+    '#salesSheet .gt { width: 100%; border-collapse: collapse; font-size: 14px; font-weight: 800; color: var(--navy); }',
+    '#salesSheet .gt th { font-size: 11px; color: #9da0b0; padding: 0 0 3px; }',
+    '#salesSheet .gt th i { display: inline-block; min-width: 26px; padding: 1px 3px; border-radius: 8px; color: #1f2438; font-style: normal; }',
+    '#salesSheet .gt td { text-align: center; padding: 4px 2px; }',
+    '#salesSheet .gt tr:nth-child(even) td { background: #f7f1e4; }',
+    '#salesSheet .gt td:first-child { text-align: left; padding-left: 6px; border-radius: 6px 0 0 6px; }',
+    '#salesSheet .gt td:last-child { border-radius: 0 6px 6px 0; }',
+    '#salesSheet .gt td.z { color: #cfc8b8; }',
+    '.sbk .sgt tr.sg td { background: none !important; }',
+    '#salesSheet .bd { flex: 1; min-height: 0; overflow-y: auto; padding: 0 12px 16px; }',
+    '#flowPill { position: absolute; right: 12px; top: calc(74px + var(--safe-top, 0px)); pointer-events: auto; cursor: pointer; border: 0; border-radius: 14px; padding: 5px 10px; font: inherit; font-size: 13px; font-weight: 800; color: #fff; background: #2a3150; box-shadow: 0 3px 0 var(--ink); display: flex; align-items: center; gap: 6px; }',
+    '#flowPill i { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 0 2px #fff; }'
+  ].join('\n');
+
+  var sheet = null, btn = null, pillEl = null, lastSig = '';
+  function openSheet() { if (!sheet) return; sheet.hidden = false; lastSig = ''; fillSheet(); }
+  function closeSheet() { if (sheet) sheet.hidden = true; }
+  function fillSheet() {
+    if (!sheet || sheet.hidden) return;
+    var h = html(A.S()); if (h === lastSig) return; lastSig = h;
+    var bd = sheet.querySelector('.bd'), y = bd.scrollTop; bd.innerHTML = h; bd.scrollTop = y;
+  }
+  function build() {
+    var st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st);
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-sp]'); if (!b) return;
+      period = b.dataset.sp; lastSig = ''; fillSheet();
+    });
+    sheet = document.createElement('div'); sheet.id = 'salesSheet'; sheet.className = 'sheet'; sheet.hidden = true;
+    sheet.innerHTML = '<div class="sheetBox"><div class="hd"><h2>Sales</h2><button type="button" class="x" aria-label="Close">&times;</button></div><div class="bd"></div></div>';
+    document.body.appendChild(sheet);
+    sheet.querySelector('.x').addEventListener('click', closeSheet);
+    sheet.addEventListener('pointerdown', function (e) { if (e.target === sheet) closeSheet(); });
+    var hud = document.getElementById('hud');
+    pillEl = document.createElement('button'); pillEl.type = 'button'; pillEl.id = 'flowPill'; pillEl.innerHTML = '<i></i><span>Flow –</span>';
+    pillEl.addEventListener('click', openSheet); hud.appendChild(pillEl);
+  }
+  var pillSig = '';
+  function tick() {
+    fillSheet();
+    if (pillEl) { var p = pill(A.S()), s = p.t + p.col; if (s !== pillSig) { pillSig = s; pillEl.querySelector('span').textContent = p.t; pillEl.querySelector('i').style.background = p.col; } }
+  }
+
+  FL.sales = {
+    fresh: fresh, load: load, sale: sale, ev: ev, tills: tills, sum: sum, flow: flow,
+    attach: function (api) { A = api; if (typeof document !== 'undefined') build(); },
+    html: function () { return html(A.S()); },
+    isOpen: function () { return !!sheet && !sheet.hidden; },
+    open: openSheet, close: closeSheet, tick: tick,
+    period: function (p) { if (p) period = p; return period; }
+  };
+})(this.FL = this.FL || {});
+
+</script>
 <script>/* src/farmline/panels.js */
 // Farm Line: the tap panels (Tom 2026-10-08 "we need to be able to click the
 // buildings, stall, stations, cart, for content and UI"). A tap on a building,
@@ -10270,7 +10493,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var fix = m.kind === 'fix', hasSf = o.stats.filter(Boolean).length > 0;
     var tabs = [['in', fix ? 'What is jamming' : 'Inside'], ['up', 'Upgrades' + (canN && !fix ? ' <em>' + canN + '</em>' : ''), fix], ['sf', 'So far', !hasSf]];
     if (tabs.some(function (t) { return t[0] === tab && t[2]; })) tab = 'in';
-    var body = tab === 'in' ? (o.now || '<p class="mute">Nothing inside.</p>') + send + (o.slot || '') + extra + (fix ? up.html : '')
+    var body = tab === 'in' ? (o.now || '<p class="mute">Nothing inside.</p>') + send + extra + (o.slot || '') + (fix ? up.html : '')
       : tab === 'up' ? (up.html || '<p class="mute">Nothing to buy here right now.</p>') : '<div class="sf">' + soFar(o) + '</div>';
     return head(o) + '<div class="ptabs">' + tabs.map(function (t) { return '<button type="button" data-tab="' + t[0] + '" class="' + (tab === t[0] ? 'on' : '') + '"' + (t[2] ? ' disabled' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div class="pbody">' + body + '</div>';
   }
@@ -10560,7 +10783,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // before the next save() writes over it
     var v = j ? Lg.saveVer(j) : 0;
     if (j && (!s || !v || v > CFG.save.version)) { try { localStorage.setItem(CFG.save.key + '-backup', j); } catch (e) { /* storage blocked */ } }
-    return s || Lg.newState();
+    s = s || Lg.newState();
+    // the sales book: a save from before it starts counting now
+    if (FL.sales && !s.sales) s.sales = FL.sales.fresh();
+    return s;
   }
   function save() {
     if (!S || !G.player) return;
@@ -11253,7 +11479,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (onServe && !G.onServe) { S.hints.h8 = S.hints.h8 || (G.hintT.h8 > -99 ? 1 : 0); }
     G.onServe = onServe;
     // drop crops anywhere along the stall, from any side (Tom: hard to empty at the stall once SERVE moved behind it)
-    var stg = Lg.stage(S), mx1 = [6.0, 9.0, 12.0][stg], mz0 = [-3.4, -3.8, -6.0][stg];
+    var stg = Math.min(2, Lg.stage(S)), mx1 = [6.0, 9.0, 12.0][stg], mz0 = [-3.4, -3.8, -6.0][stg];
     var atStall = p.x > 2.0 - 1.1 && p.x < mx1 + 1.1 && p.z > mz0 - 1.1 && p.z < -0.6 + 1.0;
     // the serve options (?serve=a|b|c): you drop on the DROP mat or on SERVE, nowhere else
     if (L.drop) atStall = onMat(p, L.drop, 0.3);
@@ -11277,6 +11503,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (unload(p, dt, null, function () { G.bulkIn = (G.bulkIn || 0) + 1; return { x: L.bulk.x + (Math.random() - 0.5) * 0.5, y: 0.7, z: L.bulk.z + (Math.random() - 0.5) * 0.4 }; }, function (c) {
         var pay = Lg.bulkPrice(c, S); G.bulkPay = (G.bulkPay || 0) + pay;
         S.coins += pay; S.stats.earned += pay; S.stats.bulk++; S.stats.bulkEarned += pay;
+        if (FL.sales) FL.sales.sale(S, c, 1, pay);
       }, function () { G.bulkIn--; })) S.hints.bulk = 1;
     }
     if (G.bulkIn && !G.flyers.length) G.bulkIn = 0;
@@ -11707,7 +11934,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // them at the FACTORY station first), then runs down the siding to our dock
   // (st.con, st.cs along info.con.path), hands it over, and comes back up.
   function conFam(v) {
-    if (!CN || !info.con || !info.con.path || v.idx || !(v.kind === 'cart' || v.kind === 'donkey' || v.kind === 'horse')) return null;
+    if (!CN || !info.con || !info.con.path || v.idx || !FL.contracts.sidingVeh(v)) return null;
     return CN.rush() && CN.left() > 0 ? CN.order().fam : null;
   }
   function haltFam(f) { var n = 0; Lg.stopCrops('halts').forEach(function (c) { n += Lg.famN(haltPool(c), f); }); return n; }
@@ -12280,7 +12507,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var best = -1, bl = 1e9;
     var mq = Lg.maxQueue(S);
     for (var i = 0; i < 3; i++) { if (!tillOpen(i)) continue; var n = G.tq[i].length; if (n < mq && n < bl) { bl = n; best = i; } }
-    if (best < 0) return false;
+    // every line full: a buyer turned away (the sales book's flow; a golden bus waits and tries again)
+    if (best < 0) { if (FL.sales && !fromBus && Lg.tills(S) > 0) FL.sales.ev(S, 'ta'); return false; }
     if (!fromBus && G.customers.length >= CFG.customers.maxActors) return false;
     var left = fromBus ? true : Math.random() < 0.5, ci = Math.floor(Math.random() * M.CUST.length);
     var a = RD.makePerson(custLook(ci), {});
@@ -12318,6 +12546,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function leaveQueue(c, why) {
     var q = G.tq[c.till], i = q.indexOf(c); if (i >= 0) q.splice(i, 1);
     if (why !== 'paid') returnStock(c);
+    // the sales book's flow: gave up waiting, or walked off at an empty shelf
+    if (FL.sales && why !== 'paid' && c.state !== 'leave') FL.sales.ev(S, why === 'puff' ? 'gu' : 'ns');
     c.state = 'leave';
     if (why === 'puff') { sparkle(c.x, 1.2, c.z, 8, '#ffffff'); burst(c.x, 1.0, c.z, 'confetti', 0); snd.puff(); text(c.x, 2.4, c.z, '...', '#ffffff', 16, 0.8); }
   }
@@ -12371,7 +12601,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (c.state === 'pay' || c.state === 'nostock' || (c.state === 'queue' && dl < 0.1)) { var kk = 1 - Math.exp(-dt * 10); c.fx += (0 - c.fx) * kk; c.fz += (-1 - c.fz) * kk; }
     });
     G.customers = G.customers.filter(function (c) { if (c.gone) { if (c.ride) c.ride.riders--; RD.remove(c.a.g); return false; } return true; });
-    // the tills
+    // the tills; the sales book's flow counts each staffed till's seconds, and those with a buyer in line
+    if (FL.sales) {
+      var tst = 0, tbu = 0;
+      for (var ti = 0; ti < 3; ti++) { if (!tillOpen(ti) || !server(ti)) continue; tst += dt; if (G.tq[ti].some(function (c) { return c.state !== 'come'; })) tbu += dt; }
+      FL.sales.tills(S, tst, tbu);
+    }
     for (var i = 0; i < 3; i++) {
       var q = G.tq[i][0];
       if (!q || q.state !== 'pay') { G.tillT[i] = 0; continue; }
@@ -12388,6 +12623,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     for (var kk in ks) { base += ks[kk] * Lg.price(kk, S); if (Lg.price(kk, S) > Lg.price(Lg.fam(kk), S)) S.stats.pkEarned = (S.stats.pkEarned || 0) + ks[kk] * (Lg.price(kk, S) - Lg.price(Lg.fam(kk), S)); }
     var pay = base * (S.rushT > 0 ? CFG.golden.rushMult : 1);
     S.coins += pay; S.stats.earned += pay; S.stats.sold += q.got;
+    if (FL.sales) { for (var sk in ks) FL.sales.sale(S, sk, ks[sk], base > 0 ? pay * ks[sk] * Lg.price(sk, S) / base : 0); FL.sales.ev(S, 'sv'); }
     if (Lg.isCan(q.want.p)) S.stats.canEarned += pay;   // cans of every grade
     if (Lg.isBag(q.want.p)) S.stats.bagEarned = (S.stats.bagEarned || 0) + pay;   // the Drying house's bags
     if (who === 'you') { S.stats.servedYou++; S.hints.served = (S.hints.served || 0) + 1; buzz(12); } else S.stats.servedSell++;
@@ -13615,7 +13851,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (j.buy) { if (S.coins >= Lg.BY[j.buy].cost[0] && (!Lg.BY[j.buy].need || Lg.BY[j.buy].need(S))) { G.tab = 'all'; openSheet(); return; } showWay(j.buy); return; }
     var w = j.way && j.way(); if (w) { G.focus = { x: w.x, z: w.z, t: 0, dur: 2.4 }; sparkle(w.x, 1, w.z, 16, '#ffe34d'); }
   }
-  function uiBlocked() { return !$('sheet').hidden || !$('labSheet').hidden || !$('settings').hidden || !$('away').hidden || !$('summary').hidden || !!G.cut || !!(FL.tips && FL.tips.isOpen()); }
+  function uiBlocked() { return !$('sheet').hidden || !$('labSheet').hidden || !!(FL.sales && FL.sales.isOpen()) || !$('settings').hidden || !$('away').hidden || !$('summary').hidden || !!G.cut || !!(FL.tips && FL.tips.isOpen()); }
   var lastHud = {};
   function drawHud() {
     if (FL.travel) FL.travel.tick();
@@ -13634,6 +13870,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var ld = Lg.lv(S, 'lab') ? (Lg.labPaused(S) ? '!' : FL.labsheet.dots(labCtx()).all) : 0;
       if (lastHud.lab !== Lg.lv(S, 'lab') + ':' + ld) { lastHud.lab = Lg.lv(S, 'lab') + ':' + ld; $('labBtn').hidden = !Lg.lv(S, 'lab'); $('labDot').hidden = !ld; $('labDot').textContent = ld; }
       if (!$('labSheet').hidden) refreshLab();
+      if (FL.sales) FL.sales.tick();
       if (lastHud.aff !== aff) { hud.upDot.hidden = !aff; hud.upDot.textContent = aff > 9 ? '9+' : aff; $('upBtn').classList.toggle('glow', aff > 0 && !S.hints.shop); lastHud.aff = aff; }
       jobsTick();
       // the next STEP chip
@@ -14263,7 +14500,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // (n: a new season's state, Lg.endSeason; none: a fresh farm)
   function resetGame(n) {
     try { localStorage.removeItem(CFG.save.key); } catch (e) { /* ignore */ }
-    S = n || Lg.newState(); S.pos = null;
+    // a new Season keeps the sales book; Start over starts a new one
+    var book = n && S.sales; S = n || Lg.newState(); S.pos = null;
+    if (FL.sales) S.sales = book || FL.sales.fresh();
     if (CN) CN.reset();
     var prev = G; G = newRuntime(); G.player = prev.player; G.helpers = prev.helpers; G.customers = prev.customers; G.veh = prev.veh; G.vehs = prev.vehs; G.sellers = prev.sellers; G.worker = prev.worker; G.piles = prev.piles; G.haptics = prev.haptics; G.saver = prev.saver;
     if (prev.bus) RD.remove(prev.bus.g);
@@ -14336,6 +14575,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // Seasons (the long plan): the SEASON button and its panel
     if (FL.seasons) FL.seasons.attach({ S: function () { return S; }, Lg: Lg, CFG: CFG, snd: snd, save: save, uiBlocked: uiBlocked, banner: function (t) { banner(1, t, true); },
       newSeason: function (n) { resetGame(n); G.focus = null; banner(1, 'Season ' + n.season.n + '!', true); snd.fanfare(); } });
+    if (FL.sales) { FL.sales.attach({ S: function () { return S; }, Lg: Lg, GC: GRADE_COL, RAW: RAW_COL, gradeCounts: gradeCounts, famName: famName, dark: function (c) { return { '#7fd3ff': '#1d8fd0', '#ffcf3a': '#c88a00', '#ff5aa8': '#d6337f', '#e8402f': '#c02a1a', '#b06cff': '#8040d0' }[c] || c; } }); }
     if (FL.panels) FL.panels.attach({
       S: function () { return S; }, G: function () { return G; }, Lg: Lg, GC: GRADE_COL, RAW: RAW_COL, gradeCounts: gradeCounts, icon: icon, card: cardHtml,
       title: menuTitle, stats: menuStats, ids: menuIds, extra: panelExtra, income: incomeRate, vLoad: vLoad, haltPool: haltPool, poolN: poolN,
