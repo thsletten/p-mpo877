@@ -156,6 +156,8 @@ body.hasJob #rush { top: calc(206px + var(--safe-top)); }
 #tap[hidden] { display: none; }
 #tap h3 { margin: 0 34px 4px 4px; font-size: 17px; color: var(--navy); }
 #tap .x { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; font-size: 20px; }
+/* the panel's X: a bigger button a little in from the screen edge, on top of everything in the panel (tester 2026-10-18 "i cant exit the stall menu") */
+#tap.psheet .x { right: 14px; top: 10px; width: 42px; height: 42px; font-size: 26px; z-index: 2; touch-action: manipulation; }
 #tap .so { background: #fff; border-radius: 12px; padding: 6px 10px; margin-bottom: 4px; }
 #tap .so small { font-size: 10px; font-weight: 800; color: #9da0b0; text-transform: uppercase; letter-spacing: .05em; }
 #tap .so p { margin: 2px 0; font-size: 13px; color: #6b6f85; }
@@ -170,6 +172,7 @@ body.hasJob #rush { top: calc(206px + var(--safe-top)); }
 #tap .send { margin: 6px 0; padding: 10px; }
 /* the tap panels (panels.js): a bottom sheet with tabs, Tom's pick B 2026-10-08 */
 #tap.pnl .ph { display: flex; gap: 10px; align-items: center; margin: 0 36px 8px 0; }
+#tap.psheet .ph { margin-right: 52px; }
 #tap.pnl .pic { flex: none; width: 46px; height: 46px; border-radius: 14px; background: #fff; display: grid; place-items: center; box-shadow: 0 2px 0 #e6d2ae; }
 #tap.pnl .pt h3 { margin: 0 0 2px; }
 #tap .pill { display: inline-block; font-size: 12px; font-weight: 800; padding: 2px 9px; border-radius: 10px; background: #ebe6da; color: #6b6f85; }
@@ -13725,6 +13728,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       HR.coinX = c.left + c.width / 2; HR.coinY = c.top + c.height / 2; HR.top = ($('job').hidden ? cr : $('job').getBoundingClientRect()).bottom + 14; HR.upX = u.left + u.width / 2; HR.upY = u.top; HR.bottom = u.top - 10; HR.nextX = nx.left + nx.width / 2; HR.nextY = nx.bottom;
     } catch (e) { /* keep defaults */ }
   }
+  // a button that acts when the finger lifts on it, and on click (a mouse, a keyboard), once
+  function onPress(b, fn) {
+    var at = 0;
+    b.addEventListener('pointerup', function (e) { if (e.pointerType === 'mouse') return; at = performance.now(); e.preventDefault(); fn(); });
+    b.addEventListener('click', function () { if (performance.now() - at > 600) fn(); });
+  }
   function initHud() {
     hud.coinN = $('coinN'); hud.carryT = $('carryT'); hud.carryFill = $('carryFill'); hud.upDot = $('upDot');
     $('upBtn').addEventListener('click', function () { openSheet(); });
@@ -13739,7 +13748,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       else if (b.dataset.chip) { G.labView.chip[G.labView.tab] = b.dataset.chip; refreshLab(true); }
       else if (b.dataset.res) { if (buyItem(b.dataset.res)) { S.hints.labBuy = 1; text(L.labMat.x, 2.2, L.labMat.z, 'Fill the crate here', '#d9c8ff', 16, 2.0); } refreshLab(true); }
     });
-    $('sheetClose').addEventListener('click', closeSheet);
+    // the X buttons close on the finger lifting as well as on click: on some phones the click never came (tester 2026-10-18)
+    onPress($('sheetClose'), closeSheet);
     $('sheet').addEventListener('pointerdown', function (e) { if (e.target === $('sheet')) closeSheet(); });
     Array.prototype.forEach.call(document.querySelectorAll('#tabs button'), function (b) { b.addEventListener('click', function () { G.tab = b.dataset.tab; refreshSheet(true); }); });
     $('gear').addEventListener('click', function () { closeMenu(); $('settings').hidden = false; refreshSettings(); });
@@ -13761,7 +13771,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     $('job').addEventListener('click', jobWay);
     $('awayBtn').addEventListener('click', collectAway);
     $('summary').addEventListener('click', function () { $('summary').hidden = true; });
-    $('tapClose').addEventListener('click', closeMenu);
+    onPress($('tapClose'), closeMenu);
     // the stop list editor's buttons, wherever it is shown (the wagon menu, or a tap panel hosting routeHtml)
     document.addEventListener('click', function (e) { var b = e.target && e.target.closest && e.target.closest('[data-sop]'); if (b && !b.disabled) editStops(+b.dataset.w, b.dataset.sop, b.dataset); if (e.target && e.target.closest && e.target.closest('[data-rmap]')) routeMap(true); });
     if (FL.panels && FL.panels.slot) FL.panels.slot('vehicle', function (m) { return routeHtml(m.wagon != null ? m.wagon : m.key); });
