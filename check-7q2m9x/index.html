@@ -153,7 +153,8 @@ body.hasJob #rush { top: calc(206px + var(--safe-top)); }
 .eye { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 0; background: #f3e7cf; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .empty { text-align: center; color: #6b6f85; }
 #tap { position: fixed; left: 0; top: 0; width: min(320px, calc(100vw - 16px)); background: var(--cream); border-radius: 18px; padding: 10px 10px 4px; box-shadow: 0 4px 0 #e6d2ae, 0 6px 18px rgba(31,36,56,.3); z-index: 4; }
-#tap[hidden] { display: none; }
+/* !important: #tap.psheet (display: flex, same weight, later) must not keep a closed panel on screen (tester 2026-10-18 "i cant exit the stall menu") */
+#tap[hidden] { display: none !important; }
 #tap h3 { margin: 0 34px 4px 4px; font-size: 17px; color: var(--navy); }
 #tap .x { position: absolute; right: 8px; top: 8px; width: 30px; height: 30px; font-size: 20px; }
 /* the panel's X: a bigger button a little in from the screen edge, on top of everything in the panel (tester 2026-10-18 "i cant exit the stall menu") */
