@@ -13848,20 +13848,23 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       { t: 'Pick 12 ' + C0.name.toLowerCase(), d: 'Walk through the field: you pick as you go.', n: function () { return S.stats.cut; }, goal: 12, pay: 5, way: function () { var f = G.fields[c0] && G.fields[c0].f; return f && { x: f.x0 + f.w / 2, z: f.z0 + f.d / 2 }; } },
       { t: 'Drop them behind the stall', d: 'Walk into the marked yard behind the stall.', n: function () { return S.hints.dropped ? 1 : 0; }, goal: 1, pay: 5, way: function () { var z = L.dropZone && L.dropZone[0]; return z ? { x: (z.x0 + z.x1) / 2, z: (z.z0 + z.z1) / 2 } : { x: L.serve.x, z: L.serve.z }; } },
       { t: 'Serve 3 buyers', d: 'Walk behind the counter. You sell faster than anyone.', n: function () { return S.hints.served || 0; }, goal: 3, pay: 10, way: function () { return { x: L.serve.x, z: L.serve.z }; } },
-      { t: 'Buy Gloves', d: 'Open Upgrades. You pick faster.', buy: 'gloves', pay: 5 },
+      // (the Sickle takes the Gloves off the shelf: either one does the job)
+      { t: 'Buy Gloves', d: 'Open Upgrades. You pick faster.', buy: 'gloves', pay: 5, met: function () { return Lg.lv(S, 'gloves') > 0 || Lg.lv(S, 'sickle') > 0 || Lg.lv(S, 'scythe') > 0; } },
       { t: 'Hire a Helper', d: 'Picks ' + C0.name.toLowerCase() + ' and leaves them at the halt.', buy: 'helper', pay: 10 },
       { t: 'Get a Hand cart', d: 'It takes the crates from the halts to the stall.', buy: 'cart', pay: 20 },
       { t: 'Hire a Seller', d: 'Sells at the stall while you farm, and while you are away.', buy: 'seller', pay: 25 },
       { t: 'Open the ' + Lg.describe(S, Lg.cropItem(c1, 'open')).name, d: C1.name + ' sell for ' + C1.price / C0.price + 'x ' + C0.name.toLowerCase() + '. Its plot is marked FOR SALE.', buy: Lg.cropItem(c1, 'open'), pay: 30 }
     ];
   }
-  function jobDone(j) { return j.buy ? Lg.lv(S, j.buy) > 0 : j.n() >= j.goal; }
+  function jobGoal(j) { return j.met ? j.met() : j.buy ? Lg.lv(S, j.buy) > 0 : j.n() >= j.goal; }
+  // done in any order (Tom 2026-10-21 stuck on "Buy Gloves"): its own goal, or a later job's
+  function jobDone(J, i) { for (var k = i; k < J.length; k++) if (jobGoal(J[k])) return true; return false; }
   function jobsTick() {
     var J = G.jobs || (G.jobs = jobList()), h = S.hints, el = $('job');
     // a save from before the jobs (or one already past some): skip what is done, unpaid
-    if (h.job == null) { h.job = 0; while (h.job < J.length && jobDone(J[h.job])) h.job++; }
+    if (h.job == null) { h.job = 0; while (h.job < J.length && jobDone(J, h.job)) h.job++; }
     var j = J[h.job];
-    if (j && jobDone(j) && !G.jobPaid) {
+    if (j && jobDone(J, h.job) && !G.jobPaid) {
       // done: a moment in green, then the coins and the next job
       G.jobPaid = G.t; el.classList.add('done'); $('jobT').textContent = j.t + '  \u2713'; if (el.hidden) { el.hidden = false; document.body.classList.add('hasJob'); } $('jobBar').style.width = '100%';
       S.coins += j.pay; S.stats.earned += j.pay; text(G.player.x, 2.2, G.player.z, '+' + j.pay + ' job done!', '#5fe05c', 15, 1.2); snd.fanfare(); pulse('coins');
