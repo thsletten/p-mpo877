@@ -760,7 +760,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // the Lab's defaults: seconds a sample (rate) and the crate's cap (a
     // later valley's silo holds more); anyOrder opens every card whose part of
     // the farm stands (probe.js --research measures items with it)
-    lab: { rate: 1.5, crate: 30, anyOrder: false },
+    // crateX: the crate holds this share of what the research needs, so you
+    // fill it twice (Tom 2026-10-20: needs 200, crate 100); crate is only the idle look
+    lab: { rate: 1.5, crate: 30, crateX: 0.5, anyOrder: false },
     golden: { first: 90, min: 180, max: 300, life: 14, near: 10, crateSeconds: 90, crateMin: 25, bus: 12, busMult: 2, rushT: 30, rushMult: 3 },
     away: { share: 0.1, min: 30, max: 7200 },
     // the packhouse extras (the long plan): Bagging x buyers' amounts; the
@@ -1680,12 +1682,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function resTierSpec(id, n) {
     var R = config.research[id]; if (!R) return null;
     // a seed card: any tier, the Mastery ones too (n is 0-based)
-    if (R.ladder) { var Q = seedTier(R.slot, R.crop, Math.max(0, n) + 1); Q.crate = config.lab.crate; return Q; }
+    if (R.ladder) { var Q = seedTier(R.slot, R.crop, Math.max(0, n) + 1); Q.crate = Math.ceil(Q.n * config.lab.crateX); return Q; }
     if (!R.tiers || !R.tiers.length) return null;
     var T = R.tiers[Math.min(n, R.tiers.length - 1)], o = {};
     for (var k in T) o[k] = T[k];
     if (!(o.rate > 0)) o.rate = config.lab.rate;
-    if (!(o.crate > 0)) o.crate = config.lab.crate;
+    o.crate = Math.ceil(o.n * config.lab.crateX);
     return o;
   }
   // seconds a tier takes fed without a break
@@ -7860,7 +7862,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
           X.chip(b.x, b.y, [['●', on ? '#ffd23a' : '#8a6a10'], ['3 orders', '#ffffff']], '#c26a00', 13, 0.96, { con: 1 });
         } else if (c.cool > 0) {
           var b2 = P((D.x0 + D.x1) / 2, 2.4, (D.z0 + D.z1) / 2);
-          X.chip(b2.x, b2.y, [['Next orders ' + Math.ceil(c.cool) + ' s', '#ffffff']], 'rgba(30,36,60,.8)', 11, 0.85, { con: 1 });
+          X.G().lblInfo = 1; X.chip(b2.x, b2.y, [['Next orders ' + Math.ceil(c.cool) + ' s', '#ffffff']], 'rgba(30,36,60,.8)', 11, 0.85, { con: 1 }); X.G().lblInfo = 0;
         }
       },
       // the RUSH flag over the cart
@@ -13256,7 +13258,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         var parts = [[(pl.key === 'stall' ? 'Shelves ' : wag ? (G.vehs.length < 2 ? 'Wagon ' : pl.key === 'wagon' ? 'Wagon 1: ' : 'Wagon 2: ') : 'Ready ') + sumG(g), '#ffffff']];
         var gd = 0; all.forEach(function (r) { gd += gradeCounts(r.pool, r.fams).d; }); if (gd) { parts[0][0] = parts[0][0].replace(/\d+$/, function (t) { return +t + gd; }); parts.push(['pill', String(gd), RAW_COL]); }
         g.forEach(function (n, i) { if (n) parts.push(['pill', String(n), GRADE_COL[i]]); });
-        chip(pl.far.x, pl.far.y, parts, 'rgba(30,36,60,.9)', 11, 0.95, { board: pl.key });
+        quiet(function () { chip(pl.far.x, pl.far.y, parts, 'rgba(30,36,60,.9)', 11, 0.95, { board: pl.key }); });
         return;
       }
       if (pl.key === 'stall') board(pl.p.x, pl.p.y, 'On the shelves', pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams), n = sumG(g); return { name: r.name, g: g, tot: (n + g.d) + '/' + r.cap, totCol: n + g.d === 0 ? '#ff6b5e' : n + g.d >= r.cap ? '#ffd23a' : '#fff' }; }));
@@ -13264,7 +13266,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       else { var rows = []; pl.split.forEach(function (o) { o.rows.forEach(function (r) { var g = gradeCounts(r.pool, r.fams); rows.push({ name: r.name, g: g, tot: String(sumG(g) + g.d) }); }); }); board(pl.p.x, pl.p.y, 'Ready to take', rows); }
     });
   }
+  // the world labels that only inform (stock counts, field names, machine
+  // bar words, Haul) stay off; the ones that need you (jams, Needs X!, things
+  // to buy) stay on. Tap a building for its numbers (Tom 2026-10-20 "too many
+  // of these black pop ups", picked A). ?labels=o shows them all, for shots
+  var LBV = (typeof location !== 'undefined' && /[?&]labels=o\b/.test(location.search)) ? 'o' : 'a';
+  function quiet(fn) { G.lblInfo = 1; try { fn(); } finally { G.lblInfo = 0; } }
   function chip(x, y, parts, bg, size, alpha, tap) {
+    if (G.lblInfo && LBV !== 'o') return;
     size = size || 13; ox.font = 'bold ' + size + 'px ' + FONT;
     var w = 16; parts.forEach(function (p) { w += p[0] === 'coin' ? size + 7 : p[0] === 'lock' ? size + 2 : p[0] === 'pill' ? ox.measureText(p[1]).width + 12 : ox.measureText(p[0]).width + 4; });
     var h = size + 12, SWd = RD.size.W;
@@ -13409,15 +13418,25 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     });
     out.forEach(function (j) { chip(j.p.x, j.p.y, j.parts, j.col, 12, 0.96, { ids: j.ids, title: j.title, lines: j.lines }); });
   }
+  // a quiet bar: a slim pill with no words
+  function thinBar(p, k, col) {
+    var W = 36, H = 5, x = p.x - W / 2, y = p.y + 4;
+    ox.globalAlpha = 0.85; ox.fillStyle = 'rgba(31,36,56,.55)'; rr(x - 1, y - 1, W + 2, H + 2, (H + 2) / 2); ox.fill();
+    k = Math.max(0, Math.min(1, k));
+    if (k > 0.01) { ox.fillStyle = col; rr(x, y, Math.max(H, W * k), H, H / 2); ox.fill(); }
+    ox.globalAlpha = 1;
+  }
   // the batch machines: a fill bar while a batch runs, the waiting count when not
   function batchBar(p, k, col, label) {
     var W = 64, H = 12, x = p.x - W / 2, y = p.y;
     if (y < HR.top - 20 || y > HR.bottom + 20 || p.x < -40 || p.x > RD.size.W + 40) return;
+    if (G.lblInfo && LBV !== 'o') { thinBar(p, k, col); return; }
     ox.fillStyle = 'rgba(31,36,56,.8)'; rr(x - 2, y - 2, W + 4, H + 4, (H + 4) / 2); ox.fill();
     ox.fillStyle = '#20242f'; rr(x, y, W, H, H / 2); ox.fill();
     k = Math.max(0, Math.min(1, k));
     if (k > 0.01) { ox.fillStyle = col; rr(x + 1, y + 1, Math.max(H - 2, (W - 2) * k), H - 2, (H - 2) / 2); ox.fill(); }
     txt(label, p.x, y + H / 2 + 0.5, 10, '#ffffff', 'center', '#1f2438', 3);
+    ox.globalAlpha = 1;
   }
   function machineBars(P) {
     var m = S.mach;
@@ -13468,17 +13487,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var on = Math.floor(G.t * 2.5) % 2 === 0, bp = P(L.lab.x0 + 4.5, 4.6, L.lab.z0 + 5.6);
       chip(bp.x, bp.y, [['\u25CF', on ? '#ff4a3d' : '#5b1f1a'], ['Needs ' + kw + '!', '#ffffff']], '#c0392b', 14, 0.97, tap);
     }
-    chip(q.x, q.y, [[n + '/' + cap, col]], 'rgba(74,35,128,.9)', 11, 0.95, tap);
+    quiet(function () { chip(q.x, q.y, [[n + '/' + cap, col]], 'rgba(74,35,128,.9)', 11, 0.95, tap); });
   }
   // the hopper's fill, always on show above the bin so the Cannery reads at a glance
   function hopperBar(p, n, cap) {
     var W = 44, H = 10, x = p.x - W / 2, y = p.y;
     if (y < HR.top - 20 || y > HR.bottom + 20 || p.x < -30 || p.x > RD.size.W + 30) return;
+    if (G.lblInfo && LBV !== 'o') { thinBar(p, cap > 0 ? n / cap : 0, n / cap > 0.08 ? '#ff8a1f' : '#e8402f'); return; }
     ox.fillStyle = 'rgba(31,36,56,.75)'; rr(x - 2, y - 2, W + 4, H + 4, (H + 4) / 2); ox.fill();
     ox.fillStyle = '#20242f'; rr(x, y, W, H, H / 2); ox.fill();
     var k = Math.max(0, Math.min(1, cap > 0 ? n / cap : 0));
     if (k > 0.01) { ox.fillStyle = k > 0.08 ? '#ff8a1f' : '#e8402f'; rr(x + 1, y + 1, Math.max(H - 2, (W - 2) * k), H - 2, (H - 2) / 2); ox.fill(); }
     txt(String(Math.round(n)), p.x, y + H / 2 + 0.5, 9, '#ffffff', 'center', '#1f2438', 3);
+    ox.globalAlpha = 1;
   }
   // a white hint bubble pointing at (tx, ty); off-screen targets get an edge arrow
   function hint(str, tx, ty) {
@@ -13595,6 +13616,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.routeMap) { routeLegend(); return; }
     // jam chips first: they own their space, the labels below give way
     jamChips(P);
+    G.lblInfo = 1;
     if (Lg.lv(S, 'cannery')) hopperBar(P(L.hopper.x, 1.72, L.hopper.z), Lg.hopN(S), CFG.cannery.hopper);
     // the FACTORY station's fill bars: the INTAKE bin and the GOODS shelf
     if (info.station) {
@@ -13607,6 +13629,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // each later district's IN bar (the Corn factory)
     Lg.DISTS.forEach(function (d) { if (d.id === 'home' || !DI(d.id) || !DL(d.id).stBars) return; var D = Lg.dist(S, d.id), cn = Lg.intakeN(D), cc = Lg.intakeCap(D), sbi = DL(d.id).stBars.in; batchBar(P(sbi.x, 0.1, sbi.z), cn / cc, '#5fd0ff', 'In ' + cn + '/' + cc); });
     machineBars(P);
+    G.lblInfo = 0;
     // how much is on each stall shelf (Tom: "no stall inventory amount")
     stockTags(P);
     labTags(P);
@@ -13625,7 +13648,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // field chips
     Object.keys(G.fields).forEach(function (c) {
       var f = G.fields[c].f, p = P(f.x0 + f.w / 2, 0.6, f.z0 - 0.2);
-      chip(p.x, p.y, [[CFG.crops[c].name, '#ffffff'], ['8x' + f.d, '#ffe46b']], CFG.crops[c].chip, 13, 0.92);
+      quiet(function () { chip(p.x, p.y, [[CFG.crops[c].name, '#ffffff'], ['8x' + f.d, '#ffe46b']], CFG.crops[c].chip, 13, 0.92); });
     });
     // a field for sale: its price, and a tap buys it (tester 2026-10-15: the plot did not look buyable)
     Object.keys(info.plots || {}).forEach(function (c) {
@@ -13669,7 +13692,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     // the haul bubble over your stack during a trip
     var pl = G.player;
-    if (G.haul && G.haul.n >= 3 && pl.items.length) { var hs = worldStackTop(pl), hp3 = P(hs.x, hs.y + 0.4, hs.z); chip(hp3.x, hp3.y, [['Haul ' + G.haul.n, '#ffffff']], '#2a3150', 11, 0.85); }
+    if (G.haul && G.haul.n >= 3 && pl.items.length) { var hs = worldStackTop(pl), hp3 = P(hs.x, hs.y + 0.4, hs.z); quiet(function () { chip(hp3.x, hp3.y, [['Haul ' + G.haul.n, '#ffffff']], '#2a3150', 11, 0.85); }); }
     drawPuffs(P, sz);
     // floating words
     G.texts.forEach(function (t) {
