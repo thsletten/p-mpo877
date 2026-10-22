@@ -1045,17 +1045,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // once per wagon: level 1 upgrades the first wagon, level 2 the second,
   // and each keeps its stop list and Automatic. Each step's own upgrades
   // (`up`) raise every vehicle of its kind. `at`: its line() number;
-  // `open`: what else it needs (the valley it comes with)
+  // `open`: what else it needs (the valley it comes with). A train's wagons
+  // double in price each (Tom 2026-10-21: "goes linear but should be exponential")
   var SLOT_STEPS = [
     { id: 'tractor', kind: 'tractor', at: 4, cost: 24000, up: 'tractorUp', upCost: [28000, 34000], icon: 'tractor',
       open: function (s) { return dryStage(s) >= 3; }, needs: 'Roaster and bagging line' },
     { id: 'oldTrain', kind: 'oldtrain', at: 5, cost: 20000, up: 'oldTrainUp', upCost: [26000, 32000], icon: 'oldTrain',
       open: function (s) { return rails(s); }, needs: 'Lay rails' },
-    { id: 'train', kind: 'train', at: 6, cost: 90000, up: 'wagon', upCost: [110000, 140000, 180000], icon: 'train',
+    { id: 'train', kind: 'train', at: 6, cost: 90000, up: 'wagon', upCost: [110000, 220000, 440000], icon: 'train',
       open: function (s) { return lv(s, 'sunValley') > 0; }, needs: 'Sunflower Valley' },
-    { id: 'diesel', kind: 'diesel', at: 7, cost: 900000, up: 'dieselUp', upCost: [1100000, 1400000, 1800000], icon: 'diesel',
+    { id: 'diesel', kind: 'diesel', at: 7, cost: 900000, up: 'dieselUp', upCost: [1100000, 2200000, 4400000], icon: 'diesel',
       open: function (s) { return lv(s, 'berryValley') > 0; }, needs: 'Berry Valley' },
-    { id: 'electric', kind: 'electric', at: 8, cost: 9000000, up: 'electricUp', upCost: [11000000, 14000000, 18000000, 23000000, 30000000], icon: 'electric',
+    { id: 'electric', kind: 'electric', at: 8, cost: 9000000, up: 'electricUp', upCost: [11000000, 22000000, 44000000, 88000000, 176000000], icon: 'electric',
       open: function (s) { return lv(s, 'vineValley') > 0; }, needs: 'Vine Valley',
       // the express's last two upgrades are Gold's long trains
       upOpen: function (s, n) { return n < 3 || lv(s, 'goldValley') > 0; } }
@@ -3365,13 +3366,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   function tender() { var m = Mdl(); m(-0.52, 0.3, -0.7, 1.04, 0.2, 1.4, '#2b2f3a'); [-1, 1].forEach(function (s) { [-0.4, 0.4].forEach(function (z) { wheel(m, s < 0 ? -0.6 : 0.5, 0.25, z, 0.2, 0.1, '#2b2f3a', C.gold, '#5b606d'); }); }); m(-0.6, 0.5, -0.72, 1.2, 0.72, 1.44, C.green); m(-0.61, 1.0, -0.73, 1.22, 0.07, 1.46, C.gold); m(-0.5, 1.22, -0.6, 1, 0.16, 1.2, '#22252e'); m(-0.35, 1.32, -0.4, 0.4, 0.12, 0.4, '#30343f'); return m; }
   // an open wagon; its crates are drawn on top (they change)
-  function wagon(col) {
-    var m = Mdl(), L = 2.2; col = col || C.red;
+  // a train wagon; L its length (2.2), deck (0..) raises its sides a step
+  // each, a white band per step (more a trip without a longer train)
+  function wagon(col, L, deck) {
+    var m = Mdl(), H = 0.42 + 0.3 * (deck || 0), wz = Math.min(0.65, L ? L / 2 - 0.42 : 0.65); L = L || 2.2; col = col || C.red;
     m(-0.52, 0.3, -L / 2, 1.04, 0.18, L, '#2b2f3a');
-    [-1, 1].forEach(function (s) { [-0.65, 0.65].forEach(function (z) { wheel(m, s < 0 ? -0.6 : 0.5, 0.25, z, 0.2, 0.1, '#2b2f3a', C.gold, '#5b606d'); }); });
+    [-1, 1].forEach(function (s) { [-wz, wz].forEach(function (z) { wheel(m, s < 0 ? -0.6 : 0.5, 0.25, z, 0.2, 0.1, '#2b2f3a', C.gold, '#5b606d'); }); });
     m(-0.62, 0.48, -L / 2, 1.24, 0.08, L, '#3a3f4d');
-    m(-0.62, 0.56, -L / 2, 0.1, 0.42, L, col); m(0.52, 0.56, -L / 2, 0.1, 0.42, L, col); m(-0.62, 0.56, -L / 2, 1.24, 0.42, 0.1, col); m(-0.62, 0.56, L / 2 - 0.1, 1.24, 0.42, 0.1, col);
-    m(-0.63, 0.78, -L / 2, 0.02, 0.06, L, '#ffffff'); m(0.61, 0.78, -L / 2, 0.02, 0.06, L, '#ffffff');
+    m(-0.62, 0.56, -L / 2, 0.1, H, L, col); m(0.52, 0.56, -L / 2, 0.1, H, L, col); m(-0.62, 0.56, -L / 2, 1.24, H, 0.1, col); m(-0.62, 0.56, L / 2 - 0.1, 1.24, H, 0.1, col);
+    for (var b = 0; b <= (deck || 0); b++) { m(-0.63, 0.78 + 0.3 * b, -L / 2, 0.02, 0.06, L, '#ffffff'); m(0.61, 0.78 + 0.3 * b, -L / 2, 0.02, 0.06, L, '#ffffff'); }
     return m;
   }
   // the donkey cart's wagon: four wheels, a long plank bed, shafts to +z.
@@ -11059,6 +11062,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   var SPOTS_DWAGON = grid(0, -0.15, 2, 3, 0.5, 0.5, 0.6, 2);
   var SPOTS_HWAGON = grid(0, -0.25, 3, 4, 0.42, 0.5, 0.72, 2);
   var SPOTS_OLDWAGON = grid(0, 0, 2, 3, 0.48, 0.55, 0.52, 2);
+  // a train's wagons (Tom 2026-10-21: a long train reached the carrot halts):
+  // ?tlen= c (default) shorter wagons, so all seven fit between the buffer
+  // and the halts; o as before; a no more than 4, each upgrade past that
+  // raises their sides
+  var TLEN = (/[?&]tlen=([a-z])/.exec(location.search) || [])[1] || 'c';
+  function wagonLook(n) {
+    if (TLEN === 'a' && n > 4) return { n: 4, L: 2.2, deck: n - 4, spots: grid(0, 0, 2, 3, 0.5, 0.62, 0.56, 2 + n - 4) };
+    if (TLEN === 'c') return { n: n, L: 1.5, deck: 0, spots: grid(0, 0, 2, 2, 0.5, 0.56, 0.56, 2) };
+    return { n: n, L: 2.2, deck: 0, spots: SPOTS_WAGON };
+  }
   function removeVehicle() {
     (G.vehs || []).forEach(function (v) {
       v.cars.forEach(function (c) { RD.remove(c.g); }); v.crew.forEach(function (c) { RD.remove(c.a.g); }); if (v.porter) RD.remove(v.porter.g); (v.donkeys || []).forEach(function (d) { RD.remove(d); });
@@ -11119,15 +11132,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       v.haltS = L.sHalt; v.mktS = L.sStop + 0.3;
     } else if (kind === 'diesel' || kind === 'electric') {
       // the diesel (Berry) and the Electric express (Vine; Gold makes it long): a loco and its wagons
-      var de = kind === 'electric', doff = 0, dparts = [[de ? M.electricLoco() : M.dieselLoco(), de ? 3.4 : 3.2, false]], nDW = 2 + v.lvl;
-      for (var dw = 0; dw < nDW; dw++) dparts.push([M.wagon(de ? ['#ffffff', '#d9e6f2'][dw % 2] : ['#ffc531', '#2f8cff', '#e8402f'][dw % 3]), 2.2, true]);
+      var de = kind === 'electric', doff = 0, dparts = [[de ? M.electricLoco() : M.dieselLoco(), de ? 3.4 : 3.2, false]], dWL = wagonLook(2 + v.lvl);
+      for (var dw = 0; dw < dWL.n; dw++) dparts.push([M.wagon(de ? ['#ffffff', '#d9e6f2'][dw % 2] : ['#ffc531', '#2f8cff', '#e8402f'][dw % 3], dWL.L, dWL.deck), dWL.L, dWL.spots]);
       dparts.forEach(function (pt, i) {
         if (i) doff += dparts[i - 1][1] / 2 + 0.18 + pt[1] / 2;
         var g = RD.makeRig(pt[0]); g.scale.set(K, K, K);
-        v.cars.push({ g: g, len: pt[1] * K, off: doff * K, pile: pt[2] ? RD.makePile(SPOTS_WAGON.length, SPOTS_WAGON, g) : null, loco: i === 0 });
+        v.cars.push({ g: g, len: pt[1] * K, off: doff * K, pile: pt[2] ? RD.makePile(pt[2].length, pt[2], g) : null, loco: i === 0 });
       });
       v.loadCar = 1; v.porter = RD.makePerson(LOOK.hauler, { arms: true });
-      v.haltS = L.sHalt - 2.9 * K; v.mktS = L.sBuffer + 1.75 * K;
+      v.haltS = L.sHalt - (2.9 - (2.2 - dWL.L) / 2) * K; v.mktS = L.sBuffer + 1.75 * K;
     } else if (kind === 'oldtrain') {
       // the Old rattler: a rusty loco and one or two creaky wagons
       var o2 = 0, oparts = [[M.oldLoco(), 2.5, false]], nOW = 1;
@@ -11145,15 +11158,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       v.crew.push({ a: RD.makePerson(LOOK.puller, {}) }); if (v.lvl >= 2) v.crew.push({ a: RD.makePerson(M.HELPERS[4], {}) });
       v.haltS = L.sHalt; v.mktS = L.sStop;
     } else {
-      var off = 0, parts = [[M.steamLoco(), 3.6, false], [M.tender(), 1.5, false]], nW = 2 + Lg.lv(S, 'wagon');
-      for (var w = 0; w < nW; w++) parts.push([M.wagon(['#e8402f', '#ff9b1f', '#4aa8ff', '#2fa34f', '#9b6bff'][w % 5]), 2.2, true]);
+      var off = 0, parts = [[M.steamLoco(), 3.6, false], [M.tender(), 1.5, false]], WL = wagonLook(2 + Lg.lv(S, 'wagon'));
+      for (var w = 0; w < WL.n; w++) parts.push([M.wagon(['#e8402f', '#ff9b1f', '#4aa8ff', '#2fa34f', '#9b6bff'][w % 5], WL.L, WL.deck), WL.L, WL.spots]);
       parts.forEach(function (pt, i) {
         if (i) off += parts[i - 1][1] / 2 + 0.18 + pt[1] / 2;
         var g = RD.makeRig(pt[0]);
-        v.cars.push({ g: g, len: pt[1], off: off, pile: pt[2] ? RD.makePile(SPOTS_WAGON.length, SPOTS_WAGON, g) : null, loco: i === 0 });
+        v.cars.push({ g: g, len: pt[1], off: off, pile: pt[2] ? RD.makePile(pt[2].length, pt[2], g) : null, loco: i === 0 });
       });
       v.loadCar = 2; v.porter = RD.makePerson(LOOK.hauler, { arms: true });
-      v.haltS = L.sHalt - 5.95; v.mktS = L.sBuffer + 2.05;
+      v.haltS = L.sHalt - 5.95 + (2.2 - WL.L) / 2; v.mktS = L.sBuffer + 2.05;
     }
     if (!st.s || prevKind !== kind && prevKind) {
       // a new vehicle starts where it makes sense: a train arrives from the market whistling
