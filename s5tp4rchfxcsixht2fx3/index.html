@@ -1013,14 +1013,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'horseUp', tab: 'line', icon: 'horse', of: 'horse', cost: [4800, 5500], need: function (s) { return hasKind(s, 'horse') && lv(s, 'corn') > 0; }, needs: 'Corn Valley' },
     // a second wagon on the same track (Tom 2026-10-08): each wagon runs the
     // route you give it (Full loop, Factory run, Stall run). It comes as a
-    // horse wagon; its own upgrades to tractor and trains are bought for it
-    { id: 'wagon2', tab: 'line', icon: 'horse', cost: [6500], need: function (s) { return line(s) >= 3 && stationOn(s); }, needs: 'Horse wagon, station worker' },
+    // horse wagon, or (Tom 2026-10-22, shared upgrades) whatever the first one
+    // is now: then it costs what that vehicle's step costs
+    // One-way tracks (Tom 2026-10-22 "E"): one more wagon for sale each time a
+    // valley opens, up to MAX_WAGONS, each WAGON_X dearer than the one before
+    { id: 'wagon2', tab: 'line', icon: 'horse', cost: [6500, 16300, 40700, 102000, 254000],
+      need: function (s) { return line(s) >= 3 && stationOn(s) && vehCount(s) < wagonCap(s); }, needs: 'Horse wagon, station worker',
+      costAt: function (s) { var q = SLOT_STEPS.filter(function (x) { return x.at === line(s); })[0]; return r2(Math.max(6500, q ? q.cost : 0) * Math.pow(WAGON_X, lv(s, 'wagon2'))); } },
     // Railway day (Tom 2026-10-12): Railways is a Lab research that unlocks
     // Lay rails, one big buy over every line; then each wagon is upgraded to
     // a train one at a time (SLOT_STEPS, made below the list)
     { id: 'rails', tab: 'line', icon: 'rails', step: 1, cost: [30000], need: function (s) { return researched(s, 'rRails'); }, needs: 'Research: Railways' },
     // Berry Valley's Second track (Tom 2026-10-12 "a"): one big buy, trains pass freely
-    { id: 'track2', tab: 'line', icon: 'rails', cost: [2400000], need: function (s) { return rails(s) && vehCount(s) > 1 && lv(s, 'berryValley') > 0; }, needs: 'Berry Valley, two trains' },
+    { id: 'track2', tab: 'line', icon: 'rails', cost: [2400000], need: function (s) { return !ONEWAY && rails(s) && vehCount(s) > 1 && lv(s, 'berryValley') > 0; }, needs: 'Berry Valley, two trains' },
     // the late Shelves rungs measured 0-1%: the tills are no longer the cap after the
     // Farm shop (rails rework, see LEGACY). Advertising keeps its twelve: with the
     // third helpers the customers are the late cap again
@@ -1039,12 +1044,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'conCrane', tab: 'line', icon: 'contracts', of: 'conYard', cost: [4500], need: function (s) { return lv(s, 'conYard') > 0; } },
     { id: 'corn', tab: 'line', icon: 'corn', step: 1, cost: [5500], need: function (s) { return line(s) >= 3; }, needs: 'Horse wagon' }
   ];
-  // ---- the vehicle ladder per wagon (Railway day, Tom 2026-10-12: "a cart
-  // is the same as a train, just upgraded"; "first unlocking it, and
-  // upgrading wagons to trains"). From the tractor on, each step is bought
-  // once per wagon: level 1 upgrades the first wagon, level 2 the second,
-  // and each keeps its stop list and Automatic. Each step's own upgrades
-  // (`up`) raise every vehicle of its kind. `at`: its line() number;
+  // ---- the vehicle ladder (Railway day, Tom 2026-10-12: "a cart is the
+  // same as a train, just upgraded"). From the tractor on, each step is one
+  // buy that upgrades every wagon at once (Tom 2026-10-22: "all wagons/trains
+  // should upgrade at the same time"; until then it was bought once per
+  // wagon); each keeps its stop list and Automatic. With more than one wagon
+  // a step costs FLEET_X of its price more per extra wagon (it moves the whole fleet).
+  // Each step's own upgrades (`up`) raise every vehicle of its kind. `at`: its line() number;
   // `open`: what else it needs (the valley it comes with). A train's wagons
   // double in price each (Tom 2026-10-21: "goes linear but should be exponential")
   var SLOT_STEPS = [
@@ -1062,9 +1068,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       upOpen: function (s, n) { return n < 3 || lv(s, 'goldValley') > 0; } }
   ];
   var SLOT_BY = {}; SLOT_STEPS.forEach(function (q) { SLOT_BY[q.id] = q; });
+  var FLEET_X = 1;   // the same coins as one buy per wagon before, in one tap
+  function fleetCost(s, c) { return r2(c * (1 + FLEET_X * Math.max(0, vehCount(s) - 1))); }
   SLOT_STEPS.forEach(function (q) {
-    ITEMS.push({ id: q.id, tab: 'line', icon: q.icon, step: 1, slot: 1, cost: [q.cost, q.cost], needs: q.needs,
-      need: function (s) { var i = lv(s, q.id); return i < vehCount(s) && slotLine(s, i) === q.at - 1 && q.open(s); } });
+    ITEMS.push({ id: q.id, tab: 'line', icon: q.icon, step: 1, slot: 1, cost: [q.cost], needs: q.needs,
+      costAt: function (s) { return fleetCost(s, q.cost); },
+      need: function (s) { return line(s) === q.at - 1 && q.open(s); } });
     ITEMS.push({ id: q.up, tab: 'line', icon: q.icon, of: q.id, cost: q.upCost,
       need: function (s) { return hasKind(s, q.kind) && (!q.upOpen || q.upOpen(s, lv(s, q.up))); } });
   });
@@ -1215,6 +1224,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       lab: { cur: '', fed: 0, box: 0, boxK: '', done: {} },
       veh: null,                                    // { s, state, load: {kind: n}, cans: {canC, canT} (vehCans()) }
       veh2: null,                                   // the Second wagon, the same shape
+      vehMore: null,                                // the third wagon on (one-way tracks, one more per valley)
       stops: [],                                    // each wagon's stop list [{ at, act }] (null: its default template)
       stats: { cut: 0, cutYou: perCrop(), cutHelp: perCrop(), golden: 0, sold: 0, earned: 0,
         washed: 0, graded: 0, pkEarned: 0, cansS: 0,
@@ -1886,11 +1896,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // ends here), then per wagon (SLOT_STEPS, Railway day): 4 tractor, 5 the
   // Old rattler, 6 the steam train, 7 diesel, 8 the electric express.
   // slotLine(s, i): wagon i's (0 the first, 1 the Second wagon); line(s) is
-  // the first wagon's, always the furthest along (its upgrades come first)
+  // every wagon is the same kind (Tom 2026-10-22); `i` is kept for the callers
   function slotLine(s, i) {
     var l = lv(s, 'horse') ? 3 : lv(s, 'donkey') ? 2 : lv(s, 'cart') ? 1 : 0;
     if (l < 3) return l;
-    SLOT_STEPS.forEach(function (q) { if (lv(s, q.id) > (i || 0)) l = q.at; });
+    SLOT_STEPS.forEach(function (q) { if (lv(s, q.id) > 0) l = q.at; });
     return l;
   }
   function line(s) { return slotLine(s, 0); }
@@ -2020,7 +2030,13 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     cornStall: { name: 'Corn to stall', stops: 'Corn fields \u2192 Corn factory \u2192 Stall', text: 'Takes corn and pumpkins to the Corn factory, then its bags and washed crops down to the stall.' },
     cornCan: { name: 'Corn to Cannery', stops: 'Corn fields \u21c4 ARRIVALS', text: 'Brings corn and pumpkins down to ARRIVALS behind the Home wash plant, which washes and sorts them for the Cannery.' }
   };
-  function vehCount(s) { return vehicleKind(s) ? 1 + (line(s) >= 3 ? Math.min(1, lv(s, 'wagon2')) : 0) : 0; }
+  var MAX_WAGONS = 6, WAGON_X = 2.5;
+  // how many wagons the line may have: two in Home, one more for each later valley (the old two-lane line: two)
+  function wagonCap(s) { return ONEWAY ? Math.min(MAX_WAGONS, 1 + Math.max(1, valleysOpen(s).length)) : 2; }
+  function vehCount(s) { return vehicleKind(s) ? 1 + (line(s) >= 3 ? Math.min(wagonCap(s) - 1, lv(s, 'wagon2')) : 0) : 0; }
+  // wagon i's saved state: s.veh, s.veh2, then s.vehMore for the third on
+  function vehSt(s, i) { return i === 0 ? s.veh : i === 1 ? s.veh2 : (s.vehMore || [])[i - 2] || null; }
+  function setVehSt(s, i, o) { if (i === 0) s.veh = o; else if (i === 1) s.veh2 = o; else { s.vehMore = s.vehMore || []; s.vehMore[i - 2] = o; } return o; }
   // stop lists need the station staffed and the wash shed; before that every wagon runs the loop
   function routesOn(s) { return stationOn(s) && lv(s, 'wash') > 0; }
   function copyStops(l) { return l.map(function (e) { return { at: e.at, act: e.act }; }); }
@@ -2063,11 +2079,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     }
     return null;
   }
+  // one-way tracks (rail.js, Tom 2026-10-22); ?oneway=0 the old line
+  var ONEWAY = !(typeof location !== 'undefined' && /[?&]oneway=0/.test(location.search));
   function autoStops(s, i) {
     var vs = valleysOpen(s), W = Math.max(1, vehCount(s));
     if (vs.length < 2) return TEMPLATES[defaultRoute(s, i)];
     var own = vs.filter(function (v, k) { return k % W === i; });
-    if (!own.length) return TEMPLATES.stall;
+    // more wagons than valleys: the extra ones help the furthest valleys
+    if (!own.length) own = [vs[vs.length - 1 - (i - vs.length) % vs.length]];
     var home = vs[0], hf = valleyFactory(s, home), withHome = own[0] === home && !!hf, l = [];
     own.forEach(function (v) {
       var f = valleyFactory(s, v), dd = DISTS.filter(function (d) { return d.valley === v; })[0];
@@ -2078,7 +2097,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       // a valley with no factory yet: a wagon that also runs Home takes its
       // crops into the Home IN on the way down (it carries Home crops too,
       // and ARRIVALS waits while it is full); one that does not, to ARRIVALS
-      else if (!withHome && stopOpen(s, 'arrivals')) l.push({ at: 'arrivals', act: 'drop' });
+      // (one-way tracks, Tom 2026-10-22: no ARRIVALS siding; such a wagon calls at the Home factory below instead)
+      else if (!withHome && !ONEWAY && stopOpen(s, 'arrivals')) l.push({ at: 'arrivals', act: 'drop' });
     });
     if (withHome) { if (own.length > 1) l.push({ at: hf, act: 'both' }); l.push({ at: valleyHalt(home), act: 'load' }); }
     else if (hf) l.push({ at: hf, act: 'both' });   // goods for the stall, and what its own valley's factory had no room for
@@ -2093,7 +2113,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (!routesOn(s)) return TEMPLATES.loop;
     return isAuto(s, i) ? autoStops(s, i) : s.stops[i];
   }
-  function setStops(s, i, l) { var c = cleanStops(l); if (!c) return false; s.stops = (s.stops || []).slice(0, 2); while (s.stops.length < i) s.stops.push(null); s.stops[i] = c; return true; }
+  function setStops(s, i, l) { var c = cleanStops(l); if (!c) return false; s.stops = (s.stops || []).slice(0, MAX_WAGONS); while (s.stops.length < i) s.stops.push(null); s.stops[i] = c; return true; }
   // back to Automatic
   function setAuto(s, i) { if (s.stops && s.stops[i]) s.stops[i] = null; return true; }
   function sameStops(a, b) { return a.length === b.length && a.every(function (e, k) { return e.at === b[k].at && e.act === b[k].act; }); }
@@ -2108,7 +2128,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function vehicle(s, i) {
     var k = vehicleKind(s, i); if (!k) return null;
     var v = vehicleAt(k, lineLevel(s, i), rails(s));
-    if (rails(s) && vehCount(s) > 1 && !lv(s, 'track2') && isTrainKind(vehicleKind(s, 0)) && isTrainKind(vehicleKind(s, 1))) v.stop += config.rail.passWait;
+    // (one-way tracks: one track each way, nobody waits to pass)
+    if (!ONEWAY && rails(s) && vehCount(s) > 1 && !lv(s, 'track2') && isTrainKind(vehicleKind(s, 0)) && isTrainKind(vehicleKind(s, 1))) v.stop += config.rail.passWait;
     return v;
   }
   function vtext(v) { return v.cap + ' a trip, speed ' + String(v.speed); }
@@ -2228,14 +2249,16 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'horseUp':
         var hr = rails(s), g0 = vehicleAt('horse', n, hr), g1 = vehicleAt('horse', n + 1, hr);
         return { name: HORSE_NAMES[n], text: g1.speed > g0.speed ? 'A second horse: the wagon goes faster.' : 'High sideboards: the wagon carries more each trip.', from: vtext(g0), to: vtext(g1) };
-      case 'wagon2': var w2 = vehicleAt('horse', lv(s, 'horseUp'), rails(s));
-        return { name: 'Second wagon', text: 'Another horse wagon on the track. It runs Automatic, or give it stops of its own. Later it is upgraded to a tractor and a train like the first.', from: '1 wagon', to: '2 wagons, ' + vtext(w2) };
+      case 'wagon2': var w2 = vehicle(s, 0) || vehicleAt('horse', lv(s, 'horseUp'), rails(s)), wk = w2.name.toLowerCase();
+        var wn0 = vehCount(s), ORD = ['', 'Second', 'Third', 'Fourth', 'Fifth', 'Sixth'];
+        return { name: ORD[wn0] + ' ' + (line(s) === 3 ? 'wagon' : wk), text: 'Another ' + wk + ' on the line. It runs Automatic, or give it stops of its own. Every upgrade raises all of them at once.' + (ONEWAY && wn0 + 1 < MAX_WAGONS ? ' The next valley you open puts one more up for sale.' : ''), from: wn0 + (wn0 > 1 ? ' wagons' : ' wagon'), to: (wn0 + 1) + ' wagons, ' + vtext(w2) };
       case 'rails': return { name: 'Lay rails', text: 'Railway day: rails up the whole line and every branch, all at once. Tractors roll ' + Math.round((C.vehicles.tractor.railMult - 1) * 100) + '% faster on them, and each wagon can now be upgraded to a train.', from: 'Dirt track', to: 'Rails' };
       case 'track2': return { name: 'Second track', text: 'A second track beside the first, all the way up: the trains pass freely and no longer wait for each other at the passing loops.', from: '+' + C.rail.passWait + ' s a stop', to: 'No waiting' };
       case 'tractor': case 'oldTrain': case 'train': case 'diesel': case 'electric':
-        var SQ = SLOT_BY[id], sv0 = vehicle(s, n) || vehicleAt('horse', 99), sv1 = vehicleAt(SQ.kind, lv(s, SQ.up), rails(s)), wn = vehCount(s) > 1 ? (n ? 'The second wagon' : 'The first wagon') : 'The wagon';
+        var SQ = SLOT_BY[id], sv0 = vehicle(s, 0) || vehicleAt('horse', 99), sv1 = vehicleAt(SQ.kind, lv(s, SQ.up), rails(s)), wn = vehCount(s) > 1 ? 'Both wagons' : 'The wagon';
         var STX = { tractor: ' becomes a tractor with a trailer: more a trip and faster, still on the dirt.', oldTrain: ' becomes the Old rattler: a rusty little locomotive and wagons on the new rails.', train: ' becomes a proper steam train.', diesel: ' becomes a diesel train: big, strong and quick.', electric: ' becomes the Electric express: the fastest on the line.' };
-        return { name: (n ? 'Second ' : '') + (n ? C.vehicles[SQ.kind].name.toLowerCase() : C.vehicles[SQ.kind].name), text: wn + STX[id] + ' It keeps its stops and drives itself.', from: vtext(sv0), to: vtext(sv1) };
+        if (vehCount(s) > 1) STX = { tractor: ' become tractors with trailers: more a trip and faster, still on the dirt.', oldTrain: ' become Old rattlers: rusty little locomotives and wagons on the new rails.', train: ' become proper steam trains.', diesel: ' become diesel trains: big, strong and quick.', electric: ' become Electric expresses: the fastest on the line.' };
+        return { name: C.vehicles[SQ.kind].name + (vehCount(s) > 1 ? ' x' + vehCount(s) : ''), text: wn + STX[id] + (vehCount(s) > 1 ? ' They keep their stops and drive themselves.' : ' It keeps its stops and drives itself.'), from: vtext(sv0), to: vtext(sv1) };
       case 'tractorUp': case 'oldTrainUp': case 'wagon': case 'dieselUp': case 'electricUp':
         var UQ = SLOT_STEPS.filter(function (q) { return q.up === id; })[0], uk = UQ.kind, u0 = vehicleAt(uk, n, rails(s)), u1 = vehicleAt(uk, n + 1, rails(s));
         var UN = { tractorUp: ['Second trailer', 'Big trailers'], oldTrainUp: ['Patched boiler', 'Third wagon'] }[id];
@@ -2357,7 +2380,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function lockedSteps(s) {
     var SL = stepList();
     return SL.filter(function (id) { var it = BY[id]; return it && (it.slot ? lv(s, id) === 0 : lv(s, id) < it.cost.length) && it.need && !it.need(s); })
-      .map(function (id) { var it = BY[id]; return { id: id, name: describe(s, id).name, cost: it.cost[0], step: SL.indexOf(id) + 1, needs: it.needs || '', icon: it.icon, tab: it.tab }; });
+      .map(function (id) { var it = BY[id]; return { id: id, name: describe(s, id).name, cost: costOf(it, s) || it.cost[0], step: SL.indexOf(id) + 1, needs: it.needs || '', icon: it.icon, tab: it.tab }; });
   }
   // the next STEP to aim at: the cheapest one for sale, else the first locked one
   function nextStep(s) {
@@ -2726,12 +2749,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var v = vehicle(s);
     // v11 -> v12 (Tom 2026-10-09): the route words became stop lists (a preset is its template)
     if (Array.isArray(o.routes) && !Array.isArray(o.stops)) o.stops = o.routes.slice(0, 2).map(function (r) { return ROUTES.indexOf(r) >= 0 ? copyStops(TEMPLATES[r]) : null; });
-    if (Array.isArray(o.stops)) s.stops = o.stops.slice(0, 2).map(cleanStops);
+    if (Array.isArray(o.stops)) s.stops = o.stops.slice(0, MAX_WAGONS).map(cleanStops);
     if (v && o.veh2 && typeof o.veh2 === 'object' && lv(s, 'wagon2')) {
       var ld2 = o.veh2.load || {}, room2 = v.cap, load2 = {};
       KINDS_ALL.forEach(function (k) { var n = Math.floor(num(ld2[k], 0, room2, 0)); load2[k] = n; room2 -= n; });
       s.veh2 = vehPlace(o.veh2, { load: load2, cans: vehCans() }, 'wait');
     }
+    if (v && Array.isArray(o.vehMore)) s.vehMore = o.vehMore.slice(0, MAX_WAGONS - 2).map(function (w, k) {
+      if (!w || typeof w !== 'object' || vehCount(s) < k + 3) return null;
+      var ldm = w.load || {}, roomm = v.cap, loadm = {};
+      KINDS_ALL.forEach(function (kk) { var n = Math.floor(num(ldm[kk], 0, roomm, 0)); loadm[kk] = n; roomm -= n; });
+      return vehPlace(w, { load: loadm, cans: vehCans() }, 'wait');
+    });
     if (conv && conv.moved && o.veh && typeof o.veh === 'object') { o.veh.s = 0; o.veh.state = 'wait'; }   // a new vehicle starts at the halt
     if (v && o.veh && typeof o.veh === 'object') {
       var ld = o.veh.load || {}, cn = o.veh.cans || {}, room = v.cap, load = {};
@@ -2749,6 +2778,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     o.s = num(ov.s, 0, 2000, 0); o.state = VEH_STATES.indexOf(ov.state) >= 0 ? ov.state : def;
     o.line = LINES.indexOf(ov.line) >= 0 ? ov.line : 'home';
     if (typeof ov.i === 'number') o.i = Math.floor(num(ov.i, 0, MAX_STOPS - 1, 0));
+    // its place on the one-way network (rail.js: a lane and how far along it) and the stop it stands at
+    if (ov.pos && typeof ov.pos.lane === 'string' && ov.pos.lane.length < 160) o.pos = { lane: ov.pos.lane, d: num(ov.pos.d, 0, 1000, 0) };
+    if (typeof ov.atStop === 'string' && ov.atStop.length < 40) o.atStop = ov.atStop;
     return o;
   }
   // save v2 -> v3. v2 laid rails mid-valley (rails + handcar) and then sold the
@@ -2820,7 +2852,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     roman: roman, tierName: tierName, tierValley: tierValley, isMilestone: isMilestone, ladderMult: ladderMult, growthMult: growthMult, sizeAt: sizeAt, qualityShift: qualityShift, seedTier: seedTier, seedOpen: seedOpen, farmValley: farmValley, resTierN: resTierN, seedId: seedId, seedCrop: seedCrop,
     CROPS: CROPS, CROPS_HI: CROPS_HI, CAN_FAMS: CAN_FAMS, HALT_KEYS: HALT_KEYS, cropCan: cropCan, haltKey: haltKey, cropItem: cropItem, cropOpen: cropOpen, cansOpen: cansOpen, famOpen: famOpen, bagShare: bagShare, perCrop: perCrop, vehCans: vehCans, intakeN: intakeN,
     RAW: RAW, rawEmpty: rawEmpty, isRaw: isRaw, isBig: isBig, rawN: rawN, rawOf: rawOf,
-    ROUTES: ROUTES, ROUTE_INFO: ROUTE_INFO, vehCount: vehCount, routesOn: routesOn, route: route, setRoute: setRoute,
+    ROUTES: ROUTES, ROUTE_INFO: ROUTE_INFO, vehCount: vehCount, wagonCap: wagonCap, vehSt: vehSt, setVehSt: setVehSt, MAX_WAGONS: MAX_WAGONS, routesOn: routesOn, route: route, setRoute: setRoute,
     STOPS: STOPS, STOP: STOP, stopOpen: stopOpen, stopCrops: stopCrops, isHaltStop: isHaltStop, haltStopOf: haltStopOf, cropValley: cropValley, routeOpen: routeOpen, LINES: LINES, ACTS: ACTS, ACT_NAME: ACT_NAME, MAX_STOPS: MAX_STOPS, TEMPLATES: TEMPLATES, stops: stops, setStops: setStops, isAuto: isAuto, setAuto: setAuto, autoStops: autoStops, valleysOpen: valleysOpen, cleanStops: cleanStops, copyStops: copyStops, templateOf: templateOf, sameStops: sameStops,
     intakeCap: intakeCap, arrivalsCap: arrivalsCap, arrivalsN: arrivalsN, arrivalsStep: arrivalsStep, goodsCap: goodsCap, goodsN: goodsN, stationOn: stationOn, stationStep: stationStep, GOODS_ORDER: GOODS_ORDER, lineTrip: lineTrip,
     troughs: troughs, washRate: washRate, pkAuto: pkAuto, pkMult: pkMult, pkRate: pkRate, canBatch: canBatch, canCycle: canCycle,
@@ -5350,6 +5382,266 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
 </script>
 
+<script>/* src/farmline/rail.js */
+// Farm Line one-way track network (Tom 2026-10-22, thread "Crop transport
+// rethink": "2 track on a path, lets have 1 per way"). Every path has two
+// tracks, one each way, and wagons drive on the right. Every branch ends in a
+// turning loop, the trunk turns round at the market in one too, and at a
+// junction any track coming in joins any track going out (straight across or a
+// turn), so a wagon only ever drives forward and can reach every stop from
+// every stop.
+//
+// Built from world.js's line tree (info.lines: each line a path from the
+// market sharing its parent's geometry up to its fork):
+//   nodes     ROOT (the market end of the trunk), J<n> (a junction: where
+//             lines fork; forks at the same spot are one junction), E:<line>
+//             (a line's far end)
+//   corridors a line's own stretch between two nodes; each has two lanes,
+//             '<id>>' with the line (away from the market) and '<id><' back
+//   links     at a junction every lane in joins every lane out of another
+//             corridor (a Bezier curve); at a line end and at ROOT a turning
+//             loop joins the lane in to the lane out
+// A place on the network is { lane, d } (d: distance along that lane). route()
+// finds the shortest way (lanes only run forward) and returns it as one
+// polyline (models.js M.Path) that game.js drives the wagon along.
+// ?oneway=0 keeps the old two-lanes-per-wagon line for comparison.
+(function (FL) {
+  'use strict';
+  var M = null;
+  var ON = !(typeof location !== 'undefined' && /[?&]oneway=0/.test(location.search));
+  var STEP = 0.3;
+
+  // ---- geometry helpers ----
+  // a point beside a path: off > 0 is right of the way it runs (rev: run it backwards)
+  function side(path, s, off, rev) {
+    var q = M.at(path, s), sg = rev ? -1 : 1;
+    return { x: q.x + q.rx * off * sg, z: q.z + q.rz * off * sg, dx: q.dx * sg, dz: q.dz * sg };
+  }
+  function newPath(x, z) { return M.Path(x, z); }
+  function addPt(p, x, z) { var q = p.pts[p.pts.length - 1]; if (Math.hypot(x - q[0], z - q[1]) > 1e-4) p.add(x, z); }
+  // a lane beside a path from s0 to s1 (s1 < s0: backwards); sAt: the line s at each point
+  function laneAlong(path, s0, s1, off) {
+    var rev = s1 < s0, n = Math.max(1, Math.ceil(Math.abs(s1 - s0) / STEP)), a = side(path, s0, off, rev), p = newPath(a.x, a.z), sAt = [s0];
+    for (var i = 1; i <= n; i++) { var s = s0 + (s1 - s0) * i / n, q = side(path, s, off, rev); var before = p.pts.length; addPt(p, q.x, q.z); if (p.pts.length > before) sAt.push(s); }
+    p.sAt = sAt;
+    return p;
+  }
+  function headOf(p, atEnd) { var q = M.at(p, atEnd ? p.len() - 0.05 : 0.05); return { x: atEnd ? p.x : p.pts[0][0], z: atEnd ? p.z : p.pts[0][1], dx: q.dx, dz: q.dz }; }
+  // a smooth link from the end of one lane (a) to the start of another (b)
+  function bezier(a, b) {
+    var dd = Math.hypot(b.x - a.x, b.z - a.z), k = dd * 0.42, p = newPath(a.x, a.z);
+    var c1 = { x: a.x + a.dx * k, z: a.z + a.dz * k }, c2 = { x: b.x - b.dx * k, z: b.z - b.dz * k };
+    var n = Math.max(3, Math.ceil(dd * 1.6 / STEP));
+    for (var i = 1; i <= n; i++) {
+      var t = i / n, u = 1 - t;
+      addPt(p, u * u * u * a.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * b.x, u * u * u * a.z + 3 * u * u * t * c1.z + 3 * u * t * t * c2.z + t * t * t * b.z);
+    }
+    return p;
+  }
+  // a turning loop (a balloon): from a lane's end at (o + right * D) heading f,
+  // round to the other lane's start at (o - right * D) heading back. It bears
+  // right a little, then makes a wide left turn round, then bears right back in.
+  var B1 = 1.6, BETA = 32;
+  function loopHalf(R2, D) {
+    // local turtle: x right, y forward
+    var x = D, y = 0, h = 0, pts = [[x, y]], st = function (r, deg) {
+      var tot = deg * Math.PI / 180, n = Math.max(2, Math.ceil(Math.abs(tot) * r / 0.2)), dh = tot / n, step = 2 * r * Math.sin(Math.abs(dh) / 2);
+      for (var i = 0; i < n; i++) { h += dh / 2; x += Math.sin(h) * step; y += Math.cos(h) * step; h += dh / 2; pts.push([x, y]); }
+    };
+    st(B1, BETA); st(R2, -(90 + BETA));
+    return { pts: pts, tipX: x, tipY: y };
+  }
+  function loopShape(D) {
+    var lo = 0.3, hi = 8;
+    for (var it = 0; it < 40; it++) { var mid = (lo + hi) / 2; if (loopHalf(mid, D).tipX > 0) lo = mid; else hi = mid; }
+    var half = loopHalf((lo + hi) / 2, D), pts = half.pts.slice();
+    for (var i = half.pts.length - 2; i >= 0; i--) pts.push([-half.pts[i][0], half.pts[i][1]]);
+    return { pts: pts, len: half.tipY };
+  }
+  // the loop placed at o (the middle of the two lanes) facing (fx, fz)
+  function loopAt(o, fx, fz, D) {
+    var sh = loopShape(D), rx = -fz, rz = fx, p = null;
+    sh.pts.forEach(function (q) { var x = o.x + rx * q[0] + fx * q[1], z = o.z + rz * q[0] + fz * q[1]; if (!p) p = newPath(x, z); else addPt(p, x, z); });
+    return p;
+  }
+  function loopLen(D) { return loopShape(D).len; }
+
+  // ---- the network ----
+  // opt: { D (lane offset), m (room for the links at a junction), skip: { lineId: 1 } }
+  function build(info, opt) {
+    M = FL.M; opt = opt || {};
+    var D = opt.D || 0.62, MJ = opt.m || 5, LL = loopLen(D) + 0.4, lines = info.lines || {}, skip = opt.skip || {};
+    var ids = Object.keys(lines).filter(function (id) { var l = lines[id]; return !l.virt && l.open !== false && !skip[id] && (!l.parent || lines[l.parent]); });
+    // junctions: forks at the same spot are one
+    var J = [], jAt = {};
+    ids.forEach(function (id) {
+      var l = lines[id]; if (!l.parent || ids.indexOf(l.parent) < 0) return;
+      var q = M.at(lines[l.parent].path, l.fork), j = J.filter(function (n) { return Math.hypot(n.x - q.x, n.z - q.z) < 1.6; })[0];
+      if (!j) { j = { id: 'J' + J.length, x: q.x, z: q.z }; J.push(j); }
+      jAt[id] = j.id;
+    });
+    var G = { D: D, lanes: {}, next: {}, cor: [], nodes: {}, loops: [], junctions: J };
+    function lane(id, p, o) { o.id = id; o.path = p; o.len = p.len(); G.lanes[id] = o; G.next[id] = G.next[id] || []; return o; }
+    // each line's corridors: cut at the junctions on it
+    ids.forEach(function (id) {
+      var l = lines[id], P = l.path, s0 = l.parent ? l.fork : 0, len = P.len();
+      var cuts = [{ s: s0, n: l.parent ? jAt[id] : 'ROOT' }];
+      ids.forEach(function (c) { if (lines[c].parent === id && lines[c].fork > s0 + 0.5) { var n = jAt[c]; if (!cuts.some(function (k) { return k.n === n; })) cuts.push({ s: lines[c].fork, n: n }); } });
+      cuts.sort(function (a, b) { return a.s - b.s; });
+      cuts.push({ s: len, n: 'E:' + id });
+      for (var k = 0; k < cuts.length - 1; k++) {
+        var A = cuts[k], B = cuts[k + 1], cid = id + '#' + k;
+        var tA = A.n === 'ROOT' ? LL : MJ, tB = B.n.indexOf('E:') === 0 ? LL : MJ;
+        var a = A.s + tA, b = B.s - tB; if (b - a < 0.6) continue;
+        var C = { id: cid, line: id, a: A.n, b: B.n, sA: a, sB: b };
+        G.cor.push(C);
+        C.fw = lane(cid + '>', laneAlong(P, a, b, D), { from: A.n, to: B.n, cor: cid, line: id, fw: true });
+        C.bw = lane(cid + '<', laneAlong(P, b, a, D), { from: B.n, to: A.n, cor: cid, line: id, fw: false });
+        if (B.n.indexOf('E:') === 0) G.nodes[B.n] = { end: true, cor: C, s: B.s, line: id };
+        if (A.n === 'ROOT') G.nodes.ROOT = { root: true, cor: C, s: A.s, line: id };
+      }
+    });
+    // the turning loops: at a line's end, and at the market end of the trunk
+    Object.keys(G.nodes).forEach(function (n) {
+      var N = G.nodes[n], C = N.cor, P = lines[C.line].path, end = !!N.end, s = end ? C.sB : C.sA, q = M.at(P, s), f = end ? 1 : -1;
+      var lp = loopAt({ x: q.x, z: q.z }, q.dx * f, q.dz * f, D), into = end ? C.fw : C.bw, out = end ? C.bw : C.fw;
+      var L = lane('loop:' + n, lp, { from: n, to: n, loop: true, line: C.line });
+      G.next[into.id].push(L.id); G.next[L.id].push(out.id); G.loops.push(L);
+    });
+    // the junction links: every lane in to every lane out of another corridor
+    J.forEach(function (j) {
+      var ins = [], outs = [];
+      for (var k in G.lanes) { var x = G.lanes[k]; if (x.loop || x.link) continue; if (x.to === j.id) ins.push(x); if (x.from === j.id) outs.push(x); }
+      ins.forEach(function (a) {
+        outs.forEach(function (b) {
+          if (a.cor === b.cor) return;
+          var ha = headOf(a.path, true), hb = headOf(b.path, false);
+          var L = lane('link:' + a.id + ':' + b.id, bezier(ha, hb), { from: j.id, to: j.id, link: true, line: b.line, turn: Math.abs(ha.dx * hb.dz - ha.dz * hb.dx) > 0.5 });
+          G.next[a.id].push(L.id); G.next[L.id].push(b.id);
+        });
+      });
+    });
+    // the market's order of laying (Railway day's rails roll up from the road): each lane's line s
+    for (var k in G.lanes) { var x = G.lanes[k]; x.s0 = x.path.sAt ? Math.min(x.path.sAt[0], x.path.sAt[x.path.sAt.length - 1]) : x.loop ? G.nodes[x.from].s : (lines[x.line] ? lines[x.line].fork : 0); }
+    return G;
+  }
+
+  // ---- places ----
+  // the lane d where the lane passes a line's s (null: not on it)
+  function dOfS(L, s) {
+    var a = L.path.sAt; if (!a) return null;
+    var lo = Math.min(a[0], a[a.length - 1]), hi = Math.max(a[0], a[a.length - 1]); if (s < lo - 0.01 || s > hi + 0.01) return null;
+    for (var i = 0; i < a.length - 1; i++) { var u = a[i], v = a[i + 1]; if ((s - u) * (s - v) <= 0) { var t = v === u ? 0 : (s - u) / (v - u); return L.path.s[i] + t * (L.path.s[i + 1] - L.path.s[i]); } }
+    return null;
+  }
+  // a place by a line's s, on the lane that runs with the line (fw) or back
+  function placeOnLine(G, line, s, fw) {
+    var best = null;
+    G.cor.forEach(function (C) { if (C.line !== line) return; var L = fw === false ? C.bw : C.fw, d = dOfS(L, s); if (d != null && !best) best = { lane: L.id, d: d }; });
+    if (best) return best;
+    // past the lanes' ends (in a loop's room): the nearest end of the line's lanes
+    var bd = 1e9;
+    G.cor.forEach(function (C) { if (C.line !== line) return; var L = fw === false ? C.bw : C.fw; [[0, L.path.sAt[0]], [L.len, L.path.sAt[L.path.sAt.length - 1]]].forEach(function (e) { var dd = Math.abs(e[1] - s); if (dd < bd) { bd = dd; best = { lane: L.id, d: e[0] }; } }); });
+    return best;
+  }
+  // the nearest place to a point, heading roughly (dx, dz) (after the network was rebuilt)
+  function nearest(G, x, z, dx, dz) {
+    var best = null, bd = 1e9;
+    for (var k in G.lanes) {
+      var L = G.lanes[k], p = L.path;
+      for (var i = 0; i < p.pts.length; i++) {
+        var d = (p.pts[i][0] - x) * (p.pts[i][0] - x) + (p.pts[i][1] - z) * (p.pts[i][1] - z);
+        if (d >= bd) continue;
+        if (dx != null) { var q = M.at(p, p.s[i]); if (q.dx * dx + q.dz * dz < 0.3) continue; }
+        bd = d; best = { lane: k, d: p.s[i] };
+      }
+    }
+    return best;
+  }
+  function at(G, pos) { var L = G.lanes[pos.lane]; return L ? M.at(L.path, pos.d) : null; }
+
+  // ---- routes ----
+  // the lanes from place a to place b, fewest metres (lanes only run forward)
+  function lanesTo(G, a, b) {
+    if (a.lane === b.lane && b.d >= a.d - 0.01) return [a.lane];
+    var dist = {}, prev = {}, open = [], La = G.lanes[a.lane]; if (!La || !G.lanes[b.lane]) return null;
+    (G.next[a.lane] || []).forEach(function (n) { dist[n] = La.len - a.d; prev[n] = a.lane; open.push(n); });
+    while (open.length) {
+      open.sort(function (p, q) { return dist[p] - dist[q]; });
+      var c = open.shift();
+      if (c === b.lane) break;
+      var dc = dist[c] + G.lanes[c].len;
+      (G.next[c] || []).forEach(function (n) { if (n === a.lane && a.lane !== b.lane) return; if (dist[n] == null || dc < dist[n]) { if (dist[n] == null) open.push(n); dist[n] = dc; prev[n] = c; } });
+    }
+    if (dist[b.lane] == null) return null;
+    var out = [b.lane], c2 = b.lane; while (prev[c2] && prev[c2] !== a.lane) { c2 = prev[c2]; out.unshift(c2); } out.unshift(a.lane);
+    return out;
+  }
+  // how far it is from a to b along the lanes
+  function distTo(G, a, b) { var ls = lanesTo(G, a, b); if (!ls) return Infinity; if (ls.length === 1) return b.d - a.d; var n = G.lanes[ls[0]].len - a.d + b.d; for (var i = 1; i < ls.length - 1; i++) n += G.lanes[ls[i]].len; return n; }
+  // a drive from a to b as one path. back: the way it came (a path and the u it
+  // is at), so a long train's tail stays on the track behind it; ahead: how far
+  // the path runs on past b (the leading animals, a train's front past the spot)
+  // Returns { path, u (where it is now), uEnd (b), segs: [{ lane, u0, d0, u1 }] } or null.
+  function route(G, a, b, back, ahead) {
+    var ls = lanesTo(G, a, b); if (!ls) return null;
+    var p = null, segs = [], u = 0;
+    function put(x, z) { if (!p) p = newPath(x, z); else addPt(p, x, z); }
+    // the way it came: up to 30 behind it (with none, the lanes that lead to a)
+    if (back && back.path) {
+      var bp = back.path, u0 = Math.max(0, back.u - 30);
+      for (var i = 0; i < bp.pts.length; i++) if (bp.s[i] >= u0 && bp.s[i] < back.u - 0.05) put(bp.pts[i][0], bp.pts[i][1]);
+    } else behind(G, a, 30).forEach(function (q) { put(q[0], q[1]); });
+    function seg(id, d0, d1) {
+      var L = G.lanes[id], lp = L.path, q0 = M.at(lp, d0);
+      put(q0.x, q0.z);
+      var su = p.len();
+      for (var i = 0; i < lp.pts.length; i++) if (lp.s[i] > d0 + 0.02 && lp.s[i] < d1 - 0.02) put(lp.pts[i][0], lp.pts[i][1]);
+      var q1 = M.at(lp, d1); put(q1.x, q1.z);
+      segs.push({ lane: id, u0: su, d0: d0, u1: p.len() });
+    }
+    // with only a back path: where it is now starts after the back part
+    ls.forEach(function (id, k) { var L = G.lanes[id]; seg(id, k === 0 ? a.d : 0, k === ls.length - 1 ? b.d : L.len); });
+    u = segs[0].u0; var uEnd = segs[segs.length - 1].u1;
+    // on past b along the network (the first way out at each end)
+    var more = ahead || 0, id = ls[ls.length - 1], d = b.d;
+    while (more > 0.01) {
+      var L2 = G.lanes[id], take = Math.min(more, L2.len - d);
+      if (take > 0.01) { seg(id, d, d + take); more -= take; }
+      if (more <= 0.01) break;
+      var nx = (G.next[id] || [])[0]; if (!nx) break;
+      id = nx; d = 0;
+    }
+    return { path: p, u: u, uEnd: uEnd, segs: segs, to: b };
+  }
+  // the points up to n behind place a, oldest first (back along the lanes that lead to it)
+  function prevOf(G, id) {
+    if (!G.prev) { G.prev = {}; for (var k in G.next) G.next[k].forEach(function (n) { (G.prev[n] = G.prev[n] || []).push(k); }); }
+    var ps = G.prev[id] || [];
+    // (a plain lane before a link or loop, so a train's tail lies along the track it came by)
+    return ps.filter(function (x) { return !G.lanes[x].link; })[0] || ps[0] || null;
+  }
+  function behind(G, a, n) {
+    var out = [], id = a.lane, d = a.d, left = n, guard = 0;
+    while (left > 0.05 && id && guard++ < 20) {
+      var lp = G.lanes[id].path, d0 = Math.max(0, d - left);
+      for (var i = lp.pts.length - 1; i >= 0; i--) if (lp.s[i] < d - 0.05 && lp.s[i] >= d0) out.unshift(lp.pts[i]);
+      left -= d - d0; if (left <= 0.05) break;
+      id = prevOf(G, id); d = id ? G.lanes[id].len : 0;
+    }
+    return out;
+  }
+  // the place at route u
+  function posAt(R, u) {
+    var sg = null; for (var i = 0; i < R.segs.length; i++) { sg = R.segs[i]; if (u <= sg.u1 + 1e-6) break; }
+    if (!sg) return R.to;
+    return { lane: sg.lane, d: sg.d0 + Math.max(0, Math.min(sg.u1, u) - sg.u0) };
+  }
+
+  FL.rail = { on: ON, build: build, route: route, lanesTo: lanesTo, distTo: distTo, posAt: posAt, placeOnLine: placeOnLine, nearest: nearest, at: at, dOfS: dOfS, loopLen: loopLen };
+})(window.FL = window.FL || {});
+
+</script>
 <script>/* src/farmline/world.js */
 // Farm Line valley 1: the layout (docs/farmline-valley1.md section 2) and its
 // voxels. World units are tiles; x runs right, z runs down the screen
@@ -5737,7 +6029,11 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // (Railway day: on rails each lane gets its own rails, lineRails; with the
   // Second track, Berry, the two lanes are full tracks a full width apart)
   function laneOff(s) { return Lg.rails(s) && Lg.lv(s, 'track2') && Lg.vehCount(s) > 1 ? 0.95 : L.lane; }
+  // one-way tracks (rail.js, Tom 2026-10-22): always two, one each way; full tracks with the Second track
+  var OW = !!(FL.rail && FL.rail.on);
+  function laneD(s) { return Lg.rails(s) && Lg.lv(s, 'track2') ? 0.95 : 0.62; }
   function trackLine(s, lp, s0, onRails) {
+    if (OW) return;   // (the one-way network draws its own lanes: railNet)
     var lo = laneOff(s), wide = lo > L.lane;
     if (Lg.vehCount(s) > 1) [-1, 1].forEach(function (sd, i) { M.dirtTrack(lp, s0, lp.len(), { k: 3 + i * 4, w: wide ? 1.9 : 1.0, g: wide ? 0.38 : 0.24, off: sd * lo, noPuddle: onRails }); });
     else M.dirtTrack(lp, s0, lp.len(), { k: 3, w: onRails ? 2.3 : 1.9, noPuddle: onRails });
@@ -5745,9 +6041,51 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   }
   // a line's rails from s0 (its fork) to its end, a pair per lane
   function lineRails(s, lp, s0, s1) {
+    if (OW) return [];
     var lo = laneOff(s), wide = lo > L.lane;
     if (Lg.vehCount(s) > 1) { var o = []; [-1, 1].forEach(function (sd) { o = o.concat(M.railBoxes(lp, s0, s1, sd * lo, wide ? 0.38 : 0.24)); }); return o; }
     return M.railBoxes(lp, s0, s1);
+  }
+
+  // the one-way network (rail.js): built from the open lines (ARRIVALS is the
+  // Home factory's stop now), each lane its own narrow track, laid with the rest
+  function railNet(s, info, onRails) {
+    var G = info.rail = FL.rail.build(info, { D: laneD(s), skip: { arrivals: 1 } }), wide = G.D > 0.9;
+    info.netRails = [];
+    Object.keys(G.lanes).forEach(function (k, i) {
+      var ln = G.lanes[k], p = ln.path, n = p.len();
+      M.dirtTrack(p, 0, n, { k: 3 + i % 7, w: wide ? 1.7 : 1.05, g: wide ? 0.38 : 0.26, noPuddle: onRails || ln.link || ln.loop });
+      reservePath(p, 0, n, 1.0);
+      if (!onRails) return;
+      ballast(p, 0, n, wide ? 1.8 : 1.2);
+      info.netRails = info.netRails.concat(M.railBoxes(p, 0.05, n - 0.05, 0, wide ? 0.38 : 0.26).map(function (b) { b.s = ln.s0 + b.s * 0.05; return b; }));
+    });
+    // looks (Tom 2026-10-22 "F"): a signal on the right of every track into a
+    // junction, its switch lever at its foot (game.js lights it red while
+    // another wagon is in the junction), and a fingerpost on the dirt
+    info.signals = [];
+    function onTrack(x, z, r) {
+      for (var k in G.lanes) { var P = G.lanes[k].path.pts; for (var i = 0; i < P.length; i++) if ((P[i][0] - x) * (P[i][0] - x) + (P[i][1] - z) * (P[i][1] - z) < r * r) return true; }
+      return false;
+    }
+    G.junctions.forEach(function (j) {
+      Object.keys(G.lanes).forEach(function (k) {
+        var ln = G.lanes[k]; if (ln.loop || ln.link || ln.to !== j.id) return;
+        var q = M.at(ln.path, Math.max(0, ln.len - 0.4)), o = wide ? 1.05 : 0.8, x = q.x + q.rx * o, z = q.z + q.rz * o;
+        if (onTrack(x, z, 0.8)) return;   // (not on another track's way)
+        if (!onRails) { RESC.push([x, z, 0.5]); vb(x - 0.06, 0, z - 0.06, 0.12, 1.1, 0.12, C.woodD); vb(x - 0.3 * Math.abs(q.dz) - 0.04, 0.85, z - 0.3 * Math.abs(q.dx) - 0.04, 0.08 + 0.6 * Math.abs(q.dz), 0.18, 0.08 + 0.6 * Math.abs(q.dx), C.wood); return; }
+        vb(x - 0.07, 0, z - 0.07, 0.14, 1.75, 0.14, '#4a4f5c');
+        vb(x - 0.16, 1.45, z - 0.16, 0.32, 0.62, 0.32, '#2a2d36');
+        vb(x - 0.2, 1.38, z - 0.2, 0.4, 0.08, 0.4, '#4a4f5c');
+        // the switch lever's box, on the near side of the mast
+        var bx = x - q.dx * 0.45, bz = z - q.dz * 0.45;
+        vb(bx - 0.16, 0, bz - 0.16, 0.32, 0.22, 0.32, '#6b6f7a'); vb(bx - 0.03, 0.22, bz - 0.03, 0.06, 0.34, 0.06, '#c23b2e');
+        RESC.push([x, z, 0.6]);
+        // the two lamps (dark; game.js lights one), facing the coming wagon
+        vb(x - q.dx * 0.17 - 0.07, 1.84, z - q.dz * 0.17 - 0.07, 0.14, 0.14, 0.14, '#3a1512'); vb(x - q.dx * 0.17 - 0.07, 1.56, z - q.dz * 0.17 - 0.07, 0.14, 0.14, 0.14, '#12301a');
+        info.signals.push({ x: x, z: z, dx: q.dx, dz: q.dz, lane: k, j: j.id, jx: j.x, jz: j.z });
+      });
+    });
   }
 
   function fieldRect(s, crop) {
@@ -5835,17 +6173,18 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   function stallStation(s) {
     var q = typeof location !== 'undefined' && /[?&]sst=([1-4])\b/.exec(location.search);
     var ln = Lg.line(s), n = q ? +q[1] : ln >= 4 || Lg.lv(s, 'rails') ? 4 : ln >= 3 ? 3 : ln >= 2 ? 2 : ln >= 1 ? 1 : 0;
-    var px1 = -0.85, zs = L.stopZ;
+    // (one-way tracks: it steps back west clear of the down lane)
+    var sx = OW ? 0.1 - laneD(s) : 0, px1 = -0.85 + sx, zs = L.stopZ;
     reserve(L.lab.x1 + 0.3, zs - 4.4, px1, -0.4);
     if (!n) return;
     if (n === 1) {
-      vb(-2.0, 0, zs - 0.9, 1.15, 0.03, 1.8, '#d2ae78');
-      nameBoard(-1.45, zs - 1.1, 'STALL', 0);
-      place(M.crate('carrot', 0.5, 0.4, 0.28), -1.65, 0.03, zs + 0.3); place(M.crate('tomato', 0.5, 0.4, 0.28), -1.2, 0.03, zs + 0.45);
-      BLOCK.push({ x0: -1.95, z0: zs + 0.05, x1: -0.9, z1: zs + 0.7 });
+      vb(-2.0 + sx, 0, zs - 0.9, 1.15, 0.03, 1.8, '#d2ae78');
+      nameBoard(-1.45 + sx, zs - 1.1, 'STALL', 0);
+      place(M.crate('carrot', 0.5, 0.4, 0.28), -1.65 + sx, 0.03, zs + 0.3); place(M.crate('tomato', 0.5, 0.4, 0.28), -1.2 + sx, 0.03, zs + 0.45);
+      BLOCK.push({ x0: -1.95 + sx, z0: zs + 0.05, x1: -0.9 + sx, z1: zs + 0.7 });
       return;
     }
-    var len = n === 2 ? 3.6 : 6.0, pz0 = zs - len / 2 - (n >= 3 ? 0.6 : 0), pz1 = pz0 + len, px0 = n >= 4 ? -3.4 : -2.5, y = 0.12;
+    var len = n === 2 ? 3.6 : 6.0, pz0 = zs - len / 2 - (n >= 3 ? 0.6 : 0), pz1 = pz0 + len, px0 = (n >= 4 ? -3.4 : -2.5) + sx, y = 0.12;
     deck(px0, pz0, px1, pz1, y);
     vb(px1 - 0.1, y + 0.01, pz0, 0.1, 0.02, pz1 - pz0, '#ffd23a');
     BLOCK.push({ x0: px0, z0: pz0, x1: px1 - 0.35, z1: pz1 });
@@ -7003,7 +7342,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     trackLine(s, lp, 0, onRails);
     vb(-1.4, 0, -0.2, 2.8, 0.03, 0.9, M.DIRT);
     reservePath(lp, 0, lp.len(), 1.5);
-    if (onRails) M.bufferAt(lp, L.sBuffer - 0.6);
+    if (onRails && !OW) M.bufferAt(lp, L.sBuffer - 0.6);
     // up the trunk: an old overgrown trail into the woods, cleared to Corn Valley at the end
     var trunkUp = M.Path(0, L.zJ + 0.3).line(80); info.trunk = trunkUp;
     var CPON = FL.cornPitch && FL.cornPitch.on;
@@ -7126,6 +7465,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
 
     // the ground look (ground.js; ?ground=a|b|c|d|now to compare): terrace heights and the
     // flat-feature mask before the props, its own cubes after them
+    if (OW) railNet(s, info, onRails);
     var GRD = FL.ground && FL.ground.begin({ free: free, blockedAt: function (x, z) {
       for (var i = 0; i < BLOCK.length; i++) { var b = BLOCK[i]; if (x > b.x0 - 0.4 && x < b.x1 + 0.4 && z > b.z0 - 0.4 && z < b.z1 + 0.4) return true; }
       return (x > 1.2 && x < (SHOPSTAGE >= 4 ? 25 : 13.8) && z > (SHOPSTAGE >= 4 ? -18.4 : -11.4) && z < 11.4) || (x > L.lab.x0 - 0.5 && x < L.lab.x1 + 0.4 && z > L.lab.z0 - 0.5 && z < 0.4);
@@ -7185,6 +7525,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var ln = info.lines[id]; if (ln.open === false || ln.virt) return;
       info.rails = info.rails.concat(lineRails(s, ln.path, Math.max(0.4, ln.fork), ln.path.len() - 0.2));
     });
+    if (info.netRails) info.rails = info.rails.concat(info.netRails);
     info.rails.sort(function (a, b) { return a.s - b.s; });
     // the laying camera follows the longest open line (the trunk up to the last valley)
     info.railCam = info.line; Object.keys(info.lines).forEach(function (id) { var ln = info.lines[id]; if (ln.open !== false && ln.path.len() > info.railCam.len()) info.railCam = ln.path; });
@@ -7468,7 +7809,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     return out;
   }
 
-  FL.world = { L: L, wyes: wyes, turnLeg: turnLeg, vOpen: vOpen, vTop: vTop, addLine: addLine, lineFork: lineFork, trackLine: trackLine, laneOff: laneOff, lineRails: lineRails, canLine: canLine, build: build, buildMarket: buildMarket, fieldRect: fieldRect, linePath: linePath, beltPaths: beltPaths };
+  FL.world = { laneD: laneD, L: L, wyes: wyes, turnLeg: turnLeg, vOpen: vOpen, vTop: vTop, addLine: addLine, lineFork: lineFork, trackLine: trackLine, laneOff: laneOff, lineRails: lineRails, canLine: canLine, build: build, buildMarket: buildMarket, fieldRect: fieldRect, linePath: linePath, beltPaths: beltPaths };
 })(this.FL = this.FL || {});
 
 </script>
@@ -10846,6 +11187,37 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.golden) tintGolden(true);
     G.layout = layoutSig();
     buildPiles();
+    // one-way tracks: the network was built again (a valley opened): each wagon finds its place on it
+    if (OW) (G.vehs || []).forEach(function (v) { netPlace(v, v.rt); });
+    makeSignals();
+  }
+  // the junction signals (world.js info.signals): a lit lamp each, red while
+  // another wagon is in the junction, green when the way is clear
+  function makeSignals() {
+    (G.sigs || []).forEach(function (g) { RD.remove(g.r); RD.remove(g.g); });
+    G.sigs = []; G.sigT = 0;
+    (info.signals || []).forEach(function (q) {
+      var x = q.x - q.dx * 0.19 - 0.08, z = q.z - q.dz * 0.19 - 0.08;
+      var r = RD.makeRig(M.Mdl()(0, 0, 0, 0.16, 0.16, 0.16, '#ff3b2a')), g = RD.makeRig(M.Mdl()(0, 0, 0, 0.16, 0.16, 0.16, '#3dff6a'));
+      r.position.set(x, 1.83, z); g.position.set(x, 1.55, z); r.visible = false;
+      G.sigs.push({ q: q, r: r, g: g, red: false });
+    });
+  }
+  function updateSignals(dt) {
+    if (!G.sigs || !G.sigs.length || (G.sigT -= dt) > 0) return;
+    G.sigT = 0.15;
+    var R2 = 6.5 * 6.5, inJ = {};
+    G.vehs.forEach(function (v) {
+      var lane = v.st.pos && v.st.pos.lane;
+      for (var i = 0; i < v.cars.length; i++) {
+        var p = carPos(v, i);
+        G.sigs.forEach(function (sg) { var q = sg.q; if ((p.x - q.jx) * (p.x - q.jx) + (p.z - q.jz) * (p.z - q.jz) < R2) (inJ[q.j] = inJ[q.j] || {})[lane || '?'] = 1; });
+      }
+    });
+    G.sigs.forEach(function (sg) {
+      var w = inJ[sg.q.j], red = !!w && Object.keys(w).some(function (l) { return l !== sg.q.lane; });
+      if (red !== sg.red) { sg.red = red; sg.r.visible = red; sg.g.visible = !red; }
+    });
   }
   function rebuildMarket(pop) {
     mk = WD.buildMarket(S);
@@ -11088,19 +11460,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var kind = Lg.vehicleKind(S);
     if (!kind) { removeVehicle(); return; }
     if (G.veh && G.veh.sig === vehSig()) return;
-    var prev = (G.vehs || []).map(function (v) { return v.kind; });
+    var prev = (G.vehs || []).map(function (v) { return v.kind; }), prevRt = (G.vehs || []).map(function (v) { return v.rt; });
     removeVehicle();
     // the Second wagon (Tom 2026-10-08): its own state and route; since
     // Railway day its own kind and level too (each wagon is upgraded on its own)
     for (var wi = 0; wi < Lg.vehCount(S); wi++) G.vehs.push(makeVehicle(Lg.vehicleKind(S, wi), wi, prev[wi]));
     G.veh = G.vehs[0];
+    if (OW) G.vehs.forEach(function (v, i) { netPlace(v, prevRt[i]); });
   }
   function makeVehicle(kind, wi, prevKind) {
-    var st = wi ? S.veh2 || (S.veh2 = { s: 0, state: 'wait', load: Lg.goods(), cans: Lg.vehCans() }) : S.veh || (S.veh = { s: 0, state: 'wait', load: Lg.goods(), cans: Lg.vehCans() });
+    var st = Lg.vehSt(S, wi) || Lg.setVehSt(S, wi, { s: 0, state: 'wait', load: Lg.goods(), cans: Lg.vehCans() });
     KINDS.forEach(function (k) { st.load[k] = st.load[k] || 0; });
     // two wagons: each in its own narrow lane, drawn smaller (the stall's wagon on the stall's side);
     // with the Second track (Berry) each train has a full track of its own (WD.laneOff)
     var two = Lg.vehCount(S) > 1, wide = two && WD.laneOff(S) > L.lane, K = two && !wide ? 0.72 : 1, laneS = 1;
+    // one-way tracks: every wagon on a narrow lane of its own way (full tracks with the Second track)
+    if (OW) { two = false; K = WD.laneD(S) > 0.9 ? 1 : 0.8; }
     if (two && info.platPile) { var mq = M.at(info.line, L.sStop); laneS = (info.platPile.x - mq.x) * mq.rx + (info.platPile.z - mq.z) * mq.rz >= 0 ? 1 : -1; }
     // the lanes are drawn with the line's left normal (models.js dirtTrack), M.at's rx is its right
     var v = { idx: wi, K: K, lat: two ? (wi ? 1 : -1) * laneS * WD.laneOff(S) : 0, kind: kind, sig: vehSig(), cars: [], crew: [], st: st, waitT: 0, dwell: 0, chunkT: 0, hop: 0, pump: 0, walk: 0, smokeT: 0, v: 0, trips: 0, moved: 0, plan: null, lvl: Lg.lineLevel(S, wi), loadCar: 0, donkeys: [], haulT: 0, work: 0, out: 0, side: 1, sideE: 1, swing: 1, dip: 0 };
@@ -11187,10 +11562,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var q = carPos(v, 0); text(q.x, 2.2, q.z, 'Empty', '#ffffff', 15, 0.9);
     return false;
   }
-  function carPos(v, i) { return v.st.con && info.con && info.con.path ? M.at(info.con.path, v.st.cs + v.cars[i].off) : vat(v, linePath(v.st.line), v.st.s + cSg(v) * v.cars[i].off); }
+  function carPos(v, i) { return v.st.con && info.con && info.con.path ? M.at(info.con.path, v.st.cs + v.cars[i].off) : vat(v, vPath(v), vS(v) + cSg(v) * v.cars[i].off); }
+  // the path a wagon drives and where on it it is: its route on the one-way
+  // network (rail.js; its cars trail behind it), else its place on its line
+  var OW = !!(FL.rail && FL.rail.on);
+  function vPath(v) { return OW && v.rt && !v.st.con ? v.rt.path : linePath(v.st.line); }
+  function vS(v) { return OW && v.rt && !v.st.con ? v.rt.u : v.st.s; }
   // a train that came over a crossing runs the other way round on its line:
   // its wagons on the market side of the loco (st.flip; game crossStep)
-  function cSg(v) { return v.st.flip && !v.st.con ? -1 : 1; }
+  function cSg(v) { if (OW && v.rt && !v.st.con) return -1; return v.st.flip && !v.st.con ? -1 : 1; }
   function trainLen(v) { var mx = 0; v.cars.forEach(function (q) { mx = Math.max(mx, q.off); }); return mx; }
   // a point on a line for this wagon: each wagon of two runs in its own lane so the two pass
   function vat(v, path, s) {
@@ -11765,17 +12145,90 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     st.line = id; st.s = X.aLen - st.s; revFace(v);
     return X;
   }
+  // ---- the one-way network (rail.js, Tom 2026-10-22) ----
+  // where stop e is: the place on the network its loading car stands at
+  // (ARRIVALS is the Home factory's stop: the same place)
+  function netSpot(at) {
+    var R = info && info.rail; if (!R) return null;
+    if (at === 'stall') return FL.rail.placeOnLine(R, 'home', 0.6 - info.platPile.z, true);
+    var x = info.stops && info.stops[at === 'arrivals' ? 'factory' : at];
+    return x ? FL.rail.placeOnLine(R, x.line, x.s, true) : null;
+  }
+  // how far the front of the wagon runs ahead of its loading car, and of the wagon's own place
+  function loadOff(v) { var c = v.cars[Math.min(v.cars.length - 1, v.loadCar || 0)]; return c ? c.off : 0; }
+  var LEAD = { cart: 1.35, donkey: 2.05, horse: 2.75, tractor: 2.55 };
+  function frontOf(v) { return LEAD[v.kind] ? LEAD[v.kind] * v.K + 0.6 : (v.cars[0] ? v.cars[0].len / 2 : 1); }
+  // a drive to stop e from where the wagon is (its cars keep the track behind it)
+  function netGo(v, e) {
+    var R = info.rail, sp = netSpot(e.at); if (!R || !sp) return false;
+    var off = loadOff(v), from = v.st.pos && R.lanes[v.st.pos.lane] ? v.st.pos : sp;
+    var r = FL.rail.route(R, from, sp, v.rt ? { path: v.rt.path, u: v.rt.u } : null, off + frontOf(v) + 3);
+    if (!r) return false;
+    r.uEnd += off; v.rt = r; v.st.atStop = null;
+    return true;
+  }
+  // a wagon put on the network: where it was (old: its route before the network
+  // or the wagon was made again), else its saved place, else at its stop
+  function netPlace(v, old) {
+    var R = info && info.rail, st = v.st; if (!R) return;
+    var pos = null, back = null, e = curStop(v), moving = ['up', 'back', 'fac', 'down', 'go'].indexOf(st.state) >= 0;
+    if (st.con) { v.rt = old || null; return; }
+    if (old && old.path) { var q = M.at(old.path, old.u); pos = FL.rail.nearest(R, q.x, q.z, q.dx, q.dz); back = { path: old.path, u: old.u }; }
+    else if (st.pos && R.lanes[st.pos.lane] && st.pos.d <= R.lanes[st.pos.lane].len + 0.01) pos = st.pos;
+    if (pos && moving) { st.pos = pos; v.rt = null; if (back) v.rt = { path: back.path, u: back.u }; if (netGo(v, e)) return; }
+    if (pos && !moving) {
+      var r = FL.rail.route(R, pos, pos, back, frontOf(v) + 3); if (r) { v.rt = r; st.pos = pos; if (!st.atStop) st.atStop = e.at; return; }
+    }
+    // at its stop (a saved wagon from before the network, or nowhere to be found)
+    var sp = netSpot(e.at); if (!sp) { v.rt = null; return; }
+    var r2 = FL.rail.route(R, sp, sp, null, loadOff(v) + frontOf(v) + 3); if (!r2) { v.rt = null; return; }
+    r2.u += loadOff(v); r2.uEnd = r2.u; v.rt = r2; st.pos = FL.rail.posAt(r2, r2.u);
+    if (moving) arrive(v); st.atStop = e.at;
+  }
+  // how far it can go before it runs into a wagon ahead on its way (wagons
+  // crossing it or going the other way do not count); v.blockBy: whose wagon
+  function aheadGap(v) {
+    var r = v.rt, p = r.path, f0 = r.u + frontOf(v), best = 99, by = -1, sm = [];
+    for (var k = 0; k <= 22; k++) { var uu = f0 + k * 0.3; if (uu > p.len()) break; sm.push([k * 0.3, M.at(p, uu)]); }
+    G.vehs.forEach(function (w) {
+      if (w === v || w.st.con || (w.blockBy === v.idx && v.idx < w.idx)) return;
+      var body = [];
+      w.cars.forEach(function (c, i) { var q = carPos(w, i), h = (c.len || 1.4) / 2 * 0.9; body.push([q.x, q.z, q.dx, q.dz]); body.push([q.x + q.dx * h, q.z + q.dz * h, q.dx, q.dz]); body.push([q.x - q.dx * h, q.z - q.dz * h, q.dx, q.dz]); });
+      if (w.rt && LEAD[w.kind]) { var lq = M.at(w.rt.path, w.rt.u + LEAD[w.kind] * w.K); body.push([lq.x, lq.z, lq.dx, lq.dz]); }
+      for (var i = 0; i < sm.length && sm[i][0] < best; i++) {
+        var q = sm[i][1];
+        for (var b = 0; b < body.length; b++) { var B = body[b]; if (Math.abs(B[0] - q.x) < 0.55 && Math.abs(B[1] - q.z) < 0.55 && B[2] * q.dx + B[3] * q.dz > 0.3) { best = sm[i][0]; by = w.idx; break; } }
+      }
+    });
+    v.blockBy = best < 1.2 ? by : -1;
+    return best;
+  }
+  // along its route to its stop: slows for the stop and for a wagon ahead; true while it moves
+  function owDrive(v, dt, V) {
+    var r = v.rt, st = v.st, dist = r.uEnd - r.u, want = Math.min(V.speed, 0.8 + dist * 2.2);
+    if (v.out > 0) return false;   // (the loader gets back on first)
+    var gap = aheadGap(v), wb = v.blockBy >= 0 ? G.vehs[v.blockBy] : null;
+    if (gap < 5) want = Math.min(want, Math.max(0, (gap - 0.45) * 2.2));
+    if (wb && wb.st.state === 'wait' && gap < 1.2) wb.yieldT = (wb.yieldT || 0) + dt;
+    v.v += Math.max(-8 * dt, Math.min(5 * dt, want - v.v));
+    if (want <= 0.01) v.v = Math.min(v.v, 0);
+    var step = Math.max(0, Math.min(dist, Math.max(want > 0.01 ? 0.2 : 0, v.v) * dt));
+    r.u += step; st.pos = FL.rail.posAt(r, r.u);
+    if (dist - step < 0.02) { r.u = r.uEnd; st.pos = FL.rail.posAt(r, r.u); arrive(v); }
+    return step > 0;
+  }
   function goTo(v, j, e) {
     var st = v.st; e = e || vList(v)[j];
     // fresh from loading goods at the factory, the halts are only a top-up on the way
     v.fromLoad = st.state === 'station' && !!v.cur && v.cur.act !== 'drop';
     st.i = j; v.cur = e; v.waitT = 0; v.dwell = 0; v.inWait = false; v.counted = false;
     st.state = facStop(e) ? 'fac' : e.at === 'stall' ? 'down' : e.at === 'halts' ? (stopS(v, e) >= st.s ? 'up' : 'back') : 'go';
+    if (OW && !st.con) netGo(v, e);
   }
   // done here: on to the next stop with work; false when there is none (it stays)
   function leaveStop(v) { var j = nextStop(v, v.st.i || 0); if (j < 0) return false; goTo(v, j); return true; }
   function arrive(v) {
-    var st = v.st, e = v.cur; v.dwell = 0; v.waitT = 0; v.v = 0;
+    var st = v.st, e = v.cur; v.dwell = 0; v.waitT = 0; v.v = 0; st.atStop = e.at;
     // at the halts: an empty wagon waits for a load; a loaded one (or one fresh
     // from loading at the factory) only tops up
     if (isHalt(e)) st.state = vLoad(v) > 0 || e.rush || v.fromLoad ? 'top' : 'wait';
@@ -11980,17 +12433,19 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (n < n0) { if (near(G.player, q.x, q.z, 10)) snd.tick(4, 0); return; }
     if (v.dwell > 0.8) { st.state = 'conBack'; v.dwell = 0; }
   }
-  function updateVehicle(dt) { G.vehs.forEach(function (v) { updateVeh(v, dt); }); }
+  function updateVehicle(dt) { G.vehs.forEach(function (v) { updateVeh(v, dt); }); updateSignals(dt); }
   function updateVeh(v, dt) {
     // an Automatic list made again (a valley or factory opened): head for the next stop with work on it
     var lk = vList(v).map(function (x) { return x.at + x.act; }).join(); if (v.listKey != null && v.listKey !== lk) restop(v); v.listKey = lk;
     var st = v.st, V = Lg.vehicle(S, v.idx), cap = V.cap, l = vList(v), e = curStop(v);
-    v.chunkT -= dt; v.hop = Math.max(0, v.hop - dt * 3);
+    v.chunkT -= dt; v.hop = Math.max(0, v.hop - dt * 3); v.yieldT = Math.max(0, (v.yieldT || 0) - dt * 0.5);
     updateLoader(v, dt);
     var moving = false;
     var cf = conFam(v);
     if (st.state === 'wait') {
-      if (Math.abs(st.s - stopS(v, e)) > 0.05) { goTo(v, st.i, e); }
+      if (OW ? st.atStop !== e.at && !st.con : Math.abs(st.s - stopS(v, e)) > 0.05) { goTo(v, st.i, e); }
+      // (one-way tracks: an empty wagon waiting on the trunk moves on when a wagon behind it can't pass)
+      else if (OW && (v.yieldT || 0) > 2.5 && vLoad(v) === 0) { v.yieldT = 0; var jy = (st.i + 1) % l.length; goTo(v, jy, l[jy]); }
       // (a full wagon with none of the crop on it can't take any: it goes on as usual)
       else if (cf && Lg.cropOf(cf) && (Lg.famN(st.load, cf) > 0 || (haltFam(cf) > 0 && vLoad(v) < cap))) {
         // RUSH a crop order: only that crop, then down the siding
@@ -12015,7 +12470,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         // empty with dry halts, it goes where there is work (the stall wagon to the goods)
         var idle = n === 0 && dry && v.dwell > 2 && !fneed && (function () { var j = nextStop(v, st.i); return j >= 0 && !isHalt(l[j]); })();
         if ((n + reserve >= cap || early || v.waitT >= V.leaveAfter || idle) && v.dwell > 1 && leaveStop(v)) {
-          var q1 = vat(v, linePath(st.line), st.s), nearH = near(G.player, q1.x, q1.z, 25);
+          var q1 = carPos(v, 0), nearH = near(G.player, q1.x, q1.z, 25);
           if (isTrain(v) && v.kind !== 'electric') { var lg = v.cars[0].g, ld = v.kind === 'train' ? -0.25 : -0.5; puff(lg.position.x + Math.sin(lg.rotation.y) * ld, v.kind === 'train' ? 1.9 : 1.6, lg.position.z + Math.cos(lg.rotation.y) * ld, false, false); }   // the whistle's white plume
           if ((v.kind === 'train' || v.kind === 'diesel' || v.kind === 'electric') && nearH) snd.whistle(); else if (v.kind === 'oldtrain' && nearH) snd.rattle(0); else if (v.kind === 'donkey' && nearH && Math.random() < 0.3) snd.bray(); else if (v.kind === 'horse' && nearH && Math.random() < 0.3) snd.neigh();
         }
@@ -12025,6 +12480,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // back to where the two lines fork, switches line and goes on
     var going = st.state === 'fac' || st.state === 'down' || st.state === 'up' || st.state === 'back' || st.state === 'go', conRun = st.state === 'conGo' || st.state === 'conBack';
     var target = st.s;
+    // one-way tracks: it drives its route (rail.js), always forwards: no turning round, no backing out
+    if (OW && going && v.rt) { moving = owDrive(v, dt, V) || moving; going = false; }
+    if (OW && !conRun) { v.faceA = 0; v.turnA = 0; v.ut = null; }
     if (going) {
       var tl = stopLine(v.cur), xc = crossStep(v, tl);
       if (xc) target = xc.to === tl ? xc.K + stopS(v, v.cur) : xc.b0;
@@ -12053,14 +12511,24 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (going && v.turning && v.out <= 0) {
       var d0 = Math.abs(target - st.s);
       // how far to back out: clear of the FACTORY yard, the halt platforms or the stall platform
-      if (v.backed == null || v.backed === 0) v.backOut = Math.abs(st.s - v.mktS) < 1 ? 3 : Math.abs(st.s - v.haltS) < 1 ? 5.5 : 6;
+      if (v.backed == null || v.backed === 0) {
+        v.backOut = Math.abs(st.s - v.mktS) < 1 ? 3 : Math.abs(st.s - v.haltS) < 1 ? 5.5 : 6;
+        if (UT !== 'o') v.backOut = utRoom(v, v.backOut, target < st.s ? -1 : 1, d0);
+      }
       if ((v.backed || 0) < v.backOut && d0 > 0.3 && Math.abs(v.turnA - wantA) > Math.PI - 0.01) {
         var bs = Math.min(d0 - 0.2, BACK_SPEED * dt, v.backOut - (v.backed || 0)); if (bs <= 0) v.backed = v.backOut;
         else { st.s += target < st.s ? -bs : bs; v.backed = (v.backed || 0) + bs; backing = true; }
       }
-      if (!backing) v.turnA += Math.max(-dt * TURN_RATE, Math.min(dt * TURN_RATE, wantA - v.turnA));
+      if (!backing && UT !== 'o' && !v.ut && Math.abs(Math.sin(v.turnA)) < 0.01) {
+        v.ut = buildUT(v, v.turnA, null, UT === 'a');
+        // (a wide sweep that would take it past where it is going swings round the back wheels instead)
+        if (UT === 'a' && Math.abs(v.ut.s1 - st.s) > Math.abs(target - st.s) - 0.5) v.ut = buildUT(v, v.turnA, null, false);
+      }
+      var rate = v.ut ? Math.PI / v.ut.T : TURN_RATE;
+      if (!backing) v.turnA += Math.max(-dt * rate, Math.min(dt * rate, wantA - v.turnA));
       v.turning = Math.abs(v.turnA - wantA) > 0.001;
-      if (!v.turning) v.backed = 0;
+      // (the turn round ends a little way along the line: carry on from there)
+      if (!v.turning) { v.backed = 0; if (v.ut) { st.s = v.ut.s1; v.ut = null; } }
     }
     v.backing = backing;
     // on the siding there is no room to back out: it turns on the spot once the loader is up
@@ -12091,7 +12559,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (cdist - cstep < 0.02) {
         st.cs = ct; v.v = 0;
         if (st.state === 'conGo') { st.state = 'conDrop'; v.dwell = 0; }
-        else { st.con = false; st.state = 'wait'; v.dwell = 0; v.waitT = 0; v.faceA = v.turnA; v.cur = l[st.i] && l[st.i].at === 'halts' ? l[st.i] : { at: 'halts', act: 'load' }; }
+        else { st.con = false; st.state = 'wait'; v.dwell = 0; v.waitT = 0; v.faceA = v.turnA; if (OW) st.atStop = 'halts'; v.cur = l[st.i] && l[st.i].at === 'halts' ? l[st.i] : { at: 'halts', act: 'load' }; }
       }
     }
     if (st.state === 'conDrop') conDrop(v, dt, cap);
@@ -13020,29 +13488,161 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // the wagon in an arc while it turns
   function leadAt(v, path, ps, dir, L) {
     var ta = v.turnA || 0, mid = Math.abs(Math.sin(ta)) > 0.01;
-    if (!mid) { var sg = ta > 1.5 ? -1 : 1, q = vat(v, path, ps + sg * L); return { x: q.x, z: q.z, rx: q.rx * sg, rz: q.rz * sg }; }
+    if (!mid) { var sg = ta > 1.5 ? -1 : 1, q = vat(v, path, ps + sg * L); return { x: q.x, z: q.z, rx: q.rx * sg, rz: q.rz * sg, a: Math.atan2(q.dx * sg, q.dz * sg), on: sg }; }
     var c = vat(v, path, ps), a = Math.atan2(c.dx, c.dz) + ta, fx = Math.sin(a), fz = Math.cos(a);
-    return { x: c.x + fx * L, z: c.z + fz * L, rx: fz, rz: -fx };
+    return { x: c.x + fx * L, z: c.z + fz * L, rx: fz, rz: -fx, a: a };
+  }
+  // ---- cars round the bends (Tom 2026-10-22 "better turn animations for the wagons") ----
+  // Each car rides on two wheel-sets (bogies) on the track, so it turns by the
+  // line between them instead of snapping round its middle, and a pulled
+  // wagon follows its animals like a trailer. ?turn= a that; b (default) as a,
+  // each car kept its coupling's length behind the one ahead and a coupling bar
+  // drawn between them; o the old look
+  var TURN = (/[?&]turn=([a-z])/.exec(location.search) || [])[1] || 'b';
+  function carOn(v, path, cut, s, h) {
+    var a = cut ? M.at(cut, s - h) : vat(v, path, s - h), b = cut ? M.at(cut, s + h) : vat(v, path, s + h);
+    var dx = b.x - a.x, dz = b.z - a.z, l = Math.hypot(dx, dz);
+    if (l < 1e-4) { var m = cut ? M.at(cut, s) : vat(v, path, s); return { x: m.x, z: m.z, dx: m.dx, dz: m.dz, rx: m.rx, rz: m.rz, s: s }; }
+    dx /= l; dz /= l;
+    return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2, dx: dx, dz: dz, rx: -dz, rz: dx, s: s };
+  }
+  function turnCars(v, path, base, sg, cut) {
+    if (cut) { base = G.cut.trainS; sg = -1; }
+    var out = [], cars = v.cars, chain = TURN !== 'a' && cars.length > 1;
+    for (var i = 0; i < cars.length; i++) {
+      var c = cars[i], h = c.len * (cars.length > 1 ? 0.34 : 0.3), s = base + sg * c.off + (cut ? 0 : trainJolt(v, i)), q = carOn(v, path, cut, s, h);
+      if (chain && i) {
+        // keep the coupling its length on a bend too (no ends over each other on the inside)
+        var p = out[i - 1], pc = cars[i - 1], gap = c.off - pc.off - pc.len / 2 - c.len / 2;
+        var rx = p.x + sg * p.dx * pc.len / 2, rz = p.z + sg * p.dz * pc.len / 2;
+        for (var k = 0; k < 2; k++) {
+          var fx = q.x - sg * q.dx * c.len / 2, fz = q.z - sg * q.dz * c.len / 2, d = Math.hypot(fx - rx, fz - rz);
+          if (Math.abs(d - gap) < 0.01) break;
+          s += sg * (gap - d); q = carOn(v, path, cut, s, h);
+        }
+      }
+      out.push(q);
+    }
+    return out;
+  }
+  // a short dark coupling bar between each car and the next
+  function couplers(v, tq) {
+    if (tq.length < 2) return;
+    var y = (v.kind === 'oldtrain' ? 0.36 : 0.42) * v.K, sg = v.st.con ? 1 : cSg(v);
+    if (!RD.onScreen(tq[0].x, 0.5, tq[0].z, 1.5) && !RD.onScreen(tq[tq.length - 1].x, 0.5, tq[tq.length - 1].z, 1.5)) return;
+    for (var i = 1; i < tq.length; i++) {
+      var p = tq[i - 1], q = tq[i], a = v.cars[i - 1].len / 2 - 0.08, b = v.cars[i].len / 2 - 0.08;
+      var x0 = p.x + sg * p.dx * a, z0 = p.z + sg * p.dz * a, x1 = q.x - sg * q.dx * b, z1 = q.z - sg * q.dz * b, l = Math.hypot(x1 - x0, z1 - z0);
+      if (l < 0.02) continue;
+      RD.dynBox((x0 + x1) / 2, y + v.cars[i].g.position.y, (z0 + z1) / 2, 0.09, 0.08, l, '#2b2f3a', Math.atan2(x1 - x0, z1 - z0));
+    }
+  }
+  // ---- turning round at the end of the line (Tom 2026-10-22: the 180 at a
+  // dead end, a halt or the stall, looked bad: the wagon spun on the spot).
+  // The animals (or the tractor, the puller) walk a turn and the wagon follows
+  // them like a real trailer, its back wheels dragged after the shafts. The
+  // whole turn is worked out once as it starts (v.ut), then played back as the
+  // turn runs. ?u180= a a wide sweep out to one side and back onto the track;
+  // b (default) a tight swing round the back wheels; o the old spin
+  var UT = (/[?&]u180=([a-z])/.exec(location.search) || [])[1] || 'b';
+  function leadL(v) { var k = v.kind; return v.K * (k === 'cart' ? 1.35 : k === 'donkey' ? 2.05 * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1) : k === 'tractor' ? 2.55 : 2.75); }
+  function buildUT(v, a0, at, wide) {
+    // it turns to whichever side has more room (buildings, trees and the stall's
+    // things in the way count); if both are as good, away from the stop
+    var away = -(v.side || 1) * (a0 > 1.5 ? -1 : 1), A = utTrack(v, a0, away, at, wide), B = utTrack(v, a0, -away, at, wide);
+    return B.bad < A.bad ? B : A;
+  }
+  // how far to back out first: on until there is room to turn round (a few tiles at most)
+  function utRoom(v, base, sg, d0) {
+    var best = base, bad = 1e9;
+    for (var d = base; d <= base + 6 && d < d0 - 0.3; d += 1) {
+      var b = buildUT(v, v.turnA || 0, v.st.s + sg * d, UT === 'a').bad;
+      if (b < bad) { bad = b; best = d; }
+      if (!b) break;
+    }
+    // (a tile more, clear of awnings and roofs that hang out over the track)
+    return Math.min(best + (best > base ? 1.2 : 0), Math.max(base, d0 - 0.3));
+  }
+  function utTrack(v, a0, sd, at, wide) {
+    var st = v.st, path = linePath(st.line), s0 = at == null ? st.s : at, q = vat(v, path, s0), fs = a0 > 1.5 ? -1 : 1;
+    var L = leadL(v), h = v.cars[0].len * 0.3, P0 = at == null ? v.pose : null, cx = P0 ? P0[0] : q.x, cz = P0 ? P0[1] : q.z;
+    var fx = P0 ? Math.sin(P0[2]) : q.dx * fs, fz = P0 ? Math.cos(P0[2]) : q.dz * fs, ax = cx - fx * h, az = cz - fz * h;
+    var hx0 = P0 ? P0[3] : cx + fx * L, hz0 = P0 ? P0[4] : cz + fz * L, l = Math.hypot(hx0 - ax, hz0 - az) || L + h;
+    var ha0 = P0 ? P0[5] : Math.atan2(fx, fz), ux = (hx0 - ax) / l, uz = (hz0 - az) / l, nx = -uz * sd, nz = ux * sd;
+    var H = [], i, N = 90;
+    // the animals walk a half circle out to one side and back onto the track the
+    // other way: b round the back wheels (the wagon swings round where it stands),
+    // a a wider sweep (the wagon rolls round after them, needs more room)
+    var R = wide ? 1.45 * l : l, ox = hx0 - ux * R, oz = hz0 - uz * R, len = Math.PI * R;
+    for (i = 0; i <= N; i++) {
+      var ph = Math.PI * i / N, ex = Math.cos(ph) * ux + Math.sin(ph) * nx, ez = Math.cos(ph) * uz + Math.sin(ph) * nz;
+      var ta = Math.atan2(-Math.sin(ph) * ux + Math.cos(ph) * nx, -Math.sin(ph) * uz + Math.cos(ph) * nz);
+      // they swing their heads round to walk the circle as they set off, and back onto the line at the end
+      var w = Math.min(1, i / (N * 0.12)), we = Math.min(1, (N - i) / (N * 0.12)), ha = i < N / 2 ? lerpA(ha0, ta, w) : lerpA(Math.atan2(-ux, -uz), ta, we);
+      H.push([ox + ex * R, oz + ez * R, ha]);
+    }
+    // the wagon: its back axle dragged after the shafts, l behind the animals
+    var F = [], bx = ax, bz = az, bad = 0;
+    for (i = 0; i <= N; i++) {
+      var dx = H[i][0] - bx, dz = H[i][1] - bz, d = Math.hypot(dx, dz) || 1; dx /= d; dz /= d;
+      bx = H[i][0] - dx * l; bz = H[i][1] - dz * l;
+      F.push([bx + dx * h, bz + dz * h, Math.atan2(dx, dz), H[i][0], H[i][1], H[i][2]]);
+      // (the animals' and the wagon's far ends, with a little room to spare)
+      if (i % 3 === 0) { if (blocked(H[i][0] + Math.sin(H[i][2]) * 0.6, H[i][1] + Math.cos(H[i][2]) * 0.6, 0.55)) bad++; if (blocked(bx - dx * 0.3, bz - dz * 0.3, 0.55)) bad++; if (blocked(bx + dx * h, bz + dz * h, 0.55)) bad++; }
+    }
+    // it ends on the track facing back the way it came, a little way along, just
+    // as it is drawn once it rolls: animals on the track ahead, the wagon aimed at them
+    var e = F[N], s1 = s0 + (e[0] - q.x) * q.dx + (e[1] - q.z) * q.dz, hl = vat(v, path, s1 - fs * L), rb = vat(v, path, s1 + fs * h);
+    var gx = hl.x - rb.x, gz = hl.z - rb.z, gl = Math.hypot(gx, gz) || 1; gx /= gl; gz /= gl;
+    var wx = rb.x + gx * h, wz = rb.z + gz * h, wa = Math.atan2(gx, gz), la = Math.atan2(-hl.dx * fs, -hl.dz * fs);
+    for (i = 0; i <= N; i++) {
+      var u = Math.max(0, (i / N - 0.7) / 0.3); u = u * u * (3 - 2 * u); if (!u) continue;
+      var f = F[i]; f[0] += (wx - f[0]) * u; f[1] += (wz - f[1]) * u; f[2] = lerpA(f[2], wa, u); f[3] += (hl.x - f[3]) * u; f[4] += (hl.z - f[4]) * u; f[5] = lerpA(f[5], la, u);
+    }
+    return { a0: a0, F: F, s1: s1, bad: bad, T: Math.max(1.6, Math.min(4.6, len / 4.2)) };
+  }
+  function lerpA(a, b, u) { var d = b - a; d -= Math.round(d / TAU) * TAU; return a + d * u; }
+  // where the wagon and its animals are during the turn round (sets the wagon; returns the lead)
+  function utPose(v) {
+    var ut = v.ut, F = ut.F, p = Math.max(0, Math.min(1, Math.abs(v.turnA - ut.a0) / Math.PI)) * (F.length - 1), i = Math.min(F.length - 2, Math.floor(p)), u = p - i, a = F[i], b = F[i + 1];
+    var g = v.cars[0].g; g.position.x = a[0] + (b[0] - a[0]) * u; g.position.z = a[1] + (b[1] - a[1]) * u; g.rotation.y = lerpA(a[2], b[2], u);
+    var ha = lerpA(a[5], b[5], u), fx = Math.sin(ha), fz = Math.cos(ha);
+    return { x: a[3] + (b[3] - a[3]) * u, z: a[4] + (b[4] - a[4]) * u, a: ha, rx: fz, rz: -fx };
+  }
+  function leadOf(v, path, ps, dir, L) { return v.ut && UT !== 'o' ? utPose(v) : leadAt(v, path, ps, dir, L); }
+  // a pulled wagon on a bend: its back axle stays on the track and its front
+  // points at the animals (or the tractor) walking the track ahead, like a real trailer
+  function pullAim(v, path, ps, lead) {
+    var c0 = v.cars[0], g = c0.g, a = TURN === 'o' || lead.a == null ? g.rotation.y : lead.a;
+    if (TURN !== 'o' && lead.on) {
+      var h = c0.len * 0.3, r = vat(v, path, ps - lead.on * h), dx = lead.x - r.x, dz = lead.z - r.z, l = Math.hypot(dx, dz);
+      if (l > 0.01) { dx /= l; dz /= l; g.position.x = r.x + dx * h; g.position.z = r.z + dz * h; g.rotation.y = Math.atan2(dx, dz); }
+    }
+    // (a turn round starts from just where the wagon and its animals are drawn)
+    v.pose = [g.position.x, g.position.z, g.rotation.y, lead.x, lead.z, a];
+    return a;
   }
   function placeVehicle(dt) { G.vehs.forEach(function (v) { placeVeh(v, dt); }); }
   function placeVeh(v, dt) {
-    var st = v.st, path = linePath(st.line), dir = (v.turnA || 0) > 1.5 ? -1 : 1, hop = Math.sin(v.hop * Math.PI) * 0.25;
+    var st = v.st, path = vPath(v), dir = (v.turnA || 0) > 1.5 ? -1 : 1, hop = Math.sin(v.hop * Math.PI) * 0.25;
     // on our siding to the Contract yard: its own path (a pulled wagon turns round to come back up)
-    var vs = st.s; if (st.con && info.con && info.con.path) { path = info.con.path; vs = st.cs; dir = st.state === 'conBack' ? -1 : 1; }
+    var vs = vS(v); if (st.con && info.con && info.con.path) { path = info.con.path; vs = st.cs; dir = st.state === 'conBack' ? -1 : 1; }
     if (v.moving) { v.walk += (Math.abs(v.v) + (v.turning ? 2.2 : 0)) * dt * 2.6; v.pump += dt * 7; }
     var cutRun = G.cut && G.cut.trainS != null && info.cornLine && (isTrain(v) || v.kind === 'horse') ? info.cornLine : null;
     var pulled = isPulled(v), old = v.kind === 'oldtrain';
     // in the Corn cut-scene a pulled vehicle drives forward up the cleared track
     var ps = vs;
     if (cutRun && pulled) { path = cutRun; ps = G.cut.trainS; dir = 1; }
+    var tq = TURN === 'o' ? null : turnCars(v, path, vs, st.con ? 1 : cSg(v), cutRun);
     v.cars.forEach(function (c, i) {
-      var q = cutRun ? M.at(cutRun, Math.max(0, G.cut.trainS - c.off)) : vat(v, path, vs + (st.con ? 1 : cSg(v)) * c.off + trainJolt(v, i));
+      var q = tq ? tq[i] : cutRun ? M.at(cutRun, Math.max(0, G.cut.trainS - c.off)) : vat(v, path, vs + (st.con ? 1 : cSg(v)) * c.off + trainJolt(v, i));
       // the Old rattler wobbles and jolts as it goes
       var wob = old && v.moving ? Math.sin(G.t * 11 + i * 1.7) * 0.035 : 0, jolt = old && v.moving ? Math.max(0, Math.sin(G.t * 7.3 + i)) * 0.05 : 0;
       c.g.position.set(q.x, hop + jolt, q.z); c.g.rotation.y = Math.atan2(q.dx, q.dz) + (pulled ? (cutRun ? 0 : v.turnA || 0) : 0) + (old && v.moving ? Math.sin(G.t * 5 + i) * 0.02 : 0);
       if (old) c.g.rotation.z = wob;
       if (c.beam) c.beam.rotation.z = Math.sin(v.pump) * 0.3;
     });
+    v.tq = tq;
     // wheels roll by the distance each car really went; pulled carts sway, lean into turns, the load bounces
     var adt = animDt();
     for (var ci = 0; ci < v.cars.length; ci++) animCart(v.cars[ci].g, v.cars[ci].pile, adt, pulled ? 1 : 0);
@@ -13055,7 +13655,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     piles.forEach(function (c, i) { RD.setPile(c.pile, seq.slice(i * per, (i + 1) * per)); });
     var c0 = v.cars[0], q0 = vat(v, path, ps);
     if (v.kind === 'cart') {
-      var lead = leadAt(v, path, ps, dir, 1.35 * v.K), fa = c0.g.rotation.y;
+      var lead = leadOf(v, path, ps, dir, leadL(v)), la = pullAim(v, path, ps, lead), fa = TURN === 'o' ? c0.g.rotation.y : la;
       var pu = v.crew[0].a;
       c0.g.rotation.x = v.moving ? 0.05 + Math.sin(v.walk * 2) * 0.015 : 0.08;
       pu.g.position.set(lead.x, hop, lead.z);
@@ -13064,7 +13664,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var pr = pu.body.rig; if (pr) { var pm = v.moving ? 1 : 0; pr.parts[0].a = 0.42 + Math.sin(v.walk) * 0.1 * pm; pr.parts[1].a = 0.42 - Math.sin(v.walk) * 0.1 * pm; rigMove(pr, pu.g, adt); poseRig(pr, pu.g); }
     } else if (v.kind === 'donkey') {
       // the donkeys walk ahead in the shafts; the driver sits on the front bench
-      var dl = leadAt(v, path, ps, dir, 2.05 * v.K * (v.lvl >= 5 ? 1.2 : v.lvl >= 4 ? 1.1 : 1)), da = c0.g.rotation.y, nd = v.donkeys.length;
+      var dl = leadOf(v, path, ps, dir, leadL(v)), da = pullAim(v, path, ps, dl), nd = v.donkeys.length;
+      q0 = { x: c0.g.position.x, z: c0.g.position.z };
       c0.g.rotation.x = v.moving ? Math.sin(v.walk * 2) * 0.012 : 0;
       v.donkeys.forEach(function (d, k) {
         var off = nd > 1 ? (k ? 0.36 : -0.36) * v.K : 0;
@@ -13076,14 +13677,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       dr.g.rotation.y = ra; animLegs(dr, false, 0); dr.legs[0].rotation.x = -1.35; dr.legs[1].rotation.x = -1.35;
     } else if (v.kind === 'tractor') {
       // the tractor drives ahead of its trailers; the driver sits in its seat
-      var tl = leadAt(v, path, ps, dir, 2.55 * v.K), ta = c0.g.rotation.y, tm = v.donkeys[0];
+      var tl = leadOf(v, path, ps, dir, leadL(v)), ta = pullAim(v, path, ps, tl), tm = v.donkeys[0];
       if (tm) { tm.position.set(tl.x, hop + (v.moving ? Math.sin(G.t * 31) * 0.012 : Math.sin(G.t * 17) * 0.006), tl.z); tm.rotation.y = ta; animCart(tm, null, adt, 0); }
       var td = v.crew[0].a, tz2 = -0.15 * v.K;
       if (tm) { td.g.position.set(tm.position.x + Math.sin(ta) * tz2, 0.72 * v.K + hop, tm.position.z + Math.cos(ta) * tz2); td.g.rotation.y = ta; animLegs(td, false, 0); td.legs[0].rotation.x = -1.35; td.legs[1].rotation.x = -1.35; }
       if (v.moving && Math.random() < dt * 4 && tm) puff(tm.position.x - Math.sin(ta) * 0.5 * v.K + Math.cos(ta) * 0.3, 1.6 * v.K, tm.position.z - Math.cos(ta) * 0.5 * v.K - Math.sin(ta) * 0.3, false, true);
     } else if (v.kind === 'horse') {
       // the horses walk ahead in the shafts (side by side from "Team of two"); the driver sits high on the bench
-      var hl = leadAt(v, path, ps, dir, 2.75 * v.K), ha = c0.g.rotation.y, nh = v.donkeys.length;
+      var hl = leadOf(v, path, ps, dir, leadL(v)), ha = pullAim(v, path, ps, hl), nh = v.donkeys.length;
+      q0 = { x: c0.g.position.x, z: c0.g.position.z };
       c0.g.rotation.x = v.moving ? Math.sin(v.walk * 1.6) * 0.01 : 0;
       v.donkeys.forEach(function (d, k) {
         var off = nh > 1 ? (k ? 0.42 : -0.42) * v.K : 0;
@@ -13115,6 +13717,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (G.marketG) { var k = G.marketPop > 0 ? G.marketPop / 0.6 : 0, sy = 1 - Math.sin(k * Math.PI) * 0.12; G.marketG.scale.set(1, sy, 1); }
     RD.dynBegin();
     if (G.veh && isTrain(G.veh)) trainRods(G.veh);
+    if (TURN === 'b') G.vehs.forEach(function (v) { if (v.tq) couplers(v, v.tq); });
     for (var i = 0; i < G.flyers.length; i++) {
       var f = G.flyers[i], LST = f.box || ITEM[f.crop] || ITEM.carrot; if (f.t < 0) { RD.dynModel(LST, f.sx, f.sy, f.sz, f.rot, 0, 1); continue; }
       if (f.mid) {
@@ -13268,14 +13871,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       if (G.boardOpen !== pl.key) {
         var wag = pl.key.indexOf('wagon') === 0, all = pl.key === 'station' ? pl.split : pl.key === 'stall' ? pl.rows : [{ pool: pl.rows[0].pool, fams: PRODUCTS }], g = [0, 0, 0, 0, 0];
         all.forEach(function (r) { gradeCounts(r.pool, r.fams).forEach(function (n, i) { g[i] += n; }); });
-        var parts = [[(pl.key === 'stall' ? 'Shelves ' : wag ? (G.vehs.length < 2 ? 'Wagon ' : pl.key === 'wagon' ? 'Wagon 1: ' : 'Wagon 2: ') : 'Ready ') + sumG(g), '#ffffff']];
+        var parts = [[(pl.key === 'stall' ? 'Shelves ' : wag ? wagonTag(pl.key) : 'Ready ') + sumG(g), '#ffffff']];
         var gd = 0; all.forEach(function (r) { gd += gradeCounts(r.pool, r.fams).d; }); if (gd) { parts[0][0] = parts[0][0].replace(/\d+$/, function (t) { return +t + gd; }); parts.push(['pill', String(gd), RAW_COL]); }
         g.forEach(function (n, i) { if (n) parts.push(['pill', String(n), GRADE_COL[i]]); });
         quiet(function () { chip(pl.far.x, pl.far.y, parts, 'rgba(30,36,60,.9)', 11, 0.95, { board: pl.key }); });
         return;
       }
       if (pl.key === 'stall') board(pl.p.x, pl.p.y, 'On the shelves', pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams), n = sumG(g); return { name: r.name, g: g, tot: (n + g.d) + '/' + r.cap, totCol: n + g.d === 0 ? '#ff6b5e' : n + g.d >= r.cap ? '#ffd23a' : '#fff' }; }));
-      else if (pl.key.indexOf('wagon') === 0) board(pl.p.x, pl.p.y, (G.vehs.length < 2 ? 'Wagon ' : pl.key === 'wagon' ? 'Wagon 1: ' : 'Wagon 2: ') + pl.total + '/' + pl.cap, pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams); return { name: r.name, g: g, tot: String(sumG(g) + g.d) }; }));
+      else if (pl.key.indexOf('wagon') === 0) board(pl.p.x, pl.p.y, wagonTag(pl.key) + pl.total + '/' + pl.cap, pl.rows.map(function (r) { var g = gradeCounts(r.pool, r.fams); return { name: r.name, g: g, tot: String(sumG(g) + g.d) }; }));
       else { var rows = []; pl.split.forEach(function (o) { o.rows.forEach(function (r) { var g = gradeCounts(r.pool, r.fams); rows.push({ name: r.name, g: g, tot: String(sumG(g) + g.d) }); }); }); board(pl.p.x, pl.p.y, 'Ready to take', rows); }
     });
   }
@@ -14398,7 +15001,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
   // "Show on map" zooms out over the whole line, every wagon's stop list drawn
   // along it; the tapped wagon's is drawn on the ground while its panel is
   // open, with the stop numbers at each stop
-  var ROUTE_COL = ['#2f8cff', '#ff8a1f'];
+  // a colour a wagon (up to six, one-way tracks)
+  var ROUTE_COL = ['#2f8cff', '#ff8a1f', '#2fbf5a', '#c45cff', '#ff4f6d', '#16b8c4'];
+  function wagonTag(key) { return G.vehs.length < 2 ? 'Wagon ' : 'Wagon ' + (+key.slice(5) || 1) + ': '; }
   function stopPos(k) {
     if (Lg.isHaltStop(k)) { var hs = Lg.stopCrops(k).map(function (c) { return info.halts[c]; }).filter(Boolean), a = hs[0], b = hs[hs.length - 1] || a; return { x: (a.x + b.x) / 2, z: (a.z + b.z) / 2 }; }
     if (k === 'factory') { var q = M.at(info.line, L.sSt); return { x: q.x, z: q.z }; }
@@ -14413,17 +15018,22 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (X && sa >= X.sFrom - 0.01 && sb >= X.sTo) return [[la, sa, X.sFrom], ['x:' + la + ':' + lb, X.aLen - X.sFrom, X.K + sb]];
     var f = WD.lineFork(info.lines, la, lb); return [[la, sa, Math.min(sa, f)], [lb, Math.min(sa, f), sb]];
   }
+  // (one-way tracks: the way round the network from stop a's place to stop b's)
+  function owLegs(a, b) {
+    var pa = netSpot(a.at), pb = netSpot(b.at); if (!pa || !pb) return [];
+    var r = FL.rail.route(info.rail, pa, pb, { path: null }, 0); return r ? [[r.path, r.u, r.uEnd]] : [];
+  }
   function routeLines(P, ids, map) {
     ids.forEach(function (wi) {
       var v = G.vehs[wi]; if (!v) return;
-      var l = Lg.stops(S, wi).filter(stopOk), col = ROUTE_COL[wi % 2], pieces = [];
-      l.forEach(function (e, i) { if (l.length > 1) pieces = pieces.concat(legs(v, e, l[(i + 1) % l.length])); });
+      var l = Lg.stops(S, wi).filter(stopOk), col = ROUTE_COL[wi % ROUTE_COL.length], pieces = [];
+      l.forEach(function (e, i) { if (l.length > 1) pieces = pieces.concat(OW && info.rail ? owLegs(e, l[(i + 1) % l.length]) : legs(v, e, l[(i + 1) % l.length])); });
       ox.save(); ox.lineCap = 'round'; ox.lineJoin = 'round';
       var lw = map ? 7 : 9;
       pieces.forEach(function (pc) {
-        var path = linePath(pc[0]), lo = Math.min(pc[1], pc[2]), hi = Math.max(pc[1], pc[2]), pts = [];
+        var own = typeof pc[0] !== 'string', path = own ? pc[0] : linePath(pc[0]), lo = Math.min(pc[1], pc[2]), hi = Math.max(pc[1], pc[2]), pts = [];
         if (hi - lo < 0.05) return;
-        for (var s0 = lo; s0 <= hi + 0.01; s0 += 0.4) { var q = vat(v, path, Math.min(s0, hi)); pts.push(P(q.x, 0.12, q.z)); }
+        for (var s0 = lo; s0 <= hi + 0.01; s0 += 0.4) { var q = own ? M.at(path, Math.min(s0, hi)) : vat(v, path, Math.min(s0, hi)); pts.push(P(q.x, 0.12, q.z)); }
         ox.strokeStyle = 'rgba(255,255,255,.9)'; ox.lineWidth = lw + 5; ox.beginPath(); pts.forEach(function (p, i) { if (i) ox.lineTo(p.x, p.y); else ox.moveTo(p.x, p.y); }); ox.stroke();
         ox.strokeStyle = col; ox.lineWidth = lw; ox.stroke();
         // moving dashes: the way it runs (both ways on a shuttle)
@@ -14434,7 +15044,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       var at = {}, order = [];
       l.forEach(function (e, i) { if (!at[e.at]) { at[e.at] = []; order.push(e.at); } at[e.at].push(i + 1); });
       order.forEach(function (k) {
-        var sp = stopPos(k), p = P(sp.x, 0.2, sp.z), off = (wi ? 1 : -1) * (map ? 13 : 0), lab = at[k].join('·'), r = map ? 9 : 11, w = Math.max(r * 2, lab.length * (map ? 7 : 8) + 10);
+        var sp = stopPos(k), p = P(sp.x, 0.2, sp.z), off = (wi - (G.vehs.length - 1) / 2) * (map ? 22 : 0), lab = at[k].join('·'), r = map ? 9 : 11, w = Math.max(r * 2, lab.length * (map ? 7 : 8) + 10);
         ox.fillStyle = col; ox.strokeStyle = '#ffffff'; ox.lineWidth = 3;
         rr(p.x + off - w / 2, p.y - r, w, r * 2, r); ox.fill(); ox.stroke();
         txt(lab, p.x + off, p.y + 1, map ? 11 : 13, '#ffffff', 'center');
@@ -14454,7 +15064,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     txt('Tap to close', x + w - 12, y + 15, 11, '#9aa3c0', 'right');
     G.vehs.forEach(function (v, i) {
       var l = Lg.stops(S, i), yy = y + 40 + i * rowH;
-      ox.fillStyle = ROUTE_COL[i % 2]; rr(x + 12, yy - 6, 26, 12, 6); ox.fill();
+      ox.fillStyle = ROUTE_COL[i % ROUTE_COL.length]; rr(x + 12, yy - 6, 26, 12, 6); ox.fill();
       txt((G.vehs.length > 1 ? 'Wagon ' + (i + 1) + ': ' : '') + (Lg.routesOn(S) ? listName(l, i) : 'Fields to stall'), x + 46, yy, 13, '#ffffff', 'left');
       var ws = l.filter(stopOk).map(function (e, k) { return (k + 1) + ' ' + stopName(e.at); }), s1 = ws.join(' \u2192 ');
       ox.font = 'bold 11px ' + FONT; while (ws.length > 1 && ox.measureText(s1).width > w - 58) { ws.pop(); s1 = ws.join(' \u2192 ') + ' \u2026'; }
