@@ -367,9 +367,9 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         items: { field: 'fieldC', helper: 'helper', helper2: 'helper2' } },
       tomato: { name: 'Tomatoes', one: 'tomato', price: 2, regrow: 13, can: 'canT', canPrice: 10, haltKey: 'haltT', idle: 0.7, bees: true, share: 0.4, burst: ['#3b9f3b', '#f2362b', '#4dba45', '#8c5430'], chip: '#c9261e',
         items: { open: 'tomatoes', field: 'fieldT', helper: 'tHelper', helper2: 'tHelper2', cans: 'tomCans' } },
-      corn: { name: 'Corn', one: 'corn', price: 4, regrow: 12, can: 'canK', canPrice: 18, haltKey: 'haltK', idle: 0.6, share: 0.2, valley: 2, burst: ['#3f9a3c', '#ffd335', '#4fbf46', '#e8c24a'], chip: '#d9a514',
+      corn: { name: 'Corn', one: 'corn', price: 2.9, regrow: 12, can: 'canK', canPrice: 18, haltKey: 'haltK', idle: 0.6, share: 0.2, valley: 2, burst: ['#3f9a3c', '#ffd335', '#4fbf46', '#e8c24a'], chip: '#d9a514',
         items: { open: 'corn', field: 'fieldK', helper: 'kHelper', helper2: 'kHelper2', cans: 'cornCans' } },
-      pumpkin: { name: 'Pumpkins', one: 'pumpkin', price: 8, regrow: 18, can: 'canU', canPrice: 34, haltKey: 'haltP', idle: 0.7, share: 0.12, valley: 2, burst: ['#3b9f3b', '#ff8a1f', '#5fae36', '#e0670f'], chip: '#e0670f',
+      pumpkin: { name: 'Pumpkins', one: 'pumpkin', price: 5.8, regrow: 18, can: 'canU', canPrice: 34, haltKey: 'haltP', idle: 0.7, share: 0.12, valley: 2, burst: ['#3b9f3b', '#ff8a1f', '#5fae36', '#e0670f'], chip: '#e0670f',
         items: { open: 'pumpkins', field: 'fieldP', helper: 'pHelper', helper2: 'pHelper2', cans: 'pumpCans' } },
       sunflower: { name: 'Sunflowers', one: 'sunflower', price: 80, regrow: 14, can: 'canO', canPrice: 350, haltKey: 'haltN', idle: 0.6, share: 0.12, valley: 3, nocan: true, burst: ['#3f9a3c', '#ffd23a', '#6b4423', '#ffe34d'], chip: '#f2b705' },
       wheat: { name: 'Wheat', one: 'wheat sheaf', price: 175, regrow: 16, can: 'canH', canPrice: 770, haltKey: 'haltH', idle: 0.65, share: 0.1, valley: 3, nocan: true, burst: ['#e8c24a', '#f4d77a', '#c9a227', '#fff1b8'], chip: '#d9b24a' },
@@ -449,7 +449,14 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // (gap / stageMult never grows; with 4.5 from stage 1 the Farm stall measured -15% income at the merge)
     customers: { interval: 4.5, interval0: 2.5, byStage: [2.5, 2.5, 3.0, 3.6], adMult: 0.85, takeMin: 2, takeMax: 4, bulkPer: 0.3, stageMult: [1, 1.3, 1.6, 2.0, 2.6, 3.4, 4.4, 5.6],
       serveYou: 1, serveSeller: 2, sellSpeedMult: 0.85, patience: 25, noStockWait: 6,
-      queue0: 5, queueMax: 12, speed: 2.4, canShare: 0.3, bagShare: 0.15, maxActors: 26 },
+      queue0: 5, queueMax: 12, speed: 2.4, canShare: 0.3, bagShare: 0.15, madeShare: 0.85, maxActors: 26 },
+    // factories keep pace with their valleys (Tom 2026-10-23 "B"): every
+    // factory runs `speed` x as fast as its stages say, a product earns
+    // (x - 1.25) / `margin` over a washed crop (cans: `canMargin`), so money
+    // stays about where it was, and each maker gets one more stage, a Second
+    // line (twice the last batch, `lineCost` x the last stage). The Cannery
+    // runs `canSpeed` x and its Second can line doubles its batch
+    pace: { speed: 2, margin: 3.4, canSpeed: 3, canMargin: 3, lineCost: 1.6 },
     stages: [
       { name: 'Roadside stall', tills: 1, stock: 60 },
       { name: 'Farm stall', tills: 2, stock: 150 },
@@ -641,7 +648,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     // is one more entry (and its layout in world.js)
     districts: [
       { id: 'home', name: 'Home factory', valley: 1, stop: 'factory', factories: ['can'], open: 'wash', arrivals: true },
-      { id: 'corn', name: 'Corn factory', valley: 2, stop: 'cornFactory', factories: ['dry'], open: 'dryer', troughs: 1, intake: 240, goods: 240 }
+      { id: 'corn', name: 'Corn factory', valley: 2, stop: 'cornFactory', factories: ['dry'], open: 'dryer', troughs: 1, intake: 480, goods: 480 }
     ],
     // the Lab (Tom 2026-10-07): one Lab for every valley, four tabs. Seeds has
     // a chip per crop, each with the same fixed slots (Sweet, Big, Bunches,
@@ -808,6 +815,25 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         // Drying house's older readers (signs, panels, tips) read config.dryer.recipes[crop].name
         ['bag', 'name', 'x', 'look', 'label'].forEach(function (k) { if (R[c][k] == null) R[c][k] = R[c][0][k]; }); });
     });
+  })();
+  // factories keep pace (config.pace, Tom 2026-10-23 "B"): each maker
+  // quicker, its products' x trimmed (the stage texts' "(xN)" too), a Second
+  // line stage at the end; the cans' prices trimmed the same way. (The
+  // Barrel cellar ages for an hour on purpose: it keeps its numbers)
+  (function () {
+    var P = config.pace, mk = config.makers, nx = function (x) { return Math.round((1.25 + (x - 1.25) / P.margin) * 100) / 100; };
+    var tx = function (t) { return t.replace(/\(x(\d+)/g, function (a, n) { return '(x' + (Math.round(nx(+n) * 10) / 10); }).replace(/worth about (\d+) crops/, function (a, n) { return 'worth about ' + Math.round(nx(+n)) + ' crops'; }); };
+    Object.keys(mk).forEach(function (id) {
+      var M = mk[id], SG = M.stages; if (id === 'cellar') return;
+      SG.forEach(function (q) { q.cycle = q.cycle / P.speed; if (q.text) q.text = tx(q.text); });
+      var last = SG[SG.length - 1], hall = id === 'dry' ? 'Drying house' : M.name;
+      SG.push({ id: id + 'Line', name: 'Second line', line: true, cost: Math.round(last.cost * P.lineCost / 100) * 100, batch: last.batch * 2, cycle: last.cycle, worker: true, icon: 'gear2',
+        text: 'A second row of machines beside the first: twice the batch, so the ' + hall + ' keeps up with its valley\'s crops.' });
+      M.hopper = Math.max(M.hopper, last.batch * 2); M.goods = M.goods * 2;
+      Object.keys(M.recipes).forEach(function (c) { var R = M.recipes[c]; R.forEach(function (q) { q.x = nx(q.x); }); R.x = R[0].x; });
+    });
+    Object.keys(config.crops).forEach(function (c) { var C = config.crops[c], b = C.price * 1.25; var v = b + (C.canPrice - b) / P.canMargin, e = Math.pow(10, Math.floor(Math.log10(v)) - 1); C.canPrice = +(Math.round(v / e) * e).toFixed(2); });
+    var K = config.cannery; K.worker /= P.canSpeed; K.you /= P.canSpeed;
   })();
   // a later valley's crop items: the first crop opens with the valley, the
   // second is a buy of its own; ids from the crop's name (field + Name,
@@ -1000,6 +1026,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     { id: 'canSpeed', tab: 'line', icon: 'gear2', of: 'cannery', cost: [1600, 2400, 3600, 5200, 7000, 9200], need: function (s) { return lv(s, 'canWorker') > 0; } },
     // Corn Valley's cans (Tom 2026-10-09 stage 4 "A"): dearer than the crop's
     // own field (Corn 5,500, so corn cans 7,500; pumpkin cans 12,000)
+    { id: 'canLine', tab: 'line', icon: 'gear2', of: 'cannery', cost: [16000], need: function (s) { return lv(s, 'canSpeed') >= 6 && lv(s, 'corn') > 0; }, needs: 'Cannery speed VI' },
     { id: 'cornCans', tab: 'line', icon: 'cans', of: 'cannery', cost: [7500], need: function (s) { return lv(s, 'corn') > 0 && lv(s, 'canWorker') > 0; }, needs: 'Corn Valley' },
     { id: 'pumpCans', tab: 'line', icon: 'cans', of: 'cannery', cost: [12000], need: function (s) { return lv(s, 'pumpkins') > 0 && lv(s, 'canWorker') > 0; }, needs: 'Pumpkin field' },
     // (the Drying house's stages are made from config.dryer.stages below the list)
@@ -1178,7 +1205,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     gloves: 'Gloves', sickle: 'Sickle', sharpS: 'Sharpen sickle', scythe: 'Scythe', sharpY: 'Sharpen scythe', boots: 'Boots',
     fieldC: 'Carrot field', fieldT: 'Tomato field', helper: 'Helper', hbasket: 'Helper basket', htool: 'Helper tool', helper2: 'Second carrot helper',
     tomatoes: 'Tomato field', tHelper: 'Tomato helper', tHelper2: 'Second tomato helper', cart: 'Hand cart',
-    donkey: 'Donkey cart', donkeyUp: 'Donkey cart upgrade', horse: 'Horse wagon', horseUp: 'Horse wagon upgrade', oldTrain: 'Old rattler', rails: 'Lay rails', cannery: 'Cannery', canWorker: 'Cannery worker', tomCans: 'Tomato cans', canSpeed: 'Cannery speed',
+    donkey: 'Donkey cart', donkeyUp: 'Donkey cart upgrade', horse: 'Horse wagon', horseUp: 'Horse wagon upgrade', oldTrain: 'Old rattler', rails: 'Lay rails', cannery: 'Cannery', canWorker: 'Cannery worker', tomCans: 'Tomato cans', canSpeed: 'Cannery speed', canLine: 'Second can line',
     train: 'Steam train', wagon: 'Wagon', seller: 'Seller', farmStall: 'Farm stall', farmShop: 'Farm shop', sellSpeed: 'Faster sellers',
     corn: 'Clear the track to Corn Valley',
     fieldK: 'Corn field', kHelper: 'Corn helper', kHelper2: 'Second corn helper', pumpkins: 'Pumpkin field', fieldP: 'Pumpkin field', pHelper: 'Pumpkin helper', pHelper2: 'Second pumpkin helper',
@@ -1849,7 +1876,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (k && room > 0) { n = Math.min(chunk, st.goods[k] - (keep[k] || 0), room); st.goods[k] -= n; load[k] = (load[k] || 0) + n; return { what: 'goods', kind: k, n: n }; }
     return null;
   }
-  function canBatch(s) { var b = config.cannery.batch; return b[Math.min(lv(s, 'canSpeed'), b.length - 1)]; }
+  function canBatch(s) { var b = config.cannery.batch; return b[Math.min(lv(s, 'canSpeed'), b.length - 1)] * (lv(s, 'canLine') ? 2 : 1); }
   function canCycle(s, you) { return canBatch(s) * canTime(s, you); }
   // the running research's tier: { cost, n, kind, rate, crate }
   function labNeed(s) { var id = s.lab && s.lab.cur; return id && config.research[id] ? resTierSpec(id, Math.max(0, lv(s, id) - 1)) : null; }
@@ -2263,9 +2290,10 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
         var UQ = SLOT_STEPS.filter(function (q) { return q.up === id; })[0], uk = UQ.kind, u0 = vehicleAt(uk, n, rails(s)), u1 = vehicleAt(uk, n + 1, rails(s));
         var UN = { tractorUp: ['Second trailer', 'Big trailers'], oldTrainUp: ['Patched boiler', 'Third wagon'] }[id];
         return { name: UN ? UN[n] || UN[UN.length - 1] : (id === 'wagon' ? 'Wagon ' : C.vehicles[uk].name + ' ') + ROMAN[n], text: 'Every ' + C.vehicles[uk].name.toLowerCase() + ' carries more' + (u1.speed > u0.speed ? ' and runs faster.' : '.'), from: vtext(u0), to: vtext(u1) };
-      case 'cannery': return { name: 'Cannery', text: 'Cans carrots (sell for 5) while you stand on CAN. The cans go on its OUT shelf. Washed crops go in by themselves and make Fine cans (+25%); pick the grades it takes in its menu.', from: '', to: 'Can = 5' };
+      case 'cannery': return { name: 'Cannery', text: 'Cans carrots (sell for ' + C.crops.carrot.canPrice + ') while you stand on CAN. The cans go on its OUT shelf. Washed crops go in by themselves and make Fine cans (+25%); pick the grades it takes in its menu.', from: '', to: 'Can = ' + C.crops.carrot.canPrice };
       case 'canWorker': return { name: 'Cannery worker', text: 'The Cannery runs without you, and the line fills its hopper and takes the cans at the FACTORY station.', from: 'You only', to: 'Worker' };
-      case 'tomCans': return { name: 'Tomato cans', text: 'The Cannery also cans tomatoes (sell for 10).', from: '', to: 'Can = 10' };
+      case 'tomCans': return { name: 'Tomato cans', text: 'The Cannery also cans tomatoes (sell for ' + C.crops.tomato.canPrice + ').', from: '', to: 'Can = ' + C.crops.tomato.canPrice };
+      case 'canLine': return { name: 'Second can line', text: 'A second kettle and line beside the first: twice the cans a batch, so the Cannery keeps up with the crops.', from: 'Batch ' + canBatch(s), to: 'Batch ' + canBatch(s) * 2 };
       case 'cornCans': case 'pumpCans':
         var cc = id === 'cornCans' ? 'corn' : 'pumpkin', CC = C.crops[cc];
         return { name: NAMES[id], text: 'The Cannery also cans washed ' + CC.name.toLowerCase() + ': ★ ones until Premium line, then every grade, best first. A can sells for ' + CC.canPrice + ' (Fine ' + fmt(CC.canPrice * 1.25) + ').', from: '', to: 'Can = ' + CC.canPrice };
@@ -2423,7 +2451,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     var cp = 0, cn = 0; CROPS.forEach(function (c) { if (cansOpen(s, c)) { cp += C.crops[c].canPrice; cn++; } });
     var cans = 0, canPrice = (cn ? cp / cn : 0) * (feedCan(s) && pkAuto(s) ? pkMult(s) : 1);
     if (lv(s, 'canWorker')) cans = Math.min(sup * 0.6, 1 / canTime(s, false));
-    var canWant = lv(s, 'cannery') ? items * C.customers.canShare : 0;
+    var canWant = lv(s, 'cannery') ? items * C.customers.madeShare : 0;
     var cansSold = Math.min(cans, canWant + Math.max(0, items - canWant - (sup - cans)));
     // the Drying house runs idle once its worker is in: the crops it dries
     // (their share of what comes in, washed by the Corn district's own
@@ -6997,6 +7025,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       : st === 3 ? [[M.dryRack(), 1.3, 1.2, 1.4], [M.dryRack(), 3.4, 1.2, 1.4], [M.roaster(), 5.4, 1.2, 1.5]]
       : [[M.dryRack(), 1.3, 1.2, 1.4], [M.dryRack(), 3.2, 1.2, 1.4], [M.dryRack(), 5.1, 1.2, 1.4], [M.roaster(), 6.9, 1.25, 1.5]];
     mach.forEach(function (q) { m.add(q[0], q[1], 0.1, BD + (q[3] || 1.5), 0, q[2]); });
+    // its Second line (Tom 2026-10-23 "B", factories keep pace): a second row of racks and a second roaster
+    if (Lg.lv(s, 'dryLine')) [[M.dryRack(), 1.3, 1.2, 3.1], [M.dryRack(), 3.2, 1.2, 3.1], [M.dryRack(), 5.1, 1.2, 3.1], [M.roaster(), 6.9, 1.25, 3.1]].forEach(function (q) { m.add(q[0], q[1], 0.1, BD + q[3], 0, q[2]); });
     // stage 3 on: the bagging line from the roaster to the east wall, bags riding it
     var lineX = st === 3 ? 6.6 : st >= 4 ? 8.0 : 0;
     if (lineX) {
@@ -7113,6 +7143,8 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     MK.stages.forEach(function (q, k) { if (k >= stage) return; var mm = M.machine ? M.machine(mid, k) : null; if (mm) mach.push(mm); });
     var step = mach.length ? Math.min(2.1, (W - 1.4) / mach.length) : 2;
     mach.forEach(function (mm, k) { m.add(mm, mx + k * step + 0.2, 0.1, BD + 1.4, 0, 1.15); });
+    // its Second line (Tom 2026-10-23 "B"): the same machines again in a second row
+    if (Lg.lv(s, mid + 'Line')) { var n2 = 0; MK.stages.forEach(function (q, k) { var mm = k < stage && M.machine ? M.machine(mid, k) : null; if (mm) m.add(mm, mx + (n2++) * step + 0.2, 0.1, BD + 3.0, 0, 1.15); }); }
     // the word on its roof
     var word = CF.name.toUpperCase(), sw = word.length * 0.42 + 0.4, sxm = W * 0.45, sy = H + 0.95, sz = BD * 0.4 + 0.25;
     m(sxm - sw / 2, sy, sz, sw, 0.62, 0.1, roof[0]); m(sxm - sw / 2 - 0.05, sy - 0.05, sz - 0.03, sw + 0.1, 0.72, 0.06, C.gold); M.signText(m, word, sxm, sy + 0.56, sz + 0.1, 0.065, '#ffd23a', 0.05);
@@ -12459,14 +12491,15 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       else if (cf && goodsFam(cf) && Lg.dOn(S, rushDist(cf)) && goodsPoolN(cf) > 0) { v.dwell += dt; if (v.dwell > 0.5) goTo(v, st.i, { at: Lg.DIST[rushDist(cf)].stop, act: 'load', rush: true }); }
       else {
         // waiting for a load. Calling at the factory next it keeps room for the
-        // goods there, and need not wait for a full load: it drops what the IN
-        // takes and tops up on the way back down
+        // goods there, but it fills the rest: a full IN never sends it off half
+        // empty (Tom 2026-10-23: the halts backed up behind a full factory);
+        // what the IN has no room for rides on to the stall
         v.dwell += dt;
         var fe = aheadFactory(l, st.i), fz = fe && Lg.stopDist(fe.at), fneed = !!fe && need(v, fe), reserve = fe && fe.act !== 'drop' ? stationReserve(cap, fe.act === 'both', fz) : 0, hcs = isHalt(e) ? haltCrops(e) : null;
         loadHalts(v, cap - vLoad(v) - reserve, null, hcs);
         var n = vLoad(v), dry = haltsN(hcs) === 0;
         if (n > 0 || reserve > 0 || fneed) v.waitT += dt; else v.waitT = 0;
-        var early = fneed && v.dwell > 1 && (fe.act === 'drop' ? dry && v.dwell > 2 : n >= Math.min(cap - reserve, stationFree(fz)) || (dry && v.dwell > 2));
+        var early = fneed && v.dwell > 1 && (fe.act === 'drop' ? dry && v.dwell > 2 : n >= cap - reserve || (dry && v.dwell > 2));
         // empty with dry halts, it goes where there is work (the stall wagon to the goods)
         var idle = n === 0 && dry && v.dwell > 2 && !fneed && (function () { var j = nextStop(v, st.i); return j >= 0 && !isHalt(l[j]); })();
         if ((n + reserve >= cap || early || v.waitT >= V.leaveAfter || idle) && v.dwell > 1 && leaveStop(v)) {
@@ -12615,10 +12648,12 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       return;
     }
     if (act === 'drop') {
-      // every raw crop goes into the IN: the wagon waits while it is full (the wash is the cap then)
+      // every raw crop goes into the IN: the wagon waits a little while it is
+      // full, never for long (no train waits on a factory, Tom 2026-10-23):
+      // what is left rides on
       var raw = vRaw(v);
-      v.inWait = raw > 0;
-      if (raw > 0 || v.dwell < 1) return;
+      v.inWait = raw > 0 && v.dwell < 4;
+      if (v.inWait || v.dwell < 1) return;
       if (!v.counted) { v.trips++; S.stats.trips++; v.counted = true; }
     }
     // Load waits a while for goods when it has none
@@ -12976,18 +13011,20 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
     if (st === 2) { o.bag = '#c98b4e'; o.bagFill = ['#ff8a1f', '#e8402f', '#4aa8ff'][ci % 3]; }
     return o;
   }
-  // a customer's family: a can (canShare, the cans it makes in equal shares),
-  // else a crop: each crop after the first by its `share` (config.crops), the
-  // first crop the rest. One roll a choice, none when there is only one
+  // a customer's family: a crop, each crop after the first by its `share`
+  // (config.crops), the first crop the rest (one roll a choice, none when
+  // there is only one), or what its factories make of it
   function pickProduct() {
     var c = CFG.customers;
     function pick(list, share) { if (list.length < 2) return list[0]; var r = Math.random(), acc = 0; for (var i = list.length - 1; i >= 1; i--) { acc += share(list[i]); if (r < acc) return list[i]; } return list[0]; }
-    // the Drying house's bags (stage 4): bagShare of buyers once it is built, a family per open crop
-    // (every maker's goods made now: Lg.famOpen; more buyers for them as makers come, Lg.bagShare)
-    var bags = Lg.BAG_FAMS.filter(function (f) { return Lg.famOpen(S, f); });
-    if (bags.length && Math.random() < Lg.bagShare(S)) return pick(bags, function () { return 1 / bags.length; });
-    if (Lg.lv(S, 'cannery') && Math.random() < c.canShare) { var cans = CROPS.filter(function (x) { return Lg.cansOpen(S, x); }).map(Lg.cropCan); return pick(cans, function () { return 1 / cans.length; }); }
-    return pick(CROPS.filter(cropOn), function (x) { return CFG.crops[x].share || 0; });
+    // (factories keep pace, Tom 2026-10-23 "B"): a buyer comes for a crop, and
+    // takes what its factories make of it (cans, bags) when the shelf has
+    // some, madeShare of the time; so what the factories make, sells
+    var crop = pick(CROPS.filter(cropOn), function (x) { return CFG.crops[x].share || 0; }), sh = S.stock.shelf;
+    var made = Lg.BAG_FAMS.filter(function (f) { return CFG.products[f].crop === crop && Lg.famOpen(S, f) && Lg.famN(sh, f) > 0; });
+    if (Lg.lv(S, 'cannery') && Lg.cansOpen(S, crop) && Lg.famN(sh, Lg.cropCan(crop)) > 0) made.push(Lg.cropCan(crop));
+    if (made.length && Math.random() < c.madeShare) return made[Math.floor(Math.random() * made.length)];
+    return crop;
   }
   function roadWalkZ() { return FL.road.walkZ(FL.road.level(S), L); }
   function spawnCustomer(fromBus, from) {
@@ -14882,7 +14919,7 @@ function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"f
       case 'halt': var pool = haltPool(m.key); return ['Crops through: <b>' + f(st.haltIn[m.key]) + '</b>', 'Waiting: <b>' + poolN(pool) + ' / ' + Lg.haltCap(S) + '</b>'];
       case 'vehicle': var v = Lg.vehicle(S, m.key || 0), gv = G.vehs[m.key]; return [Lg.vehCount(S) > 1 && gv ? 'Trips this session: <b>' + f(gv.trips) + '</b>' : 'Trips: <b>' + f(st.trips) + '</b>', 'Crops moved: <b>' + f(st.moved) + '</b>', v ? 'Carries <b>' + v.cap + '</b> a trip' : ''];
       case 'stall': return ['Served by you: <b>' + f(st.servedYou) + '</b>, by sellers: <b>' + f(st.servedSell) + '</b>', 'Sold: <b>' + f(st.sold) + '</b>', 'Earned: <b>' + f(st.earned) + '</b>'];
-      case 'cannery': return Lg.lv(S, 'cannery') ? ['Cans made: <b>' + f(st.cans) + '</b> (\u2605\u2605\u2605 or better <b>' + f(st.cansS || 0) + '</b>, \u2605\u2605 <b>' + f(st.cansP) + '</b>, Fine <b>' + f(st.cansF) + '</b>)', 'Earned from cans: <b>' + f(st.canEarned) + '</b>', 'Hopper <b>' + Lg.hopN(S) + '</b>' + hopGrades() + ', cans on the shelf <b>' + canSum(S.stock.goods) + '</b>', canPrices(), gradeLine()] : ['Cans carrots (sell for 5) while you stand on CAN.', 'Washed crops make Fine cans (+25%), \u2605\u2605 and \u2605\u2605\u2605 crops their own better cans.', 'Needs: ' + Lg.BY.cannery.needs];
+      case 'cannery': return Lg.lv(S, 'cannery') ? ['Cans made: <b>' + f(st.cans) + '</b> (\u2605\u2605\u2605 or better <b>' + f(st.cansS || 0) + '</b>, \u2605\u2605 <b>' + f(st.cansP) + '</b>, Fine <b>' + f(st.cansF) + '</b>)', 'Earned from cans: <b>' + f(st.canEarned) + '</b>', 'Hopper <b>' + Lg.hopN(S) + '</b>' + hopGrades() + ', cans on the shelf <b>' + canSum(S.stock.goods) + '</b>', canPrices(), gradeLine()] : ['Cans carrots (sell for ' + CFG.crops.carrot.canPrice + ') while you stand on CAN.', 'Washed crops make Fine cans (+25%), \u2605\u2605 and \u2605\u2605\u2605 crops their own better cans.', 'Needs: ' + Lg.BY.cannery.needs];
       case 'packhouse': return Lg.lv(S, 'wash') ? ['Washed: <b>' + f(st.washed || 0) + '</b>' + (Lg.lv(S, 'sorter') ? ', graded: <b>' + f(st.graded || 0) + '</b>' : ''), 'Extra earned: <b>' + f(st.pkEarned || 0) + '</b>', 'Trough <b>' + Lg.washBatch(S) + '</b> a batch, <b>' + Math.round(Lg.washCycle(S)) + ' s</b>', 'Intake <b>' + Lg.intakeN(S) + ' / ' + Lg.intakeCap(S) + '</b>, shelf <b>' + Lg.goodsN(S) + ' / ' + Lg.goodsCap(S) + '</b>', Lg.lv(S, 'cannery') ? 'Washed crops go into the Cannery by themselves when it takes their grade, the rest onto the shelf.' : ''] : ['Washed crops sell for 25% more.', 'Needs: ' + Lg.BY.wash.needs];
       case 'lab': return ['Research better seeds, farm, shop and factory. Pay, then keep its crate fed.', 'Needs: ' + Lg.BY.lab.needs];
       case 'dryer': var cD = Lg.dist(S, Lg.facDist('dry')); return Lg.dryStage(S) ? ['Bags made: <b>' + f(st.bags || 0) + '</b> (\u2605\u2605 or better <b>' + f(st.bagsG || 0) + '</b>)', 'Earned from bags: <b>' + f(st.bagEarned || 0) + '</b>', 'IN <b>' + Lg.intakeN(cD) + ' / ' + Lg.intakeCap(cD) + '</b>, CROPS <b>' + Lg.goodsN(cD) + ' / ' + Lg.goodsCap(cD) + '</b>', 'Bin <b>' + Lg.dryHopN(S) + ' / ' + CFG.dryer.hopper + '</b>, GOODS yard <b>' + Lg.dryGoodsN(S) + ' / ' + Lg.dryGoodsCap(S) + '</b>', bagPrices()]
